@@ -1,0 +1,4 @@
+{
+  "before": {"id":"Q12352$6ca7ed2a-4c44-2f80-c5b9-ef58973aad64","rank":"normal","qualifiers":[],"references":[],"property":{"id":"P664","data-type":"string"},"value":{"type":"value","content":"foo"}},
+  "after":  {"id":"Q12352$6ca7ed2a-4c44-2f80-c5b9-ef58973aad64","rank":"normal","qualifiers":[],"references":[],"property":{"id":"P664","data-type":"string"},"value":{"type":"value","content":"bar"}}
+}

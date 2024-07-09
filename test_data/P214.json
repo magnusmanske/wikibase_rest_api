@@ -1,0 +1,2452 @@
+{
+    "type": "property",
+    "data-type": "external-id",
+    "labels": {
+        "fr": "identifiant VIAF",
+        "en": "VIAF ID",
+        "de": "VIAF-Kennung",
+        "it": "identificativo VIAF",
+        "cs": "VIAF",
+        "nn": "VIAF-identifikator",
+        "nl": "VIAF-identificatiecode",
+        "ru": "\u043a\u043e\u0434 VIAF",
+        "ca": "identificador VIAF",
+        "es": "identificador VIAF",
+        "uk": "VIAF",
+        "fi": "VIAF-tunniste",
+        "lv": "VIAF identifikators",
+        "fa": "\u0634\u0646\u0627\u0633\u0647 \u0628\u0645 \u0628\u0645",
+        "el": "\u03ba\u03c9\u03b4\u03b9\u03ba\u03cc\u03c2 \u03b1\u03bd\u03b1\u03c6\u03bf\u03c1\u03ac\u03c2 VIAF",
+        "vi": "m\u00e3 s\u1ed1 VIAF",
+        "pt-br": "identificador VIAF",
+        "ja": "VIAF\u8b58\u5225\u5b50",
+        "gl": "identificador VIAF",
+        "is": "VIAF",
+        "sr": "VIAF",
+        "uz": "VIAF identifikatori",
+        "ko": "VIAF ID",
+        "af": "VIAF ID",
+        "da": "VIAF",
+        "ilo": "panangilasin ti VIAF",
+        "eo": "VIAF (internacia) identigilo",
+        "he": "\u05de\u05d6\u05d4\u05d4 VIAF",
+        "zh": "VIAF\u6807\u8bc6\u7b26",
+        "zh-hans": "\u865a\u62df\u56fd\u9645\u89c4\u8303\u6587\u6863\u6807\u8bc6\u7b26",
+        "zh-hant": "\u865b\u64ec\u570b\u969b\u6b0a\u5a01\u6a94\u6848\u8b58\u5225\u78bc",
+        "pt": "identificador VIAF",
+        "sv": "VIAF-ID",
+        "sl": "VIAF",
+        "id": "penanda VIAF",
+        "min": "Identifikasi VIAF",
+        "hu": "VIAF-azonos\u00edt\u00f3",
+        "be-tarask": "\u0456\u0434\u044d\u043d\u0442\u044b\u0444\u0456\u043a\u0430\u0442\u0430\u0440 VIAF",
+        "nds": "VIAF",
+        "pl": "identyfikator VIAF",
+        "be": "\u0456\u0434\u044d\u043d\u0442\u044b\u0444\u0456\u043a\u0430\u0442\u0430\u0440 VIAF",
+        "ro": "identificator VIAF",
+        "de-at": "VIAF",
+        "de-ch": "VIAF",
+        "bar": "VIAF",
+        "jam": "VIAF",
+        "bs": "VIAF",
+        "cy": "dynodwr VIAF",
+        "mzn": "VIAF  \u0634\u0646\u0627\u0633\u0647",
+        "ka": "VIAF  \u10d8\u10d3\u10d4\u10dc\u10e2\u10d8\u10e4\u10d8\u10d9\u10d0\u10e2\u10dd\u10e0\u10d8",
+        "zh-tw": "\u865b\u64ec\u570b\u969b\u6b0a\u5a01\u6a94\u6848\u8b58\u5225\u78bc",
+        "nb": "VIAF-ID",
+        "sk": "VIAF",
+        "hr": "VIAF",
+        "la": "siglum VIAF",
+        "en-gb": "VIAF ID",
+        "th": "VIAF",
+        "sco": "VIAF identifier",
+        "tr": "VIAF kimli\u011fi",
+        "pcd": "VIAF",
+        "et": "VIAF",
+        "ar": "\u0645\u064f\u0639\u0631\u0650\u0651\u0641 \u0645\u0644\u0641 \u0627\u0644\u0636\u0628\u0637 \u0627\u0644\u0627\u0633\u062a\u0646\u0627\u062f\u064a \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a \u0627\u0644\u062f\u064e\u0651\u0648\u0644\u064a (VIAF)",
+        "lmo": "VIAF",
+        "bn": "\u09ad\u09bf\u0986\u0987\u098f\u098f\u09ab \u0986\u0987\u09a1\u09bf",
+        "oc": "identificant VIAF",
+        "mk": "VIAF",
+        "rm": "VIAF",
+        "nds-nl": "VIAF",
+        "hi": "VIAF \u0905\u092d\u093f\u091c\u094d\u091e\u093e\u092a\u0915",
+        "hsb": "VIAF",
+        "eu": "VIAF identifikadorea",
+        "zh-cn": "\u865a\u62df\u56fd\u9645\u89c4\u8303\u6587\u6863\u6807\u8bc6\u7b26",
+        "ms": "ID VIAF",
+        "gu": "VIAF \u0a93\u0ab3\u0a96 \u0a95\u0acd\u0ab0\u0aae\u0abe\u0a82\u0a95",
+        "stq": "VIAF",
+        "pms": "VIAF",
+        "li": "VIAF",
+        "lb": "VIAF",
+        "ts": "Xihlawulekisi xa VIAF",
+        "te": "\u0c35\u0c3f \u0c10 \u0c0e \u0c0e\u0c2b\u0c4d  \u0c10\u0c21\u0c46\u0c02\u0c1f\u0c3f\u0c2b\u0c48\u0c2f\u0c30\u0c4d",
+        "tt": "VIAF \u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440\u044b",
+        "gsw": "VIAF",
+        "en-ca": "VIAF ID",
+        "zh-hk": "\u865b\u64ec\u570b\u969b\u6b0a\u5a01\u6a94\u6848\u8b58\u5225\u78bc",
+        "ta": "VIAF \u0b85\u0b9f\u0bc8\u0baf\u0bbe\u0bb3\u0bae\u0bcd \u0b95\u0bbe\u0b9f\u0bcd\u0b9f\u0bbf",
+        "or": "\u0b2d\u0b3f.\u0b06\u0b07.\u0b0f.\u0b0f\u0b2b. \u0b38\u0b42\u0b1a\u0b15",
+        "sr-ec": "\u0412\u0418\u0410\u0424",
+        "sr-el": "VIAF",
+        "ia": "identificator VIAF",
+        "ksh": "VIAF-K\u00e4nnommer",
+        "mg": "Mpamantatra VIAF",
+        "scn": "c\u00f2dici idintificativu VIAF",
+        "ml": "\u0d35\u0d3f.\u0d10.\u0d0e.\u0d0e\u0d2b\u0d4d. \u0d24\u0d3f\u0d30\u0d3f\u0d1a\u0d4d\u0d1a\u0d31\u0d3f\u0d2f\u0d32\u0d41\u0d2a\u0d3e\u0d27\u0d3f",
+        "ne": "VIAF \u092a\u0939\u093f\u091a\u093e\u0928 \u0938\u0919\u094d\u0915\u0947\u0924",
+        "sh": "VIAF identifikator",
+        "bg": "VIAF ID",
+        "ast": "identificador VIAF",
+        "lt": "VIAF kodas",
+        "an": "VIAF",
+        "br": "anaouder VIAF",
+        "co": "VIAF",
+        "frp": "VIAF",
+        "fur": "VIAF",
+        "ga": "VIAF",
+        "gd": "VIAF",
+        "ie": "VIAF",
+        "io": "VIAF",
+        "kg": "VIAF",
+        "lij": "VIAF",
+        "nap": "VIAF",
+        "nrm": "VIAF",
+        "sc": "VIAF",
+        "sw": "VIAF",
+        "vec": "ID VIAF",
+        "vls": "VIAF",
+        "vo": "VIAF",
+        "wa": "VIAF",
+        "wo": "VIAF",
+        "zu": "VIAF",
+        "tg": "\u0448\u0438\u043d\u043e\u0441\u0430\u0438 VIAF",
+        "sq": "VIAF ID",
+        "mr": "\u0935\u094d\u0939\u0940\u0906\u092f\u090f\u090f\u092b \u0913\u0933\u0916\u0923",
+        "ur": "\u0648\u06cc \u0622\u0626\u06cc \u0627\u06d2 \u0627\u06cc\u0641 \u0622\u0626\u06cc \u0688\u06cc",
+        "ba": "VIAF \u043a\u043e\u0434\u044b",
+        "zh-sg": "\u865a\u62df\u56fd\u9645\u89c4\u8303\u6587\u6863\u6807\u8bc6\u7b26",
+        "hy": "VIAF \u056f\u0578\u0564",
+        "frr": "VIAF ID",
+        "zh-my": "\u865a\u62df\u56fd\u9645\u89c4\u8303\u6587\u6863\u6807\u8bc6\u7b26",
+        "zh-mo": "\u865b\u64ec\u570b\u969b\u6b0a\u5a01\u6a94\u6848\u8b58\u5225\u78bc",
+        "az": "VIAF kodu",
+        "jv": "tetenger VIAF",
+        "yi": "VIAF-\u05d0\u05d9\u05d3\u05e2\u05e0\u05d8\u05d9\u05e4\u05d9\u05e6\u05d9\u05e8\u05e2\u05e8",
+        "tt-cyrl": "VIAF \u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440\u044b",
+        "pap": "identifikashon VIAF",
+        "szl": "idyntyfikat\u014dr VIAF",
+        "sms": "VIAF-tobdst\u00f5k",
+        "smn": "VIAF-tubd\u00e2ld\u00e2s",
+        "ms-arab": "\u0627\u0621\u064a. \u062f\u064a. \u06cf\u064a. \u0627\u0621\u064a. \u0623\u064a. \u0627\u064a\u0641.",
+        "pa": "\u0a35\u0a40\u0a06\u0a08\u0a0f\u0a10\u0a71\u0a2b \u0a06\u0a08\u0a21\u0a40",
+        "skr": "\u0648\u06cc \u0622\u0626\u06cc \u0627\u06d2 \u0627\u06cc\u0641 \u0622\u0626\u06cc \u0759\u06cc",
+        "pnb": "\u0648\u06cc\u0627\u0641 \u0634\u0646\u0627\u062e\u062a\u06cc",
+        "dag": "VIAF dalinli",
+        "nqo": "\u07dd\u07ed\u07cc\u07ca\u07dd \u07e1\u07ca\u07df\u07d0\u07f2\u07e0\u07cc\u07f2",
+        "ary": "\u0625\u062f\u0648\u0646\u062a\u064a\u0641\u064a\u0643\u0627\u062a\u0648\u0631 \u0645\u062e\u0627\u0632\u0646\u064a \u06a4\u064a\u0631\u062a\u0648\u0627\u0644\u064a \u062f\u0648\u0644\u064a (VIAF)",
+        "rue": "VIAF",
+        "ku": "VIAF ID",
+        "kaa": "VIAF identifikator\u0131",
+        "ps": "\u0645\u0646\u0648\u062f \u067e\u06d0\u0698\u0646\u062f\u0648\u0646\u06a9\u06cc"
+    },
+    "descriptions": {
+        "fr": "identifiant du Fichier d'autorit\u00e9 international virtuel",
+        "en": "identifier for the Virtual International Authority File database [format: up to 22 digits]",
+        "it": "identificativo del database Virtual International Authority File (VIAF)",
+        "ca": "identificador Virtual International Authority File",
+        "fi": "kohteen tunniste kansainv\u00e4lisess\u00e4 auktoriteettirekisteriss\u00e4 VIAF:ssa (engl. Virtual International Authority File)",
+        "el": "\u03c4\u03bf \u03b1\u03bd\u03b1\u03b3\u03bd\u03c9\u03c1\u03b9\u03c3\u03c4\u03b9\u03ba\u03cc \u03c4\u03bf\u03c5 \u03c5\u03c0\u03bf\u03ba\u03b5\u03af\u03bc\u03b5\u03bd\u03bf \u03c3\u03c4\u03bf Virtual International Authority File",
+        "de": "Identifikator in der virtuellen internationale Normdatei (bitte nur individualisierte VIAFs eintragen, das hei\u00dft Nummern ohne den Vermerk \u201eundifferentiated\u201c)",
+        "pt-br": "identificador do Virtual International Authority File",
+        "da": "subjekts Virtual International Authority File id",
+        "ilo": "panangilasin ti suheto ti Virtual International Authority File",
+        "ja": "\u30d0\u30fc\u30c1\u30e3\u30eb\u56fd\u969b\u5178\u62e0\u30d5\u30a1\u30a4\u30eb (VIAF) \u306e\u8b58\u5225\u5b50",
+        "he": "Virtual International Authority File identifier",
+        "pt": "Base Virtual Internacional de Autoridade",
+        "hu": "azonos\u00edt\u00f3 a Nemzetk\u00f6zi Virtu\u00e1lis Katal\u00f3gust\u00e1rban (legfeljebb 22 sz\u00e1mjegy)",
+        "zh": "\u865b\u64ec\u570b\u969b\u6b0a\u5a01\u6a94\u6848\u6578\u64da\u5eab\u7684\u6807\u8bc6\u7b26\u3002\u683c\u5f0f\uff1a\u6700\u591a22\u500b\u6578\u5b57",
+        "ro": "identificator VIAF (Virtual International Authority File)",
+        "zh-hant": "\u865b\u64ec\u570b\u969b\u6b0a\u5a01\u6a94\u6848\u6578\u64da\u5eab\u7684\u8b58\u5225\u78bc\u3002\u683c\u5f0f\uff1a\u6700\u591a22\u500b\u6578\u5b57",
+        "zh-hans": "\u865a\u62df\u56fd\u9645\u89c4\u8303\u6587\u6863\u6570\u636e\u5e93\u7684\u6807\u8bc6\u7b26\u3002\u683c\u5f0f\uff1a\u6700\u591a22\u4e2a\u6570\u5b57",
+        "de-at": "virtuelle internationale Normdatei f\u00fcr Personendaten (Bitte nur individualisierte VIAFs eintragen, d.h. Nummern ohne den Vermerk \"undifferentiated\")",
+        "de-ch": "virtuelle internationale Normdatei f\u00fcr Personendaten (Bitte nur individualisierte VIAFs eintragen, d.h. Nummern ohne den Vermerk \"undifferentiated\")",
+        "zh-tw": "\u865b\u64ec\u570b\u969b\u6a5f\u69cb\u6587\u4ef6\u6578\u64da\u5eab\u7684\u8b58\u5225\u78bc\u3002\u683c\u5f0f\uff1a\u6700\u591a22\u500b\u6578\u5b57",
+        "es": "Virtual International Authority File identifier",
+        "nn": "identifikator for eit emne i Virtual International Authority File (VIAF)",
+        "fa": "\u0634\u0646\u0627\u0633\u0647 \u0628\u0645 \u0628\u0645 (\u0628\u0631\u06af\u0647\u200c\u062f\u0627\u0646 \u0645\u0633\u062a\u0646\u062f \u0628\u06cc\u0646\u200c\u0627\u0644\u0645\u0644\u0644\u06cc \u0645\u062c\u0627\u0632\u06cc)",
+        "mk": "\u043d\u0430\u0437\u043d\u0430\u043a\u0430 \u0432\u043e \u0412\u0438\u0440\u0442\u0443\u0435\u043b\u043d\u0430\u0442\u0430 \u043c\u0435\u0453\u0443\u043d\u0430\u0440\u043e\u0434\u043d\u0430 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u043d\u0430 \u043f\u043e\u0434\u0430\u0442\u043e\u0442\u0435\u043a\u0430 (VIAF)",
+        "hi": "\u0935\u0930\u094d\u091a\u0941\u0905\u0932 \u0907\u0902\u091f\u0930\u0928\u0947\u0936\u0928\u0932 \u0905\u0925\u094b\u0930\u093f\u091f\u0940 \u092b\u093c\u093e\u0907\u0932 \u0938\u0947 \u092a\u0939\u091a\u093e\u0928\u0915\u0930\u094d\u0924\u093e",
+        "tr": "Virtual International Authority File tan\u0131mlay\u0131c\u0131s\u0131",
+        "zh-cn": "\u865a\u62df\u56fd\u9645\u89c4\u8303\u6587\u6863\u6570\u636e\u5e93\u7684\u6807\u8bc6\u7b26\u3002\u683c\u5f0f\uff1a\u6700\u591a22\u4e2a\u6570\u5b57",
+        "gu": "\u0ab5\u0ab0\u0acd\u0a9a\u0acd\u0aaf\u0ac1\u0a85\u0ab2 \u0a88\u0aa8\u0acd\u0a9f\u0ab0\u0aa8\u0ac7\u0ab6\u0aa8\u0ab2 \u0a93\u0aa5\u0acb\u0ab0\u0abf\u0a9f\u0ac0 \u0aab\u0abe\u0a88\u0ab2 \u0a93\u0ab3\u0a96",
+        "bs": "VIAF",
+        "pl": "identyfikator Virtual International Authority File. Format: do 22 cyfr",
+        "gsw": "virtuelli internationali Normdatei fir Personedate",
+        "ko": "\ud56d\ubaa9 \uc8fc\uc81c\uc5d0\uac8c \ubd80\uc5ec\ub41c \uac00\uc0c1\uad6d\uc81c\uc804\uac70\ud30c\uc77c(VIAF) \uc2dd\ubcc4\uc790",
+        "sv": "Virtual International Authority File, auktoritetsdata",
+        "zh-hk": "\u865b\u64ec\u570b\u969b\u6b0a\u5a01\u6a94\u6848\u6578\u64da\u5eab\u7684\u8b58\u5225\u78bc\u3002\u683c\u5f0f\uff1a\u6700\u591a22\u500b\u6578\u5b57",
+        "en-gb": "Virtual International Authority File identifier",
+        "nl": "identificatie voor Virtual International Authority File",
+        "ksh": "K\u00e4nnommer en de Verto\u00e4lle Engenazjonahle Outorit\u00e4hte-Dattei (bloh\u00df Nommere f\u00f6r \u00e4\u00e4schte L\u00fcck, alsu kein Nommere met d\u00e4 Eijeschaff \u201eundifferentiated\u201c)",
+        "scn": "c\u00f2dici idintificativu nt\u00e2 basi di dati ntirnazziunali di cuntrollu d'auturit\u00e0 VIAF (Virtual International Authority File)",
+        "ru": "\u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440 \u0432 \u043c\u0435\u0436\u0434\u0443\u043d\u0430\u0440\u043e\u0434\u043d\u043e\u0439 \u0431\u0430\u0437\u0435 \u0434\u0430\u043d\u043d\u044b\u0445 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u043d\u043e\u0433\u043e \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044f",
+        "cs": "identifik\u00e1tor v datab\u00e1zi Virtual International Authority File",
+        "ast": "identificador nel Virtual International Authority File",
+        "id": "penanda dari Virtual International Authority File",
+        "eu": "Virtual International Authority File identifikadorea",
+        "ar": "\u0645\u0639\u0631\u0641 \u0642\u0627\u0639\u062f\u0629 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0644\u0641 \u0644\u0644\u0633\u0644\u0637\u0629 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a\u0629 \u0627\u0644\u062f\u0648\u0644\u064a\u0629 (VIAF) [\u0627\u0644\u0635\u064a\u063a\u0629: \u062d\u062a\u0649 22 \u0631\u0642\u0645\u0627]",
+        "uk": "\u0456\u0434\u0435\u043d\u0442\u0438\u0444\u0456\u043a\u0430\u0442\u043e\u0440 Virtual International Authority File \u2014 \u043c\u0456\u0436\u043d\u0430\u0440\u043e\u0434\u043d\u0430 \u0431\u0430\u0437\u0430 \u0434\u0430\u043d\u0438\u0445 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u043d\u043e\u0433\u043e \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044e",
+        "sq": "Identifikues n\u00eb dosjen e Autoritetit Nd\u00ebrkomb\u00ebtar Virtual. Formati: deri n\u00eb 22 shifra",
+        "mr": "\u0935\u094d\u0939\u0930\u094d\u091a\u0941\u0905\u0932 \u0907\u0902\u091f\u0930\u0928\u0945\u0936\u0928\u0932 \u0905\u0925\u0949\u0930\u093f\u091f\u0940 \u092b\u093e\u0908\u0932",
+        "zh-sg": "\u865a\u62df\u56fd\u9645\u89c4\u8303\u6587\u6863\u6570\u636e\u5e93\u7684\u6807\u8bc6\u7b26\u3002\u683c\u5f0f\uff1a\u6700\u591a22\u4e2a\u6570\u5b57",
+        "or": "\u0b2d\u0b30\u0b4d\u0b1a\u0b41\u0b06\u0b32 \u0b07\u0b23\u0b4d\u0b1f\u0b30\u0b28\u0b4d\u0b5f\u0b3e\u0b38\u0b28\u0b3e\u0b32 \u0b05\u0b25\u0b30\u0b3f\u0b1f\u0b40 \u0b2b\u0b3e\u0b07\u0b32 \u0b38\u0b42\u0b1a\u0b15",
+        "ms": "pengenal pasti untuk pangkalan data Fail Kewibawaan Antarabangsa Maya (VIAF)",
+        "sr": "\u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440 \u0437\u0430 \u0412\u0438\u0440\u0442\u0443\u0435\u043b\u043d\u0443 \u043c\u0435\u0452\u0443\u043d\u0430\u0440\u043e\u0434\u043d\u0443 \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u0447\u043a\u0443 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u0443",
+        "gl": "identificador do Virtual International Authority File. Pode ser usado xunto con afirmado en (P248) en cualificador",
+        "zh-mo": "\u865b\u64ec\u570b\u969b\u6b0a\u5a01\u6a94\u6848\u6578\u64da\u5eab\u7684\u8b58\u5225\u78bc\u3002\u683c\u5f0f\uff1a\u6700\u591a22\u500b\u6578\u5b57",
+        "nb": "identifikator for subjektets oppf\u00f8ring i Virtual International Authority File sin database",
+        "az": "Virtual International Authority File g\u00f6st\u0259ricisi",
+        "be-tarask": "\u0456\u0434\u044d\u043d\u0442\u044b\u0444\u0456\u043a\u0430\u0442\u0430\u0440 \u0443 \u0431\u0430\u0437\u0435 \u0437\u044c\u0432\u0435\u0441\u0442\u0430\u043a \u0412\u0456\u0440\u0442\u0443\u0430\u043b\u044c\u043d\u0430\u0433\u0430 \u043c\u0456\u0436\u043d\u0430\u0440\u043e\u0434\u043d\u0430\u0433\u0430 \u0430\u045e\u0442\u0430\u0440\u044b\u0442\u044d\u0442\u043d\u0430\u0433\u0430 \u043a\u0430\u043d\u0442\u0440\u043e\u043b\u044e (\u0434\u0430 22 \u0440\u0430\u0437\u0440\u0430\u0434\u0430\u045e)",
+        "eo": "identigilo",
+        "zh-my": "\u865a\u62df\u56fd\u9645\u89c4\u8303\u6587\u6863\u4e2d\u7684\u6807\u8bc6\u7b26\u3002\u683c\u5f0f\uff1a\u6700\u591a22\u4e2a\u6570\u5b57",
+        "nqo": "\u07e1\u07ca\u07f2\u07ec\u07d5\u07cf\u07f2\u07ec\u07d5\u07cd \u07de\u07ce\u07f2\u07ec\u07e0\u07ca\u07ec\u07db\u07cc\u07f0\u07df\u07ca\u07ec\u07de\u07ca \u07e1\u07ca\u07ec\u07db\u07ca\u07f2\u07ec\u07d5\u07ca\u07ec\u07e1\u07ce\u07f2\u07eb \u07de\u07d0\u07d5\u07d0\u07ef \u07df\u07ce\u07eb \u07dd\u07ca\u07f2",
+        "af": "identifiseerder vir die Virtual International Authority-l\u00eaerdatabasis [formaat: tot 22 syfers]",
+        "ps": "\u0645\u062c\u0627\u0632\u064a \u0646\u0693\u064a\u0648\u0627\u0644 \u0648\u0627\u06a9 \u062f\u0648\u062a\u0646\u06d0 \u062e\u0648\u0646\u062f\u064a\u0681 (\u062a\u0631 \u06f2\u06f2 \u062a\u0648\u0631\u0648)"
+    },
+    "aliases": {
+        "fr": [
+            "viaf",
+            "Virtual International Authority File",
+            "VIAF",
+            "Fichier d'autorit\u00e9 international virtuel",
+            "identifiant Fichier d'autorit\u00e9 international virtuel"
+        ],
+        "en": [
+            "VIAF identifier",
+            "Virtual International Authority File",
+            "viaf.org ID",
+            "VIAF cluster ID",
+            "VIAF"
+        ],
+        "cs": [
+            "Virtual International Authority File"
+        ],
+        "it": [
+            "Virtual International Authority File",
+            "VIAF"
+        ],
+        "es": [
+            "Fichero de Autoridades Virtual Internacional",
+            "VIAF",
+            "FAVI",
+            "identificador FAVI"
+        ],
+        "ru": [
+            "Virtual International Authority File",
+            "VIAF",
+            "\u0412\u0418\u0410\u0424"
+        ],
+        "fi": [
+            "VIAF",
+            "VIAF-tunnus",
+            "Virtual International Authority File"
+        ],
+        "pt-br": [
+            "Virtual International Authority File"
+        ],
+        "ja": [
+            "VIAF",
+            "Virtual International Authority File",
+            "\u30d0\u30fc\u30c1\u30e3\u30eb\u56fd\u969b\u5178\u62e0\u30d5\u30a1\u30a4\u30eb"
+        ],
+        "pt": [
+            "Base Virtual Internacional de Autoridade",
+            "Virtual International Authority File",
+            "identificador VIAF"
+        ],
+        "zh": [
+            "\u865a\u62df\u56fd\u9645\u89c4\u8303\u6587\u6863\u6807\u8bc6\u7b26",
+            "VIAF\u8b58\u5225\u78bc"
+        ],
+        "be": [
+            "Virtual International Authority File",
+            "VIAF"
+        ],
+        "de-at": [
+            "Virtual International Authority File"
+        ],
+        "de-ch": [
+            "Virtual International Authority File"
+        ],
+        "bar": [
+            "Virtual International Authority File"
+        ],
+        "ca": [
+            "VIAF",
+            "Virtual International Authority File"
+        ],
+        "gl": [
+            "VIAF"
+        ],
+        "fa": [
+            "VIAF",
+            "\u0634\u0646\u0627\u0633\u0647 \u0648\u06cc\u0627\u0641",
+            "\u0634\u0646\u0627\u0633\u0647 \u0628\u0645 \u0628\u0645",
+            "\u0634\u0646\u0627\u0633\u0647 \u0648\u06cc\u0627\u0641 \u0627\u0634\u062e\u0627\u0635",
+            "\u0634\u0646\u0627\u0633\u0647 VIAF \u0627\u0634\u062e\u0627\u0635"
+        ],
+        "he": [
+            "VIAF",
+            "Virtual International Authority File"
+        ],
+        "id": [
+            "VIAF"
+        ],
+        "ilo": [
+            "VIAF"
+        ],
+        "uk": [
+            "VIAF ID",
+            "\u043a\u043e\u0434 VIAF",
+            "Virtual International Authority File",
+            "\u0412\u0406\u0410\u0424",
+            "\u0456\u0434\u0435\u043d\u0442\u0438\u0444\u0456\u043a\u0430\u0442\u043e\u0440 VIAF"
+        ],
+        "vi": [
+            "VIAF"
+        ],
+        "tr": [
+            "viaf",
+            "Virtual International Authority File",
+            "VIAF"
+        ],
+        "ko": [
+            "VIAF",
+            "\uac00\uc0c1 \uad6d\uc81c \uc804\uac70 \ud30c\uc77c ID",
+            "\uac00\uc0c1 \uad6d\uc81c \uc804\uac70\ud30c\uc77c \uc2dd\ubcc4\uc790",
+            "\uac00\uc0c1 \uad6d\uc81c \uc804\uac70 \ud30c\uc77c",
+            "\uac00\uc0c1 \uad6d\uc81c \uc804\uac70\ud30c\uc77c",
+            "VIAF \uc2dd\ubcc4\uc790",
+            "\uac00\uc0c1 \uad6d\uc81c \uc804\uac70 \ud30c\uc77c \uc2dd\ubcc4\uc790",
+            "\uac00\uc0c1\uad6d\uc81c\uc804\uac70\ud30c\uc77c \uc2dd\ubcc4\uc790",
+            "\uac00\uc0c1\uad6d\uc81c\uc804\uac70\ud30c\uc77c(VIAF) \uc2dd\ubcc4\uc790",
+            "\uac00\uc0c1\uad6d\uc81c\uc804\uac70\ud30c\uc77c"
+        ],
+        "oc": [
+            "identificacion VIAF",
+            "Virtual International Authority File"
+        ],
+        "eo": [
+            "VIAF",
+            "Virtual International Authority File"
+        ],
+        "pl": [
+            "VIAF",
+            "Virtual International Authority File"
+        ],
+        "de": [
+            "Virtual International Authority File",
+            "Virtual International Authority",
+            "VIAF"
+        ],
+        "scn": [
+            "Virtual International Authority File",
+            "VIAF"
+        ],
+        "sh": [
+            "VIAF"
+        ],
+        "nl": [
+            "Virtual International Authority File",
+            "VIAF"
+        ],
+        "ast": [
+            "VIAF",
+            "Virtual International Authority File"
+        ],
+        "cy": [
+            "VIAF",
+            "Virtual International Authority File"
+        ],
+        "sr": [
+            "\u0412\u0418\u0410\u0424",
+            "VIAF ID",
+            "Virtual International Authority File"
+        ],
+        "nb": [
+            "VIAF",
+            "VIAF-identifikator",
+            "Virtual International Authority File-identifikator",
+            "Virtual International Authority File"
+        ],
+        "eu": [
+            "VIAF",
+            "Virtual International Authority File"
+        ],
+        "hu": [
+            "Virtual International Authority File azonos\u00edt\u00f3",
+            "Nemzetk\u00f6zi Virtu\u00e1lis Katal\u00f3gust\u00e1r-azonos\u00edt\u00f3",
+            "Nemzetk\u00f6zi Virtu\u00e1lis Katal\u00f3gust\u00e1r azonos\u00edt\u00f3"
+        ],
+        "mr": [
+            "\u0935\u094d\u0939\u0930\u094d\u091a\u0941\u0905\u0932 \u0907\u0902\u091f\u0930\u0928\u0945\u0936\u0928\u0932 \u0905\u0925\u0949\u0930\u093f\u091f\u0940 \u092b\u093e\u0908\u0932",
+            "\u0935\u094d\u0939\u0940\u0906\u092f\u090f\u090f\u092b \u0913\u0933\u0916\u0923",
+            "\u0935\u094d\u0939\u0940\u0906\u092f\u090f\u090f\u092b \u0906\u092f\u0921\u0940"
+        ],
+        "ur": [
+            "\u0648\u06cc \u0622\u0626\u06cc \u0627\u06d2 \u0627\u06cc\u0641"
+        ],
+        "ba": [
+            "VIAF",
+            "Virtual International Authority File"
+        ],
+        "or": [
+            "\u0b2d\u0b3f \u0b06\u0b07 \u0b0f \u0b0f\u0b2b \u0b38\u0b42\u0b1a\u0b15",
+            "VIAF \u0b2a\u0b30\u0b3f\u0b1a\u0b5f"
+        ],
+        "ms": [
+            "VIAF",
+            "pengenal pasti VIAF",
+            "pengecam VIAF",
+            "Fail Kewibawaan Antarabangsa Maya",
+            "Virtual International Authority File"
+        ],
+        "ro": [
+            "VIAF",
+            "cod VIAF",
+            "num\u0103r VIAF"
+        ],
+        "be-tarask": [
+            "\u043a\u043e\u0434 VIAF",
+            "VIAF",
+            "\u0412\u0456\u0440\u0442\u0443\u0430\u043b\u044c\u043d\u044b \u043c\u0456\u0436\u043d\u0430\u0440\u043e\u0434\u043d\u044b \u0430\u045e\u0442\u0430\u0440\u044b\u0442\u044d\u0442\u043d\u044b \u0444\u0430\u0439\u043b",
+            "Virtual International Authority File"
+        ],
+        "bg": [
+            "\u0418\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440 \u0437\u0430 \u0432\u0438\u0440\u0442\u0443\u0430\u043b\u043d\u0438\u044f \u043c\u0435\u0436\u0434\u0443\u043d\u0430\u0440\u043e\u0434\u0435\u043d \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u0435\u043d \u0430\u0440\u0445\u0438\u0432 (VIAF)"
+        ],
+        "ar": [
+            "\u0641\u064a\u0627\u0641",
+            "\u0645\u0639\u0631\u0641 \u0641\u064a\u0627\u0641",
+            "\u06a4\u064a\u0627\u0641",
+            "\u0645\u064f\u0639\u0631\u0651\u0641 \u06a4\u064a\u0627\u0641"
+        ],
+        "af": [
+            "Virtual International Authority File"
+        ],
+        "an": [
+            "Virtual International Authority File"
+        ],
+        "az": [
+            "Virtual International Authority File"
+        ],
+        "br": [
+            "Virtual International Authority File"
+        ],
+        "bs": [
+            "Virtual International Authority File"
+        ],
+        "co": [
+            "Virtual International Authority File"
+        ],
+        "da": [
+            "Virtual International Authority File"
+        ],
+        "en-ca": [
+            "Virtual International Authority File"
+        ],
+        "en-gb": [
+            "Virtual International Authority File"
+        ],
+        "et": [
+            "Virtual International Authority File"
+        ],
+        "frp": [
+            "Virtual International Authority File"
+        ],
+        "frr": [
+            "Virtual International Authority File"
+        ],
+        "fur": [
+            "Virtual International Authority File"
+        ],
+        "ga": [
+            "Virtual International Authority File"
+        ],
+        "gd": [
+            "Virtual International Authority File"
+        ],
+        "gsw": [
+            "Virtual International Authority File"
+        ],
+        "gu": [
+            "Virtual International Authority File"
+        ],
+        "hr": [
+            "Virtual International Authority File"
+        ],
+        "hsb": [
+            "Virtual International Authority File"
+        ],
+        "hy": [
+            "Virtual International Authority File"
+        ],
+        "ie": [
+            "Virtual International Authority File"
+        ],
+        "io": [
+            "Virtual International Authority File"
+        ],
+        "is": [
+            "Virtual International Authority File"
+        ],
+        "jam": [
+            "Virtual International Authority File"
+        ],
+        "ka": [
+            "Virtual International Authority File"
+        ],
+        "kg": [
+            "Virtual International Authority File"
+        ],
+        "ksh": [
+            "Virtual International Authority File"
+        ],
+        "la": [
+            "Virtual International Authority File"
+        ],
+        "lb": [
+            "Virtual International Authority File"
+        ],
+        "li": [
+            "Virtual International Authority File"
+        ],
+        "lij": [
+            "Virtual International Authority File"
+        ],
+        "lmo": [
+            "Virtual International Authority File"
+        ],
+        "lt": [
+            "Virtual International Authority File"
+        ],
+        "lv": [
+            "Virtual International Authority File"
+        ],
+        "mg": [
+            "Virtual International Authority File"
+        ],
+        "min": [
+            "Virtual International Authority File"
+        ],
+        "mk": [
+            "Virtual International Authority File"
+        ],
+        "nap": [
+            "Virtual International Authority File"
+        ],
+        "nds": [
+            "Virtual International Authority File"
+        ],
+        "nds-nl": [
+            "Virtual International Authority File"
+        ],
+        "ne": [
+            "Virtual International Authority File"
+        ],
+        "nn": [
+            "Virtual International Authority File"
+        ],
+        "nrm": [
+            "Virtual International Authority File"
+        ],
+        "pcd": [
+            "Virtual International Authority File"
+        ],
+        "pms": [
+            "Virtual International Authority File"
+        ],
+        "rm": [
+            "Virtual International Authority File"
+        ],
+        "sc": [
+            "Virtual International Authority File"
+        ],
+        "sco": [
+            "Virtual International Authority File"
+        ],
+        "sk": [
+            "Virtual International Authority File"
+        ],
+        "sl": [
+            "Virtual International Authority File"
+        ],
+        "sq": [
+            "Virtual International Authority File"
+        ],
+        "sr-el": [
+            "Virtual International Authority File"
+        ],
+        "stq": [
+            "Virtual International Authority File"
+        ],
+        "sv": [
+            "Virtual International Authority File"
+        ],
+        "sw": [
+            "Virtual International Authority File"
+        ],
+        "ta": [
+            "Virtual International Authority File"
+        ],
+        "th": [
+            "Virtual International Authority File"
+        ],
+        "uz": [
+            "Virtual International Authority File"
+        ],
+        "vec": [
+            "Virtual International Authority File"
+        ],
+        "vls": [
+            "Virtual International Authority File"
+        ],
+        "vo": [
+            "Virtual International Authority File"
+        ],
+        "wa": [
+            "Virtual International Authority File"
+        ],
+        "wo": [
+            "Virtual International Authority File"
+        ],
+        "zh-hans": [
+            "VIAF\u6807\u8bc6\u7b26"
+        ],
+        "zh-hant": [
+            "VIAF\u8b58\u5225\u78bc"
+        ],
+        "zh-hk": [
+            "VIAF\u8b58\u5225\u78bc",
+            "VIAF\u6a19\u8b58\u7b26",
+            "\u865b\u64ec\u570b\u969b\u898f\u7bc4\u6587\u6a94\u6a19\u8b58\u7b26"
+        ],
+        "zh-mo": [
+            "VIAF\u8b58\u5225\u78bc",
+            "VIAF\u6a19\u8b58\u7b26",
+            "\u865b\u64ec\u570b\u969b\u898f\u7bc4\u6587\u6a94\u6a19\u8b58\u7b26"
+        ],
+        "zh-my": [
+            "VIAF\u6807\u8bc6\u7b26"
+        ],
+        "zh-sg": [
+            "VIAF\u6807\u8bc6\u7b26"
+        ],
+        "zu": [
+            "Virtual International Authority File"
+        ],
+        "zh-cn": [
+            "VIAF\u6807\u8bc6\u7b26"
+        ],
+        "zh-tw": [
+            "VIAF\u8b58\u5225\u78bc"
+        ],
+        "sms": [
+            "Virtual International Authority File -tobdst\u00f5k"
+        ],
+        "smn": [
+            "Virtual International Authority File -tubd\u00e2ld\u00e2s"
+        ],
+        "pnb": [
+            "\u0648\u06cc \u0622\u0626\u06cc \u0627\u06d2 \u0627\u06cc\u0641 \u0622\u0626\u06cc \u0688\u06cc"
+        ],
+        "ary": [
+            "VIAF",
+            "\u06a4\u064a\u0627\u0641"
+        ],
+        "pa": [
+            "\u0a35\u0a40. \u0a06\u0a08. \u0a0f. \u0a10\u0a71\u0a2b. \u0a06\u0a08. \u0a21\u0a40."
+        ],
+        "kaa": [
+            "Virtual International Authority File"
+        ]
+    },
+    "statements": {
+        "P1630": [
+            {
+                "id": "P214$19b6edba-4eb5-3c15-29e1-4a52c8aac716",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P407",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q1860"
+                        }
+                    }
+                ],
+                "references": [
+                    {
+                        "hash": "f46d2120ca0b87d49be51fc257aa12923cacf2fe",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P854",
+                                    "data-type": "url"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "https://viaf.org/viaf/data"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "property": {
+                    "id": "P1630",
+                    "data-type": "string"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "https://viaf.org/viaf/$1/"
+                }
+            }
+        ],
+        "P1793": [
+            {
+                "id": "P214$b26c86bc-43fb-72bd-127a-f344094db91d",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P2916",
+                            "data-type": "monolingualtext"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "text": "2 or more digits (not starting by 0), or none",
+                                "language": "en"
+                            }
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2916",
+                            "data-type": "monolingualtext"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "text": "2 \u0438\u043b\u0438 \u0431\u043e\u043b\u0435\u0435 \u0446\u0438\u0444\u0440",
+                                "language": "ru"
+                            }
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2916",
+                            "data-type": "monolingualtext"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "text": "2 oder mehr Ziffern",
+                                "language": "de"
+                            }
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2916",
+                            "data-type": "monolingualtext"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "text": "2 chiffres ou plus (ne commen\u00e7ant pas par 0), sinon aucun",
+                                "language": "fr"
+                            }
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2916",
+                            "data-type": "monolingualtext"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "text": "2 o pi\u00f9 cifre (non pu\u00f2 cominciare per 0)",
+                                "language": "it"
+                            }
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P1793",
+                    "data-type": "string"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "[1-9]\\d(\\d{0,7}|\\d{17,20})"
+                }
+            }
+        ],
+        "P1855": [
+            {
+                "id": "P214$31568f2a-4133-cbef-3523-90a482d5bebf",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P214",
+                            "data-type": "external-id"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "120062731"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P1855",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q447070"
+                }
+            },
+            {
+                "id": "P214$a3b8e5a4-4f0b-6d27-1176-aeb2a6941fd0",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P214",
+                            "data-type": "external-id"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "15"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P1855",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q8056"
+                }
+            },
+            {
+                "id": "P214$01255d88-4cc8-c6b9-17ca-e6074b6512fd",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P214",
+                            "data-type": "external-id"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "150088538"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P1855",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q66"
+                }
+            },
+            {
+                "id": "P214$e18fe31b-4fd3-4a17-5674-bbb91e9c2079",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P214",
+                            "data-type": "external-id"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "240782041"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P1855",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q85"
+                }
+            },
+            {
+                "id": "P214$4ebbab4d-4eed-e5ba-3f2c-a62c945abdd7",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P214",
+                            "data-type": "external-id"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "9972147907520779210008"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P1855",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q951104"
+                }
+            },
+            {
+                "id": "P214$8666a311-41a6-24bb-57bf-c6111c22fff4",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P214",
+                            "data-type": "external-id"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "44298806"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P214",
+                            "data-type": "external-id"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "214796741"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P214",
+                            "data-type": "external-id"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "198592695"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P1855",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q3166765"
+                }
+            },
+            {
+                "id": "P214$7452c308-448a-7f75-2dd9-e3c26f410622",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P214",
+                            "data-type": "external-id"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "141940265"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P1855",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q712504"
+                }
+            }
+        ],
+        "P2875": [
+            {
+                "id": "P214$b59e4670-4367-ad55-e7f6-37394c9b7795",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P2875",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q8709085"
+                }
+            }
+        ],
+        "P1896": [
+            {
+                "id": "P214$10219b87-43fa-f05f-661b-d8350f27d5af",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P407",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q1860"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P1896",
+                    "data-type": "url"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "https://viaf.org"
+                }
+            }
+        ],
+        "P3303": [
+            {
+                "id": "P214$d03b2256-4746-a739-a3ed-709fc511d212",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P137",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q190593"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P3303",
+                    "data-type": "string"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "https://www.worldcat.org/identities/containsVIAFID/$1"
+                }
+            },
+            {
+                "id": "P214$6bdbf58a-4375-aaa1-fbe1-07cf1a65040c",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P137",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q45340488"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P3303",
+                    "data-type": "string"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "https://scholia.toolforge.org/viaf/$1"
+                }
+            },
+            {
+                "id": "P214$d745069a-4c8e-22be-53c4-0dfb9c3a8144",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P137",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q190593"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P3303",
+                    "data-type": "string"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "https://www.worldcat.org/identities/viaf-$1"
+                }
+            }
+        ],
+        "P3713": [
+            {
+                "id": "P214$D4A79BF6-3A39-46BE-BF85-8D5121567E4B",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P3713",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q16300231"
+                }
+            }
+        ],
+        "P3709": [
+            {
+                "id": "P214$0FBF7367-93DB-4FF6-9C08-A868CA825103",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P3709",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q16300230"
+                }
+            }
+        ],
+        "P3254": [
+            {
+                "id": "P214$4BC9FB8C-8664-4D76-9A6B-9BE25616BC26",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P3254",
+                    "data-type": "url"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "https://www.wikidata.org/wiki/Wikidata:Property_proposal/Archive/3#P214"
+                }
+            }
+        ],
+        "P2302": [
+            {
+                "id": "P214$7B2C9065-7A6B-4E53-B49B-284D8FB9D951",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P31"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2305",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q4167410"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2305",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q4167836"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2305",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q13406463"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2305",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q273057"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2305",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q101352"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2316",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q21502408"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P2302",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q21502838"
+                }
+            },
+            {
+                "id": "P214$B36B72ED-7C33-4CF1-A4E9-55366E0B6501",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P2303",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q49330830"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2303",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q6894163"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2303",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q918153"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2303",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q2670092"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P4155",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P4070"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P2302",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q21502410"
+                }
+            },
+            {
+                "id": "P214$4887D192-533A-41A3-8E18-7E6CECC73767",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P813"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P742"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P2562"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P1477"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P1810"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P2241"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P1448"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P1889"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P5168"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P4070"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P518"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P8327"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P7452"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P4970"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P580"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2306",
+                            "data-type": "wikibase-property"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "P582"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2316",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q21502408"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P2302",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q21510851"
+                }
+            },
+            {
+                "id": "P214$F98CC03E-A180-4F15-B3C9-5C6097F40A57",
+                "rank": "deprecated",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P2316",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q62026391"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P6607",
+                            "data-type": "monolingualtext"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "text": "Constraint set to deprecated: allows to generate KrBot report only. Add all available VIAF ids for the same item. VIAF will likely merge them.",
+                                "language": "en"
+                            }
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P2302",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q19474404"
+                }
+            },
+            {
+                "id": "P214$59D1DFC0-3BF4-4288-BDBA-9971F1FEE5A4",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P1793",
+                            "data-type": "string"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "([1-9]\\d{1,8}|[1-9]\\d{18,21}|)"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P2316",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q21502408"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P2302",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q21502404"
+                }
+            },
+            {
+                "id": "P214$09B61279-A1C1-48F3-AFC2-BE85393C8881",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P2305",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q29934200"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P2302",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q52004125"
+                }
+            },
+            {
+                "id": "P214$6239edd0-4907-5eab-1825-4c8e564066dc",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P5314",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q54828448"
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P5314",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q54828450"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P2302",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q53869507"
+                }
+            }
+        ],
+        "P2429": [
+            {
+                "id": "P214$dc33a4dc-44a7-85bf-8ff8-6031e072cdf1",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P2429",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q21873886"
+                }
+            }
+        ],
+        "P2668": [
+            {
+                "id": "P214$feb66b4b-4834-8a6a-c37d-09bedcdfc50e",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P2668",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q24025284"
+                }
+            }
+        ],
+        "P4876": [
+            {
+                "id": "P214$8562d17f-4048-adf2-0f20-4fc2079ecbe9",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P585",
+                            "data-type": "time"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "time": "+2018-07-00T00:00:00Z",
+                                "precision": 10,
+                                "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                            }
+                        }
+                    }
+                ],
+                "references": [
+                    {
+                        "hash": "97d0d503f22fd10b5e389e3a57818ed560fbb758",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P4656",
+                                    "data-type": "url"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "https://www.wikidata.org/wiki/Wikidata:WikiProject_Authority_control/Archive#VIAF_Games"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "property": {
+                    "id": "P4876",
+                    "data-type": "quantity"
+                },
+                "value": {
+                    "type": "value",
+                    "content": {
+                        "amount": "+32254690",
+                        "unit": "1"
+                    }
+                }
+            },
+            {
+                "id": "P214$603a0251-42a4-d9c0-afa0-70d282e697cd",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P585",
+                            "data-type": "time"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "time": "+2018-07-00T00:00:00Z",
+                                "precision": 10,
+                                "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                            }
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P518",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q5"
+                        }
+                    }
+                ],
+                "references": [
+                    {
+                        "hash": "97d0d503f22fd10b5e389e3a57818ed560fbb758",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P4656",
+                                    "data-type": "url"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "https://www.wikidata.org/wiki/Wikidata:WikiProject_Authority_control/Archive#VIAF_Games"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "property": {
+                    "id": "P4876",
+                    "data-type": "quantity"
+                },
+                "value": {
+                    "type": "value",
+                    "content": {
+                        "amount": "+21034181",
+                        "unit": "1"
+                    }
+                }
+            },
+            {
+                "id": "P214$f4a308e0-49f2-76a8-e61b-899619bd149c",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P585",
+                            "data-type": "time"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "time": "+2020-09-00T00:00:00Z",
+                                "precision": 10,
+                                "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                            }
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P518",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q5"
+                        }
+                    }
+                ],
+                "references": [
+                    {
+                        "hash": "c16e9582419e9e924d95a78023aea94fec406d21",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P854",
+                                    "data-type": "url"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "https://catalogo.pusc.it/beyond_viaf/"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "property": {
+                    "id": "P4876",
+                    "data-type": "quantity"
+                },
+                "value": {
+                    "type": "value",
+                    "content": {
+                        "amount": "+22099715",
+                        "unit": "1"
+                    }
+                }
+            },
+            {
+                "id": "P214$f482c308-4967-090d-6b12-2721535335ad",
+                "rank": "preferred",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P585",
+                            "data-type": "time"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "time": "+2020-09-00T00:00:00Z",
+                                "precision": 10,
+                                "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                            }
+                        }
+                    }
+                ],
+                "references": [
+                    {
+                        "hash": "c16e9582419e9e924d95a78023aea94fec406d21",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P854",
+                                    "data-type": "url"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "https://catalogo.pusc.it/beyond_viaf/"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "property": {
+                    "id": "P4876",
+                    "data-type": "quantity"
+                },
+                "value": {
+                    "type": "value",
+                    "content": {
+                        "amount": "+33656281",
+                        "unit": "1"
+                    }
+                }
+            }
+        ],
+        "P2667": [
+            {
+                "id": "P214$91078718-4bf7-7e59-7b7a-a00caaf4be16",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P2667",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q25937159"
+                }
+            }
+        ],
+        "P1921": [
+            {
+                "id": "P214$9be4c45b-42fe-20f2-6f44-a59cd11fcaaf",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P1921",
+                    "data-type": "string"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "http://viaf.org/viaf/$1"
+                }
+            }
+        ],
+        "P2264": [
+            {
+                "id": "P214$e89a293a-43df-250f-3b81-0a5c6d188b4a",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P8555",
+                            "data-type": "time"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": {
+                                "time": "+2018-12-06T00:00:00Z",
+                                "precision": 11,
+                                "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                            }
+                        }
+                    },
+                    {
+                        "property": {
+                            "id": "P1810",
+                            "data-type": "string"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "VIAF selected"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P2264",
+                    "data-type": "external-id"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "2050"
+                }
+            }
+        ],
+        "P4354": [
+            {
+                "id": "P214$9de5d591-4ae8-10d2-2621-cb94d4576497",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P407",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q20923490"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P4354",
+                    "data-type": "string"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "https://viaf.org/viaf/search?query=local.names%20all%20%22$1%22"
+                }
+            }
+        ],
+        "P8966": [
+            {
+                "id": "P214$2eb16aa8-4874-0306-828c-3feec6aa56b7",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P8967",
+                            "data-type": "string"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "\\1"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P8966",
+                    "data-type": "string"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "^https?:\/\/(?:www\\.)?viaf\\.org\/viaf\/([1-9]\\d(?:\\d{0,7}|\\d{17,20}))($|\/|\\?|#)"
+                }
+            }
+        ],
+        "P9073": [
+            {
+                "id": "P214$6cc3c07e-4321-f112-1363-b0c27fd72e29",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P9073",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q54919"
+                }
+            }
+        ],
+        "P6104": [
+            {
+                "id": "P214$41EAC283-3779-4FB7-A913-CE8B7EF5DCE0",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P6104",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q88300058"
+                }
+            }
+        ],
+        "P31": [
+            {
+                "id": "P214$78dabcd5-44e1-426f-f691-fcac67e9667a",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P31",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q19595382"
+                }
+            },
+            {
+                "id": "P214$371ab427-4379-0a7a-897f-6a30e5dae75a",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P31",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q21745557"
+                }
+            },
+            {
+                "id": "P214$09a0fa7e-43bd-0c6e-5af3-0c62c63a0849",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P31",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q19833377"
+                }
+            },
+            {
+                "id": "P214$e969ef68-42fc-2364-6a04-e963d5edb375",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P31",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q19829908"
+                }
+            },
+            {
+                "id": "P214$9c1dab52-4bd2-bc00-71c3-c99b0d724a3c",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P31",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q24075706"
+                }
+            },
+            {
+                "id": "P214$154be7ae-4f11-9dbe-07eb-df640457d27b",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P31",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q62589320"
+                }
+            },
+            {
+                "id": "P214$8374760e-44c6-709e-0bcf-f62c0b84d297",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P31",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q55586529"
+                }
+            },
+            {
+                "id": "P214$2a31b180-406d-ade3-5fc4-6f9641fbbd5b",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [
+                    {
+                        "hash": "81edd067f37c28bd2f8f1e1b857e132beae77ab2",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P854",
+                                    "data-type": "url"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "https://www.dnb.de/DE/Professionell/Metadatendienste/Datenbezug/Entity-Facts/entityFacts.html"
+                                }
+                            },
+                            {
+                                "property": {
+                                    "id": "P813",
+                                    "data-type": "time"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": {
+                                        "time": "+2020-06-10T00:00:00Z",
+                                        "precision": 11,
+                                        "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "hash": "e3ca11dfa48b5a8157bfc4c888bf77627b0f6e93",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P854",
+                                    "data-type": "url"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "https://www.bnf.fr/fr/databnffr"
+                                }
+                            },
+                            {
+                                "property": {
+                                    "id": "P813",
+                                    "data-type": "time"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": {
+                                        "time": "+2020-06-10T00:00:00Z",
+                                        "precision": 11,
+                                        "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "hash": "b79f002d16a3acd10890286aa8c0cc337c542177",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P248",
+                                    "data-type": "wikibase-item"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "Q15087707"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "hash": "a3d066cccab9979285f1be4576f419a678b5ca4b",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P854",
+                                    "data-type": "url"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "https://catalog.perseus.org/cite-collections/authors"
+                                }
+                            },
+                            {
+                                "property": {
+                                    "id": "P813",
+                                    "data-type": "time"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": {
+                                        "time": "+2020-06-10T00:00:00Z",
+                                        "precision": 11,
+                                        "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "hash": "0f890822769e129f6ac915749b42d513b41022d9",
+                        "parts": [
+                            {
+                                "property": {
+                                    "id": "P854",
+                                    "data-type": "url"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": "http://www.bne.es/es/LaBNE/Cooperacion/CooperacionInternacional/Colaboraciones/VIAF.html"
+                                }
+                            },
+                            {
+                                "property": {
+                                    "id": "P813",
+                                    "data-type": "time"
+                                },
+                                "value": {
+                                    "type": "value",
+                                    "content": {
+                                        "time": "+2020-06-10T00:00:00Z",
+                                        "precision": 11,
+                                        "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "property": {
+                    "id": "P31",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q96192295"
+                }
+            },
+            {
+                "id": "P214$3ff0f54c-495e-1ebb-3806-0302b11f58c2",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P31",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q99566538"
+                }
+            }
+        ],
+        "P1659": [
+            {
+                "id": "P214$DBFF9A04-B3AE-4394-867D-F8467CE1A5CB",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P1659",
+                    "data-type": "wikibase-property"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "P10832"
+                }
+            }
+        ],
+        "P10923": [
+            {
+                "id": "P214$01b14f67-43ad-68f1-dd0c-11d58e86eed0",
+                "rank": "preferred",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P407",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q1860"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P10923",
+                    "data-type": "url"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "https://en.wikipedia.org/wiki/Wikipedia:VIAF/errors"
+                }
+            },
+            {
+                "id": "P214$626d61f7-4067-e0af-d1e5-b1280e25119f",
+                "rank": "normal",
+                "qualifiers": [
+                    {
+                        "property": {
+                            "id": "P407",
+                            "data-type": "wikibase-item"
+                        },
+                        "value": {
+                            "type": "value",
+                            "content": "Q1860"
+                        }
+                    }
+                ],
+                "references": [],
+                "property": {
+                    "id": "P10923",
+                    "data-type": "url"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "mailto:bibchange@oclc.org"
+                }
+            }
+        ],
+        "P1628": [
+            {
+                "id": "P214$61befdcf-4cd4-3f82-3584-3501e7a687ab",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P1628",
+                    "data-type": "url"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "https://id.loc.gov/vocabulary/identifiers/viaf"
+                }
+            }
+        ],
+        "P2910": [
+            {
+                "id": "P214$4ea747d7-4da7-0f00-da54-3b520838e6ca",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P2910",
+                    "data-type": "commonsMedia"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "VIAF icon.svg"
+                }
+            }
+        ],
+        "P10726": [
+            {
+                "id": "P214$E63AFB76-A53D-4BFC-B0D8-6FEC169EFC58",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P10726",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q19832964"
+                }
+            }
+        ],
+        "P1629": [
+            {
+                "id": "P214$f718d1c7-47c4-bf73-52ba-839e9d867323",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P1629",
+                    "data-type": "wikibase-item"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "Q19832964"
+                }
+            }
+        ],
+        "P12508": [
+            {
+                "id": "P214$32ef4053-4f1d-249a-e220-81cd4f0021aa",
+                "rank": "normal",
+                "qualifiers": [],
+                "references": [],
+                "property": {
+                    "id": "P12508",
+                    "data-type": "external-id"
+                },
+                "value": {
+                    "type": "value",
+                    "content": "44/31"
+                }
+            }
+        ]
+    },
+    "id": "P214"
+}

@@ -1,0 +1,66 @@
+use async_trait::async_trait;
+use std::collections::HashMap;
+use serde::ser::Serialize;
+use serde_json::{json, Value};
+use crate::{EditMetadata, EntityId, HeaderInfo, HttpMisc, RestApi, RestApiError, RevisionMatch};
+
+#[async_trait]
+pub trait Entity: Default+Sized+Serialize+HttpMisc {
+    fn id(&self) -> EntityId;
+    fn from_json_header_info(j: Value, header_info: HeaderInfo) -> Result<Self, RestApiError>;
+
+    fn from_json(j: Value) -> Result<Self, RestApiError> {
+        Self::from_json_header_info(j, HeaderInfo::default())
+    }
+
+    async fn get(id: EntityId, api: &RestApi) -> Result<Self, RestApiError> {
+        Self::get_match(id, api, RevisionMatch::default()).await
+    }
+
+    async fn get_match(id: EntityId, api: &RestApi, rm: RevisionMatch) -> Result<Self, RestApiError> {
+        let path = format!("/entities/{}/{id}",id.group()?);
+        let mut request = api.wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET).await?.build()?;
+        rm.modify_headers(request.headers_mut());
+
+        let response = api.execute(request).await?;
+
+        if !response.status().is_success() {
+            return Err(RestApiError::from_response(response).await);
+        }
+        let hi = HeaderInfo::from_header(response.headers());
+        let j: Value = response.error_for_status()?.json().await?;
+        let ret = Self::from_json_header_info(j, hi)?;
+        Ok(ret)
+    }
+
+    async fn post(&self, api: &RestApi) -> Result<Self, RestApiError> ;
+
+    async fn post_with_type(&self, entity_type: &str, entity_group: &str, api: &RestApi) -> Result<Self, RestApiError> {
+        self.post_with_type_and_metadata(entity_type, entity_group, api, EditMetadata::default()).await
+    }
+
+    async fn post_with_type_and_metadata(&self, entity_type: &str, entity_group: &str, api: &RestApi, em: EditMetadata) -> Result<Self, RestApiError> {
+        if self.id().is_some() {
+            return Err(RestApiError::HasId);
+        }
+        let path = format!("/entities/{entity_group}");
+        let mut request = api.wikibase_request_builder(&path, HashMap::new(), reqwest::Method::POST).await?.build()?;
+        let mut j: Value = json!({entity_type: self});
+        Self::add_metadata_to_json(&mut j, &em);
+        *request.body_mut() = Some(format!("{j}").into());
+
+        let response = api.execute(request).await?;
+        if !response.status().is_success() {
+            let status_code = response.status();
+            if status_code == 404 {
+                return Err(RestApiError::NotImplementedInRestApi{method: reqwest::Method::POST, path});
+            }
+            return Err(RestApiError::from_response(response).await);
+        }
+
+        let j: Value = response.json().await?;
+        // TODO return entire entity? Check if it's the same as this one?
+        let ret = Self::from_json(j)?;
+        Ok(ret)
+    }
+}

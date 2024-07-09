@@ -1,0 +1,14 @@
+{
+    "id": "Q12352$1c54962e-4e69-1935-d1f5-7f4d93703a52",
+    "rank": "normal",
+    "property": {
+        "id": "P31",
+        "data-type": "wikibase-item"
+      },
+      "value": {
+        "type": "value",
+        "content": "Q42"
+      },
+      "qualifiers": [],
+      "references": []
+}
