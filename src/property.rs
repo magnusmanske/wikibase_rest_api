@@ -1,8 +1,14 @@
+use crate::{
+    aliases::Aliases,
+    entity::Entity,
+    language_strings::{LanguageStringsMultiple, LanguageStringsSingle},
+    statements::Statements,
+    EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
+};
 use async_trait::async_trait;
+use derivative::Derivative;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_json::Value;
-use crate::{aliases::Aliases, entity::Entity, language_strings::{LanguageStringsMultiple, LanguageStringsSingle}, statements::Statements, EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError};
-use derivative::Derivative;
 
 #[derive(Derivative, Debug, Clone, Default)]
 #[derivative(PartialEq)]
@@ -12,13 +18,13 @@ pub struct Property {
     descriptions: LanguageStringsSingle,
     aliases: LanguageStringsMultiple,
     statements: Statements,
-    #[derivative(PartialEq="ignore")]
+    #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
 }
 
 impl HttpMisc for Property {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!("/entities/{}/{id}",id.group()?))
+        Ok(format!("/entities/{}/{id}", id.group()?))
     }
 }
 
@@ -31,7 +37,10 @@ impl Entity for Property {
     fn from_json_header_info(j: Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
         let id = j["id"]
             .as_str()
-            .ok_or(RestApiError::MissingOrInvalidField{field: "id".to_string(), j: j.clone()})?;
+            .ok_or(RestApiError::MissingOrInvalidField {
+                field: "id".to_string(),
+                j: j.clone(),
+            })?;
         Ok(Self {
             id: EntityId::property(id),
             labels: LanguageStringsSingle::from_json(&j["labels"])?,
@@ -47,16 +56,18 @@ impl Entity for Property {
     }
 }
 
-
 impl Serialize for Property {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
+        // #lizard forgives the complexity
         let mut fields = 5;
-        if self.id.is_some() { fields += 1; }
+        if self.id.is_some() {
+            fields += 1;
+        }
         let mut s = serializer.serialize_struct("Item", fields)?;
-        if self.id.is_some() { 
+        if self.id.is_some() {
             let id: String = self.id.to_owned().into();
             s.serialize_field("id", &id)?;
         }
@@ -83,57 +94,57 @@ impl Property {
     pub fn labels(&self) -> &LanguageStringsSingle {
         &self.labels
     }
-    
+
     /// Returns the labels of the property, mutable
     pub fn labels_mut(&mut self) -> &mut LanguageStringsSingle {
         &mut self.labels
     }
-    
+
     /// Returns the descriptions of the property
     pub fn descriptions(&self) -> &LanguageStringsSingle {
         &self.descriptions
     }
-    
+
     /// Returns the descriptions of the property, mutable
     pub fn descriptions_mut(&mut self) -> &mut LanguageStringsSingle {
         &mut self.descriptions
     }
-    
+
     /// Returns the aliases of the property
     pub fn aliases(&self) -> &LanguageStringsMultiple {
         &self.aliases
     }
-    
+
     /// Returns the aliases of the property, mutable
     pub fn aliases_mut(&mut self) -> &mut LanguageStringsMultiple {
         &mut self.aliases
     }
-    
+
     /// Returns the aliases of the property for a specific language, as an `Aliases` object
     pub fn as_aliases<S: Into<String>>(&self, lang: S) -> Aliases {
         let lang: String = lang.into();
-        let v: Vec<String> = self.aliases
+        let v: Vec<String> = self
+            .aliases
             .get_lang(&lang)
             .iter()
             .map(|x| x.to_string())
             .collect();
         Aliases::new(lang, v)
     }
-    
+
     /// Returns the header info of the property
     pub fn header_info(&self) -> &HeaderInfo {
         &self.header_info
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-    use wiremock::{MockServer, Mock, ResponseTemplate};
-    use wiremock::matchers::{body_partial_json, method, path};
     use crate::language_strings::LanguageStrings;
     use crate::{LanguageString, RestApi, Statement};
+    use serde_json::json;
+    use wiremock::matchers::{body_partial_json, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     use super::*;
 
@@ -147,10 +158,16 @@ mod tests {
         Mock::given(method("GET"))
             .and(path(&mock_path))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v))
-            .mount(&mock_server).await;
-        let api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).build().unwrap();
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
 
-        let property = Property::get(EntityId::property("P214"), &api).await.unwrap();
+        let property = Property::get(EntityId::property("P214"), &api)
+            .await
+            .unwrap();
         let j = serde_json::to_string(&property).unwrap(); // Convert property to JSON text
         let v: Value = serde_json::from_str(&j).unwrap(); // Convert to JSON value
         let property_from_json = Property::from_json(v).unwrap(); // Convert back to property
@@ -171,7 +188,9 @@ mod tests {
     fn test_statements() {
         let mut property = Property::default();
         assert_eq!(property.statements().len(), 0);
-        property.statements_mut().insert(Statement::new_string("P31", "Q42"));
+        property
+            .statements_mut()
+            .insert(Statement::new_string("P31", "Q42"));
         assert_eq!(property.statements().len(), 1);
     }
 
@@ -179,7 +198,9 @@ mod tests {
     fn test_labels() {
         let mut property = Property::default();
         assert_eq!(property.labels().len(), 0);
-        property.labels_mut().insert(LanguageString::new("en", "label"));
+        property
+            .labels_mut()
+            .insert(LanguageString::new("en", "label"));
         assert_eq!(property.labels().len(), 1);
     }
 
@@ -187,7 +208,9 @@ mod tests {
     fn test_descriptions() {
         let mut property = Property::default();
         assert_eq!(property.descriptions().len(), 0);
-        property.descriptions_mut().insert(LanguageString::new("en", "description"));
+        property
+            .descriptions_mut()
+            .insert(LanguageString::new("en", "description"));
         assert_eq!(property.descriptions().len(), 1);
     }
 
@@ -195,14 +218,18 @@ mod tests {
     fn test_aliases() {
         let mut property = Property::default();
         assert_eq!(property.aliases().len(), 0);
-        property.aliases_mut().insert(LanguageString::new("en", "alias"));
+        property
+            .aliases_mut()
+            .insert(LanguageString::new("en", "alias"));
         assert_eq!(property.aliases().len(), 1);
     }
 
     #[test]
     fn test_as_aliases() {
         let mut property = Property::default();
-        property.aliases_mut().insert(LanguageString::new("en", "alias"));
+        property
+            .aliases_mut()
+            .insert(LanguageString::new("en", "alias"));
         let aliases = property.as_aliases("en");
         assert_eq!(aliases.len(), 1);
     }
@@ -223,9 +250,15 @@ mod tests {
             id: EntityId::property("P214"),
             ..Default::default()
         };
-        property.labels_mut().insert(LanguageString::new("en", "label"));
-        property.descriptions_mut().insert(LanguageString::new("en", "description"));
-        property.aliases_mut().insert(LanguageString::new("en", "alias"));
+        property
+            .labels_mut()
+            .insert(LanguageString::new("en", "label"));
+        property
+            .descriptions_mut()
+            .insert(LanguageString::new("en", "description"));
+        property
+            .aliases_mut()
+            .insert(LanguageString::new("en", "alias"));
         let j = serde_json::to_string(&property).unwrap();
         let v: Value = serde_json::from_str(&j).unwrap();
         assert_eq!(v["id"], "P214");
@@ -246,7 +279,10 @@ mod tests {
         let property = Property::from_json(v).unwrap();
         assert_eq!(property.id(), EntityId::property("P214"));
         assert_eq!(property.labels().get_lang("en").unwrap(), "label");
-        assert_eq!(property.descriptions().get_lang("en").unwrap(), "description");
+        assert_eq!(
+            property.descriptions().get_lang("en").unwrap(),
+            "description"
+        );
         assert_eq!(property.aliases().get_lang("en"), &["alias"]);
     }
 
@@ -260,10 +296,16 @@ mod tests {
         let mock_server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/w/rest.php/wikibase/v0/entities/properties"))
-            .and(body_partial_json(json!({"property": {"labels": {"en": property.labels().get_lang("en")}}})))
+            .and(body_partial_json(
+                json!({"property": {"labels": {"en": property.labels().get_lang("en")}}}),
+            ))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v))
-            .mount(&mock_server).await;
-        let api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).build().unwrap();
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
 
         // Check that an error is returned when trying to post an item that already has an ID
         let r = property.post(&api).await;
@@ -274,5 +316,4 @@ mod tests {
         let r = property.post(&api).await.unwrap();
         assert_eq!(r.id(), v.id());
     }
-
 }

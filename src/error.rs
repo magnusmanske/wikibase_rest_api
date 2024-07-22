@@ -1,26 +1,30 @@
-use std::{collections::HashMap, error::Error, fmt::{self, Display, Formatter}};
 use reqwest::header::InvalidHeaderValue;
 use serde::Deserialize;
 use serde_json::Value;
+use std::{
+    collections::HashMap,
+    error::Error,
+    fmt::{self, Display, Formatter},
+};
 
 #[derive(Debug, Clone, Deserialize, Default, PartialEq)]
 pub struct RestApiErrorPayload {
     code: String,
     message: String,
     #[serde(default)]
-    context: HashMap<String,Value>,
+    context: HashMap<String, Value>,
 }
 
 impl RestApiErrorPayload {
     pub fn code(&self) -> &str {
         &self.code
     }
-    
+
     pub fn message(&self) -> &str {
         &self.message
     }
-    
-    pub fn context(&self) -> &HashMap<String,Value> {
+
+    pub const fn context(&self) -> &HashMap<String, Value> {
         &self.context
     }
 }
@@ -33,19 +37,32 @@ impl Display for RestApiErrorPayload {
 
 #[derive(Debug)]
 pub enum RestApiError {
-    ApiError{status: reqwest::StatusCode, status_text: String, payload: RestApiErrorPayload},
+    ApiError {
+        status: reqwest::StatusCode,
+        status_text: String,
+        payload: RestApiErrorPayload,
+    },
     ClientIdRequired,
     ClientSecretRequired,
     RefreshTokenRequired,
     AccessTokenRequired,
     Reqwest(reqwest::Error),
     InvalidHeaderValue(InvalidHeaderValue),
-    NotImplementedInRestApi{method: reqwest::Method, path: String},
+    NotImplementedInRestApi {
+        method: reqwest::Method,
+        path: String,
+    },
     UnexpectedResponse(Value),
     MissingId,
     HasId,
-    MissingOrInvalidField{field: String, j: Value},
-    WrongType{field: String, j: Value},
+    MissingOrInvalidField {
+        field: String,
+        j: Value,
+    },
+    WrongType {
+        field: String,
+        j: Value,
+    },
     IsNone,
     UnknownEntityLetter(String),
     UnknownValue(String),
@@ -61,86 +78,94 @@ pub enum RestApiError {
 impl Display for RestApiError {
     #[cfg(not(tarpaulin_include))]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        // #lizard forgives the complexity
         match self {
-            RestApiError::ApiError {status, status_text, payload} => {
+            RestApiError::ApiError {
+                status,
+                status_text,
+                payload,
+            } => {
                 write!(f, "{} {} / {}", status, status_text, payload)
-            },
+            }
             RestApiError::Reqwest(e) => {
                 write!(f, "{}", e)
-            },
+            }
             RestApiError::InvalidHeaderValue(e) => {
                 write!(f, "{}", e)
-            },
-            RestApiError::NotImplementedInRestApi{method, path} => {
-                write!(f, "Method {} not implemented for path {} in REST API", method, path)
-            },
+            }
+            RestApiError::NotImplementedInRestApi { method, path } => {
+                write!(
+                    f,
+                    "Method {} not implemented for path {} in REST API",
+                    method, path
+                )
+            }
             RestApiError::ClientIdRequired => {
                 write!(f, "Client ID required")
-            },
+            }
             RestApiError::ClientSecretRequired => {
                 write!(f, "Client secret required")
-            },
+            }
             RestApiError::RefreshTokenRequired => {
                 write!(f, "Refresh token required")
-            },
+            }
             RestApiError::AccessTokenRequired => {
                 write!(f, "Access token required")
-            },
+            }
             RestApiError::UnexpectedResponse(v) => {
                 write!(f, "Unexpected response: {}", v)
-            },
+            }
             RestApiError::MissingId => {
                 write!(f, "Missing ID")
-            },
+            }
             RestApiError::HasId => {
                 write!(f, "ID already set")
-            },
-            RestApiError::MissingOrInvalidField{field, j} => {
+            }
+            RestApiError::MissingOrInvalidField { field, j } => {
                 if j.get(field).is_none() {
                     write!(f, "Missing field {}: {}", field, j)
                 } else {
                     write!(f, "Invalid field type for {}: {}", field, j)
                 }
-            },
-            RestApiError::WrongType{field, j} => {
+            }
+            RestApiError::WrongType { field, j } => {
                 write!(f, "Wrong type for {}: {}", field, j)
-            },
+            }
             RestApiError::IsNone => {
                 write!(f, "Entity ID is None")
-            },
+            }
             RestApiError::UnknownEntityLetter(s) => {
                 write!(f, "Unrecognized entity ID letter: {}", s)
-            },
+            }
             RestApiError::UnknownValue(s) => {
                 write!(f, "Unknown value: {}", s)
-            },
+            }
             RestApiError::SerdeJson(e) => {
                 write!(f, "{}", e)
-            },
+            }
             RestApiError::ApiNotSet => {
                 write!(f, "API not set")
-            },
+            }
             RestApiError::UnknownDataType(s) => {
                 write!(f, "Unknown data type: {}", s)
-            },
+            }
             RestApiError::UnknownStatementRank(s) => {
                 write!(f, "Unknown statement rank: {}", s)
-            },
+            }
             RestApiError::EmptyValue(s) => {
                 write!(f, "Empty value: {}", s)
-            },
+            }
             RestApiError::UnsupportedMethod(m) => {
                 write!(f, "Unsupported method: {}", m)
-            },
+            }
             RestApiError::RestApiUrlInvalid(s) => {
                 write!(f, "REST API URL does not contain '/rest.php': {}", s)
-            },
+            }
         }
     }
 }
 
-impl Error for RestApiError {
-}
+impl Error for RestApiError {}
 
 impl From<reqwest::Error> for RestApiError {
     fn from(e: reqwest::Error) -> Self {
@@ -164,8 +189,15 @@ impl RestApiError {
     pub async fn from_response(response: reqwest::Response) -> Self {
         let status = response.status();
         let status_text = status.canonical_reason().unwrap_or_default().to_owned();
-        let payload = response.json().await.unwrap_or(RestApiErrorPayload::default());
-        RestApiError::ApiError{status, status_text, payload}
+        let payload = response
+            .json()
+            .await
+            .unwrap_or(RestApiErrorPayload::default());
+        RestApiError::ApiError {
+            status,
+            status_text,
+            payload,
+        }
     }
 }
 
@@ -180,7 +212,10 @@ mod tests {
         let payload = RestApiErrorPayload {
             code: "code".to_owned(),
             message: "message".to_owned(),
-            context: [("key".to_owned(), json!("value"))].iter().cloned().collect(),
+            context: [("key".to_owned(), json!("value"))]
+                .iter()
+                .cloned()
+                .collect(),
         };
         assert_eq!(payload.code(), "code");
         assert_eq!(payload.message(), "message");
@@ -192,10 +227,20 @@ mod tests {
         let payload = RestApiErrorPayload {
             code: "code".to_owned(),
             message: "message".to_owned(),
-            context: [("key".to_owned(), json!("value"))].iter().cloned().collect(),
+            context: [("key".to_owned(), json!("value"))]
+                .iter()
+                .cloned()
+                .collect(),
         };
-        let error = RestApiError::ApiError{status: reqwest::StatusCode::BAD_REQUEST, status_text: "Bad Request".to_owned(), payload};
-        assert_eq!(error.to_string(), "400 Bad Request Bad Request / code: message / {\"key\": String(\"value\")}");
+        let error = RestApiError::ApiError {
+            status: reqwest::StatusCode::BAD_REQUEST,
+            status_text: "Bad Request".to_owned(),
+            payload,
+        };
+        assert_eq!(
+            error.to_string(),
+            "400 Bad Request Bad Request / code: message / {\"key\": String(\"value\")}"
+        );
     }
 
     #[tokio::test]
@@ -237,7 +282,10 @@ mod tests {
         let payload = RestApiErrorPayload {
             code: "code".to_owned(),
             message: "message".to_owned(),
-            context: [("key".to_owned(), json!("value"))].iter().cloned().collect(),
+            context: [("key".to_owned(), json!("value"))]
+                .iter()
+                .cloned()
+                .collect(),
         };
         assert_eq!(payload.context().get("key").unwrap(), &json!("value"));
     }
@@ -247,7 +295,10 @@ mod tests {
         let payload = RestApiErrorPayload {
             code: "code".to_owned(),
             message: "message".to_owned(),
-            context: [("key".to_owned(), json!("value"))].iter().cloned().collect(),
+            context: [("key".to_owned(), json!("value"))]
+                .iter()
+                .cloned()
+                .collect(),
         };
         let s = format!("{payload}");
         assert_eq!(s, "code: message / {\"key\": String(\"value\")}");
@@ -257,7 +308,9 @@ mod tests {
     fn test_from_serde_json_error() {
         let error = serde_json::from_str::<Value>("{").unwrap_err();
         let rest_api_error: RestApiError = error.into();
-        assert_eq!(rest_api_error.to_string(), "EOF while parsing an object at line 1 column 1");
+        assert_eq!(
+            rest_api_error.to_string(),
+            "EOF while parsing an object at line 1 column 1"
+        );
     }
-
 }

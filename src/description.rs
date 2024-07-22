@@ -1,18 +1,21 @@
+use crate::{
+    get_put_delete::HttpMisc, EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpPut,
+    LanguageString, RestApi, RestApiError, RevisionMatch,
+};
+use async_trait::async_trait;
+use derivative::Derivative;
+use reqwest::Request;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::ops::Deref;
-use async_trait::async_trait;
-use serde_json::{json, Value};
-use crate::{get_put_delete::HttpMisc, EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpPut, LanguageString, RestApi, RestApiError, RevisionMatch};
-use derivative::Derivative;
 
 #[derive(Derivative, Debug, Clone)]
 #[derivative(PartialEq)]
 pub struct Description {
     ls: LanguageString,
-    #[derivative(PartialEq="ignore")]
+    #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
 }
-
 
 impl Description {
     /// Constructs a new `Description` object from a language code and a description.
@@ -21,6 +24,24 @@ impl Description {
             ls: LanguageString::new(language, value),
             header_info: HeaderInfo::default(),
         }
+    }
+
+    async fn generate_get_match_request(
+        id: &EntityId,
+        language: &str,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Request, RestApiError> {
+        let path = format!(
+            "/entities/{group}/{id}/descriptions/{language}",
+            group = id.group()?
+        );
+        let mut request = api
+            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        rm.modify_headers(request.headers_mut());
+        Ok(request)
     }
 }
 
@@ -49,41 +70,75 @@ impl Into<LanguageString> for Description {
 
 impl HttpMisc for Description {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!("/entities/{group}/{id}/descriptions/{language}", group = id.group()?, language = self.ls.language()))
+        Ok(format!(
+            "/entities/{group}/{id}/descriptions/{language}",
+            group = id.group()?,
+            language = self.ls.language()
+        ))
     }
 }
 
 #[async_trait]
 impl HttpGet for Description {
-    async fn get_match(id: &EntityId, language: &str, api: &RestApi, rm: RevisionMatch) -> Result<Self, RestApiError> {
-        let path = format!("/entities/{group}/{id}/descriptions/{language}", group = id.group()?);
-        let mut request = api.wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET).await?.build()?;
-        rm.modify_headers(request.headers_mut());
-        let j: Value = api.execute(request).await?.error_for_status()?.json().await?;
+    async fn get_match(
+        id: &EntityId,
+        language: &str,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError> {
+        let request = Self::generate_get_match_request(id, language, api, rm).await?;
+        let j: Value = api
+            .execute(request)
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         let s = j
             .as_str()
-            .ok_or_else(|| RestApiError::MissingOrInvalidField { field: "Description".into(), j: j.to_owned() })?;
-        Ok( Self { ls: LanguageString::new(language, s) , header_info: HeaderInfo::default() } )
+            .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                field: "Description".into(),
+                j: j.to_owned(),
+            })?;
+        Ok(Self {
+            ls: LanguageString::new(language, s),
+            header_info: HeaderInfo::default(),
+        })
     }
 }
 
 #[async_trait]
 impl HttpDelete for Description {
-    async fn delete_meta(&self, id: &EntityId, api: &mut RestApi, em: EditMetadata) -> Result<(), RestApiError> {
+    async fn delete_meta(
+        &self,
+        id: &EntityId,
+        api: &mut RestApi,
+        em: EditMetadata,
+    ) -> Result<(), RestApiError> {
         let j = json!({});
-        self.run_json_query(&id, reqwest::Method::DELETE, j, api, &em).await?;
+        self.run_json_query(&id, reqwest::Method::DELETE, j, api, &em)
+            .await?;
         Ok(())
-    }   
+    }
 }
 
 #[async_trait]
 impl HttpPut for Description {
-    async fn put_meta(&self, id: &EntityId, api: &mut RestApi, em: EditMetadata) -> Result<Self, RestApiError> {
+    async fn put_meta(
+        &self,
+        id: &EntityId,
+        api: &mut RestApi,
+        em: EditMetadata,
+    ) -> Result<Self, RestApiError> {
         let j = json!({"description": self.ls.value()});
-        let (j, header_info) = self.run_json_query(&id, reqwest::Method::PUT, j, api, &em).await?;
+        let (j, header_info) = self
+            .run_json_query(&id, reqwest::Method::PUT, j, api, &em)
+            .await?;
         let value = j
             .as_str()
-            .ok_or_else(|| RestApiError::MissingOrInvalidField { field: "Description".into(), j: j.to_owned() })?;
+            .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                field: "Description".into(),
+                j: j.to_owned(),
+            })?;
         let mut ret = Self::new(self.language(), value);
         ret.header_info = header_info;
         Ok(ret)
@@ -92,9 +147,9 @@ impl HttpPut for Description {
 
 #[cfg(test)]
 mod tests {
-    use wiremock::{MockServer, Mock, ResponseTemplate};
-    use wiremock::matchers::{bearer_token, body_partial_json, method, path};
     use super::*;
+    use wiremock::matchers::{bearer_token, body_partial_json, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
     async fn test_description_get() {
@@ -105,15 +160,18 @@ mod tests {
         Mock::given(method("GET"))
             .and(path(&mock_path))
             .respond_with(ResponseTemplate::new(200).set_body_json(mock_description))
-        .mount(&mock_server).await;
-        let api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).build().unwrap();
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let description = Description::get(&id, "en", &api).await.unwrap();
         assert_eq!(description.language(), "en");
         assert_eq!(description.value(), mock_description);
     }
-
 
     #[tokio::test]
     async fn test_description_put() {
@@ -126,9 +184,14 @@ mod tests {
             .and(method("PUT"))
             .and(path(&mock_path))
             .and(bearer_token(token))
-            .respond_with(ResponseTemplate::new(200).set_body_json(json!(description) ))
-        .mount(&mock_server).await;
-        let mut api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).set_access_token(token).build().unwrap();
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!(description)))
+            .mount(&mock_server)
+            .await;
+        let mut api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .set_access_token(token)
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let new_description = Description::new("en", description);
@@ -136,7 +199,6 @@ mod tests {
         assert_eq!(return_description.language(), "en");
         assert_eq!(return_description.value(), description);
     }
-
 
     #[tokio::test]
     async fn test_description_delete() {
@@ -147,9 +209,14 @@ mod tests {
         Mock::given(method("DELETE"))
             .and(path(&mock_path))
             .and(bearer_token(token))
-            .respond_with(ResponseTemplate::new(200).set_body_json(json!("Description deleted") ))
-        .mount(&mock_server).await;
-        let mut api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).set_access_token(token).build().unwrap();
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!("Description deleted")))
+            .mount(&mock_server)
+            .await;
+        let mut api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .set_access_token(token)
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let description = Description::new("en", "");

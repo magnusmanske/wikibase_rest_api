@@ -1,6 +1,6 @@
 use reqwest::header::HeaderMap;
-use tokio::sync::RwLock;
 use std::{collections::HashMap, sync::Arc};
+use tokio::sync::RwLock;
 
 use crate::{bearer_token::BearerToken, RestApiError};
 
@@ -9,7 +9,6 @@ const DEFAULT_USER_AGENT: &str = "Rust Wikibase REST API";
 
 /// The latest supported version of the Wikibase REST API
 const WIKIBASE_REST_API_VERSION: u8 = 0;
-
 
 #[derive(Debug, Clone)]
 pub struct RestApi {
@@ -67,7 +66,10 @@ impl RestApi {
     }
 
     /// Returns a `HeaderMap` with the user agent and OAuth2 bearer token (if present)
-    pub(crate) async fn headers_from_token(&self, token: &BearerToken) -> Result<HeaderMap, RestApiError> {
+    pub(crate) async fn headers_from_token(
+        &self,
+        token: &BearerToken,
+    ) -> Result<HeaderMap, RestApiError> {
         let mut headers = HeaderMap::new();
         headers.insert(reqwest::header::USER_AGENT, self.user_agent.parse()?);
         if let Some(access_token) = &token.get() {
@@ -79,12 +81,18 @@ impl RestApi {
         Ok(headers)
     }
 
-    pub fn array2hashmap(&self, array: &[(&str,&str)]) -> HashMap<String,String> {
-        array.into_iter().map(|(k,v)| (k.to_string(), v.to_string())).collect()
+    pub fn array2hashmap(&self, array: &[(&str, &str)]) -> HashMap<String, String> {
+        array
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
-    
+
     /// Executes a `reqwest::Request`, and returns a `reqwest::Response`.
-    pub async fn execute(&self, request: reqwest::Request) -> Result<reqwest::Response, RestApiError> {
+    pub async fn execute(
+        &self,
+        request: reqwest::Request,
+    ) -> Result<reqwest::Response, RestApiError> {
         self.token.write().await.check(&self, &request).await?;
         let response = self.client.execute(request).await?;
         Ok(response)
@@ -93,14 +101,11 @@ impl RestApi {
     pub fn api_url(&self) -> &str {
         &self.api_url
     }
-    
+
     pub fn client(&self) -> &reqwest::Client {
         &self.client
     }
 }
-
-
-
 
 #[derive(Debug, Default)]
 pub struct RestApiBuilder {
@@ -138,7 +143,11 @@ impl RestApiBuilder {
 
     /// Sets the OAuth2 client ID and client secret
     #[cfg(not(tarpaulin_include))]
-    pub fn oauth2_info<S1: Into<String>, S2: Into<String>>(mut self, client_id: S1, client_secret: S2) -> Self {
+    pub fn oauth2_info<S1: Into<String>, S2: Into<String>>(
+        mut self,
+        client_id: S1,
+        client_secret: S2,
+    ) -> Self {
         self.token.set_oauth2_info(client_id, client_secret);
         self
     }
@@ -148,9 +157,9 @@ impl RestApiBuilder {
             Some(api_url) => api_url.to_owned(),
             None => return Err(RestApiError::ApiNotSet),
         };
-        let (base,_rest) = api_url
+        let (base, _rest) = api_url
             .split_once("/rest.php")
-            .ok_or_else(||RestApiError::RestApiUrlInvalid(api_url.to_owned()))?;
+            .ok_or_else(|| RestApiError::RestApiUrlInvalid(api_url.to_owned()))?;
         let api_url = format!("{base}/rest.php");
         Ok(api_url)
     }
@@ -163,7 +172,7 @@ impl RestApiBuilder {
         Ok(RestApi {
             client: self.client.clone(),
             user_agent: self.user_agent.clone().unwrap_or(self.default_user_agent()),
-            api_url: api_url,
+            api_url,
             token: Arc::new(RwLock::new(token)),
         })
     }
@@ -185,16 +194,17 @@ impl RestApiBuilder {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-
     #[test]
     fn test_array2hashmap() {
-        let api = RestApi::builder().api("https://test.wikidata.org/w/rest.php").build().unwrap();
-        let array = [("a","1"),("b","2")];
+        let api = RestApi::builder()
+            .api("https://test.wikidata.org/w/rest.php")
+            .build()
+            .unwrap();
+        let array = [("a", "1"), ("b", "2")];
         let hashmap = api.array2hashmap(&array);
         assert_eq!(hashmap.get("a"), Some(&"1".to_string()));
         assert_eq!(hashmap.get("b"), Some(&"2".to_string()));
@@ -226,17 +236,28 @@ mod tests {
 
     #[test]
     fn test_user_agent() {
-        let api = RestApi::builder().api("https://test.wikidata.org/w/rest.php").build().unwrap();
+        let api = RestApi::builder()
+            .api("https://test.wikidata.org/w/rest.php")
+            .build()
+            .unwrap();
         assert_eq!(api.user_agent, RestApi::builder().default_user_agent());
 
-        let builder = RestApi::builder().user_agent("Test User Agent").api("https://test.wikidata.org/w/rest.php").build().unwrap();
+        let builder = RestApi::builder()
+            .user_agent("Test User Agent")
+            .api("https://test.wikidata.org/w/rest.php")
+            .build()
+            .unwrap();
         assert_eq!(builder.user_agent, "Test User Agent");
     }
 
     #[test]
     fn test_client() {
         let client = reqwest::Client::new();
-        let api = RestApi::builder().client(client.clone()).api("https://test.wikidata.org/w/rest.php").build().unwrap();
+        let api = RestApi::builder()
+            .client(client.clone())
+            .api("https://test.wikidata.org/w/rest.php")
+            .build()
+            .unwrap();
         assert_eq!(format!("{:?}", api.client), format!("{:?}", client));
     }
 }

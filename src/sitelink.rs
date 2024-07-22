@@ -1,10 +1,13 @@
 use async_trait::async_trait;
-use std::collections::HashMap;
+use derivative::Derivative;
 use serde::ser::{Serialize, SerializeStruct};
 use serde_json::{json, Value};
-use derivative::Derivative;
+use std::collections::HashMap;
 
-use crate::{EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpMisc, HttpPut, RestApi, RestApiError, RevisionMatch};
+use crate::{
+    EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpMisc, HttpPut, RestApi,
+    RestApiError, RevisionMatch,
+};
 
 #[derive(Derivative, Debug, Clone)]
 #[derivative(PartialEq)]
@@ -13,7 +16,7 @@ pub struct Sitelink {
     title: String,
     badges: Vec<String>,
     url: Option<String>,
-    #[derivative(PartialEq="ignore")]
+    #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
 }
 
@@ -24,7 +27,12 @@ impl Sitelink {
     }
 
     /// Create a new sitelink with the given wiki, title, badges, and URL
-    pub fn new_complete(wiki: String, title: String, badges: Vec<String>, url: Option<String>) -> Sitelink {
+    pub fn new_complete(
+        wiki: String,
+        title: String,
+        badges: Vec<String>,
+        url: Option<String>,
+    ) -> Sitelink {
         Sitelink {
             wiki,
             title,
@@ -33,28 +41,45 @@ impl Sitelink {
             header_info: HeaderInfo::default(),
         }
     }
-    
+
     /// Create a new sitelink from a JSON object
     pub fn from_json<S: Into<String>>(wiki: S, j: &Value) -> Result<Self, RestApiError> {
         Self::from_json_header_info(wiki, j, HeaderInfo::default())
     }
-    
-    /// Create a new sitelink from a JSON object with header info
-    pub fn from_json_header_info<S: Into<String>>(wiki: S, j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
-        let wiki = wiki.into();
-        let title = j["title"]
+
+    fn string_from_json_header_info(j: &Value, key: &str) -> Result<String, RestApiError> {
+        j[key]
             .as_str()
-            .ok_or(RestApiError::MissingOrInvalidField{field: "title".to_string(), j: j.clone()})?;
-        let badges = j["badges"]
+            .ok_or(RestApiError::MissingOrInvalidField {
+                field: key.to_string(),
+                j: j.clone(),
+            })
+            .map(|s| s.to_string())
+    }
+
+    fn badges_from_json_header_info(j: &Value) -> Result<Vec<String>, RestApiError> {
+        Ok(j["badges"]
             .as_array()
-            .ok_or(RestApiError::MissingOrInvalidField{field: "badges".to_string(), j: j.clone()})?
+            .ok_or(RestApiError::MissingOrInvalidField {
+                field: "badges".to_string(),
+                j: j.clone(),
+            })?
             .iter()
             .map(|b| b.as_str().unwrap().to_string())
-            .collect();
-        let url = j["url"]
-            .as_str()
-            .ok_or(RestApiError::MissingOrInvalidField{field: "url".to_string(), j: j.clone()})?;
-        let mut ret = Sitelink::new_complete(wiki.to_string(), title.to_string(), badges, Some(url.to_string()));
+            .collect())
+    }
+
+    /// Create a new sitelink from a JSON object with header info
+    pub fn from_json_header_info<S: Into<String>>(
+        wiki: S,
+        j: &Value,
+        header_info: HeaderInfo,
+    ) -> Result<Self, RestApiError> {
+        let wiki = wiki.into().to_string();
+        let title = Self::string_from_json_header_info(j, "title")?;
+        let badges = Self::badges_from_json_header_info(j)?;
+        let url = Some(Self::string_from_json_header_info(j, "url")?);
+        let mut ret = Sitelink::new_complete(wiki, title, badges, url);
         ret.header_info = header_info;
         Ok(ret)
     }
@@ -85,8 +110,11 @@ impl Serialize for Sitelink {
     where
         S: serde::Serializer,
     {
+        // #lizard forgives the complexity
         let mut fields = 2;
-        if self.url.is_some() { fields += 1; }
+        if self.url.is_some() {
+            fields += 1;
+        }
         let mut s = serializer.serialize_struct("Sitelink", fields)?;
         s.serialize_field("title", &self.title)?;
         s.serialize_field("badges", &self.badges)?;
@@ -99,15 +127,27 @@ impl Serialize for Sitelink {
 
 impl HttpMisc for Sitelink {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!("/entities/{group}/{id}/sitelinks/{wiki}", group = id.group()?, wiki = self.wiki()))
+        Ok(format!(
+            "/entities/{group}/{id}/sitelinks/{wiki}",
+            group = id.group()?,
+            wiki = self.wiki()
+        ))
     }
 }
 
 #[async_trait]
 impl HttpGet for Sitelink {
-    async fn get_match(id: &EntityId, site_id: &str, api: &RestApi, rm: RevisionMatch) -> Result<Self, RestApiError> {
+    async fn get_match(
+        id: &EntityId,
+        site_id: &str,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError> {
         let path = format!("/entities/{}/{id}/sitelinks/{site_id}", id.group()?);
-        let mut request = api.wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET).await?.build()?;
+        let mut request = api
+            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
         rm.modify_headers(request.headers_mut());
         let response = api.execute(request).await?;
         let header_info = HeaderInfo::from_header(response.headers());
@@ -118,9 +158,16 @@ impl HttpGet for Sitelink {
 
 #[async_trait]
 impl HttpDelete for Sitelink {
-    async fn delete_meta(&self, id: &EntityId, api: &mut RestApi, em: EditMetadata) -> Result<(), RestApiError> {
+    async fn delete_meta(
+        &self,
+        id: &EntityId,
+        api: &mut RestApi,
+        em: EditMetadata,
+    ) -> Result<(), RestApiError> {
         let j = json!({});
-        let (j, _revision_id) = self.run_json_query(&id, reqwest::Method::DELETE, j, api, &em).await?;
+        let (j, _revision_id) = self
+            .run_json_query(&id, reqwest::Method::DELETE, j, api, &em)
+            .await?;
         match j.as_str() {
             Some("Sitelink deleted") => Ok(()),
             _ => Err(RestApiError::UnexpectedResponse(j.to_owned())),
@@ -130,25 +177,31 @@ impl HttpDelete for Sitelink {
 
 #[async_trait]
 impl HttpPut for Sitelink {
-    async fn put_meta(&self, id: &EntityId, api: &mut RestApi, em: EditMetadata) -> Result<Sitelink, RestApiError> {
+    async fn put_meta(
+        &self,
+        id: &EntityId,
+        api: &mut RestApi,
+        em: EditMetadata,
+    ) -> Result<Sitelink, RestApiError> {
         let j = json!({
             "sitelink": {
                 "title": self.title(),
                 "badges": self.badges()
             }
         });
-        let (j, header_info) = self.run_json_query(&id, reqwest::Method::PUT, j, api, &em).await?;
+        let (j, header_info) = self
+            .run_json_query(&id, reqwest::Method::PUT, j, api, &em)
+            .await?;
         let ret = Self::from_json_header_info(&self.wiki, &j, header_info)?;
         Ok(ret)
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-    use wiremock::{MockServer, Mock, ResponseTemplate};
-    use wiremock::matchers::{bearer_token, body_partial_json, method, path};
     use super::*;
+    use wiremock::matchers::{bearer_token, body_partial_json, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn test_sitelink() {
@@ -156,7 +209,12 @@ mod tests {
         let title = "Foo".to_string();
         let badges = vec!["Q17437796".to_string()];
         let url = "https://en.wikipedia.org/wiki/Foo".to_string();
-        let sitelink = Sitelink::new_complete(wiki.clone(), title.clone(), badges.clone(), Some(url.to_string()));
+        let sitelink = Sitelink::new_complete(
+            wiki.clone(),
+            title.clone(),
+            badges.clone(),
+            Some(url.to_string()),
+        );
         assert_eq!(sitelink.wiki(), wiki);
         assert_eq!(sitelink.title(), title);
         assert_eq!(sitelink.badges(), &badges);
@@ -174,13 +232,22 @@ mod tests {
         Mock::given(method("GET"))
             .and(path(&mock_path))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["sitelinks"]["enwiki"]))
-            .mount(&mock_server).await;
-        let api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).build().unwrap();
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
 
-        let sitelink = Sitelink::get(&EntityId::item(id),"enwiki",&api).await.unwrap();
-        assert_eq!(sitelink.wiki(),"enwiki");
-        assert_eq!(sitelink.title(),"Douglas Adams");
-        assert_eq!(sitelink.url(),Some("https://en.wikipedia.org/wiki/Douglas_Adams"));
+        let sitelink = Sitelink::get(&EntityId::item(id), "enwiki", &api)
+            .await
+            .unwrap();
+        assert_eq!(sitelink.wiki(), "enwiki");
+        assert_eq!(sitelink.title(), "Douglas Adams");
+        assert_eq!(
+            sitelink.url(),
+            Some("https://en.wikipedia.org/wiki/Douglas_Adams")
+        );
     }
 
     #[tokio::test]
@@ -193,19 +260,29 @@ mod tests {
         let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/sitelinks/enwiki");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
-        Mock::given(body_partial_json(json!({"sitelink":{"badges":[],"title":page_title}})))
-            .and(method("PUT"))
-            .and(path(&mock_path))
-            .and(bearer_token(token))
-            .respond_with(ResponseTemplate::new(200).set_body_json(json!({"badges":[],"title":page_title,"url":"dummy"})))
-            .mount(&mock_server).await;
-        let mut api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).set_access_token(token).build().unwrap();
+        Mock::given(body_partial_json(
+            json!({"sitelink":{"badges":[],"title":page_title}}),
+        ))
+        .and(method("PUT"))
+        .and(path(&mock_path))
+        .and(bearer_token(token))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({"badges":[],"title":page_title,"url":"dummy"})),
+        )
+        .mount(&mock_server)
+        .await;
+        let mut api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .set_access_token(token)
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
-        let sitelink = Sitelink::new("enwiki",page_title);
+        let sitelink = Sitelink::new("enwiki", page_title);
         let new_sitelink = sitelink.put(&id, &mut api).await.unwrap();
-        assert_eq!(new_sitelink.wiki(),sitelink.wiki());
-        assert_eq!(new_sitelink.title(),sitelink.title());
+        assert_eq!(new_sitelink.wiki(), sitelink.wiki());
+        assert_eq!(new_sitelink.title(), sitelink.title());
     }
 
     #[tokio::test]
@@ -221,8 +298,13 @@ mod tests {
             .and(path(&mock_path))
             .and(bearer_token(token))
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Sitelink deleted")))
-            .mount(&mock_server).await;
-        let mut api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).set_access_token(token).build().unwrap();
+            .mount(&mock_server)
+            .await;
+        let mut api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .set_access_token(token)
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let new_sitelink = Sitelink::new("enwiki", "doesn't matter");
