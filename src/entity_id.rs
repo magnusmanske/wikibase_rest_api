@@ -12,7 +12,7 @@ pub enum EntityId {
 
 impl EntityId {
     /// Returns the ID of the entity.
-    pub fn id(&self) -> Result<&String, RestApiError> {
+    pub const fn id(&self) -> Result<&String, RestApiError> {
         match self {
             EntityId::None => Err(RestApiError::IsNone),
             EntityId::Item(id) => Ok(id),
@@ -21,7 +21,7 @@ impl EntityId {
     }
 
     /// Returns the group of the entity.
-    pub fn group(&self) -> Result<&str, RestApiError> {
+    pub const fn group(&self) -> Result<&str, RestApiError> {
         match self {
             EntityId::Item(_) => Ok("items"),
             EntityId::Property(_) => Ok("properties"),
@@ -30,7 +30,7 @@ impl EntityId {
     }
 
     /// Returns the entity type of the entity.
-    pub fn entity_type(&self) -> Result<&str, RestApiError> {
+    pub const fn entity_type(&self) -> Result<&str, RestApiError> {
         match self {
             EntityId::Item(_) => Ok("item"),
             EntityId::Property(_) => Ok("property"),
@@ -44,7 +44,10 @@ impl EntityId {
     }
 
     /// Creates a new entity ID from a string, using a bespoke configuration.
-    pub fn new_from_config<S: Into<String>>(id: S, config: &Config) -> Result<EntityId, RestApiError> {
+    pub fn new_from_config<S: Into<String>>(
+        id: S,
+        config: &Config,
+    ) -> Result<EntityId, RestApiError> {
         let id = id.into();
         if id.starts_with(config.item_letter()) {
             Ok(EntityId::Item(id.to_string()))
@@ -54,10 +57,9 @@ impl EntityId {
             Err(RestApiError::UnknownEntityLetter(id))
         }
     }
-    
 
     /// Returns an unset (None) entity ID.
-    pub fn none() -> EntityId {
+    pub const fn none() -> EntityId {
         EntityId::None
     }
 
@@ -73,20 +75,20 @@ impl EntityId {
 
     /// Returns true if the entity ID is an item or a property.
     pub fn is_some(&self) -> bool {
-        *self!=EntityId::None
+        *self != EntityId::None
     }
 
     /// Returns true if the entity ID is unset (None).
     pub fn is_none(&self) -> bool {
-        *self==EntityId::None
+        *self == EntityId::None
     }
 }
 
-impl Into<String> for EntityId {
-    fn into(self) -> String {
-        match self {
-            EntityId::Item(id) => format!("{id}"),
-            EntityId::Property(id) => format!("{id}"),
+impl From<EntityId> for String {
+    fn from(val: EntityId) -> Self {
+        match val {
+            EntityId::Item(id) => id.to_string(),
+            EntityId::Property(id) => id.to_string(),
             EntityId::None => String::new(),
         }
     }
@@ -102,39 +104,62 @@ impl fmt::Display for EntityId {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_entity_id() {
+    fn test_entity_id_item() {
         let id = EntityId::item("Q123");
         assert_eq!(id, EntityId::item("Q123"));
+    }
+
+    #[test]
+    fn test_entity_id_property() {
         let id = EntityId::property("P123");
         assert_eq!(id, EntityId::property("P123"));
+    }
+
+    #[test]
+    fn test_entity_id_none() {
         let id = EntityId::none();
         assert_eq!(id, EntityId::None);
     }
 
     #[test]
-    fn test_entity_id_is_some() {
+    fn test_entity_id_item_is_some() {
         let id = EntityId::item("Q123");
-        assert_eq!(id.is_some(), true);
-        let id = EntityId::property("P123");
-        assert_eq!(id.is_some(), true);
-        let id = EntityId::none();
-        assert_eq!(id.is_some(), false);
+        assert!(id.is_some());
     }
 
     #[test]
-    fn test_entity_id_is_none() {
-        let id = EntityId::item("Q123");
-        assert_eq!(id.is_none(), false);
+    fn test_entity_id_property_is_some() {
         let id = EntityId::property("P123");
-        assert_eq!(id.is_none(), false);
+        assert!(id.is_some());
+    }
+
+    #[test]
+    fn test_entity_id_none_is_some() {
         let id = EntityId::none();
-        assert_eq!(id.is_none(), true);
+        assert!(!id.is_some());
+    }
+
+    #[test]
+    fn test_entity_id_item_is_none() {
+        let id = EntityId::item("Q123");
+        assert!(!id.is_none());
+    }
+
+    #[test]
+    fn test_entity_id_property_is_none() {
+        let id = EntityId::property("P123");
+        assert!(!id.is_none());
+    }
+
+    #[test]
+    fn test_entity_id_none_is_none() {
+        let id = EntityId::none();
+        assert!(id.is_none());
     }
 
     #[test]
@@ -154,31 +179,55 @@ mod tests {
     }
 
     #[test]
-    fn test_entity_id_group() {
+    fn test_entity_id_item_group() {
         let id = EntityId::item("Q123");
         assert_eq!(id.group().unwrap(), "items");
+    }
+
+    #[test]
+    fn test_entity_id_property_group() {
         let id = EntityId::property("P123");
         assert_eq!(id.group().unwrap(), "properties");
+    }
+
+    #[test]
+    fn test_entity_id_none_group() {
         let id = EntityId::none();
         assert!(id.group().is_err());
     }
 
     #[test]
-    fn test_entity_id_entity_type() {
+    fn test_entity_id_entity_item_type() {
         let id = EntityId::item("Q123");
         assert_eq!(id.entity_type().unwrap(), "item");
+    }
+
+    #[test]
+    fn test_entity_id_entity_property_type() {
         let id = EntityId::property("P123");
         assert_eq!(id.entity_type().unwrap(), "property");
+    }
+
+    #[test]
+    fn test_entity_id_entity_none_type() {
         let id = EntityId::none();
         assert!(id.entity_type().is_err());
     }
 
     #[test]
-    fn test_entity_id_new() {
+    fn test_entity_id_item_new() {
         let id = EntityId::new("Q123").unwrap();
         assert_eq!(id, EntityId::item("Q123"));
+    }
+
+    #[test]
+    fn test_entity_id_property_new() {
         let id = EntityId::new("P123").unwrap();
         assert_eq!(id, EntityId::property("P123"));
+    }
+
+    #[test]
+    fn test_entity_id_none_new() {
         let id = EntityId::new("X123");
         assert!(id.is_err());
     }
@@ -186,13 +235,11 @@ mod tests {
     #[test]
     fn test_entity_id_new_from_config() {
         let config = Config::new('A', 'B');
-        let id = EntityId::new_from_config("A123", &config).unwrap();
-        assert_eq!(id, EntityId::item("A123"));
-        let id = EntityId::new_from_config("B123", &config).unwrap();
-        assert_eq!(id, EntityId::property("B123"));
-        let id = EntityId::new_from_config("X123", &config);
-        assert!(id.is_err());
+        let id_a = EntityId::new_from_config("A123", &config).unwrap();
+        assert_eq!(id_a, EntityId::item("A123"));
+        let id_b = EntityId::new_from_config("B123", &config).unwrap();
+        assert_eq!(id_b, EntityId::property("B123"));
+        let id_x = EntityId::new_from_config("X123", &config);
+        assert!(id_x.is_err());
     }
-
-
 }
