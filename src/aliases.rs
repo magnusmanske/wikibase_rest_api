@@ -156,7 +156,7 @@ impl HttpGet for Aliases {
             .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
             .await?
             .build()?;
-        rm.modify_headers(request.headers_mut());
+        rm.modify_headers(request.headers_mut())?;
         let response = api.execute(request).await?;
         Self::check_get_match_response(language, response).await
     }

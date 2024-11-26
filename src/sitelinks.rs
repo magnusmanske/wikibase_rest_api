@@ -1,21 +1,27 @@
+use crate::{
+    sitelinks_patch::SitelinksPatch, EntityId, FromJson, HeaderInfo, HttpGetEntity, HttpMisc,
+    RestApi, RestApiError, RevisionMatch, Sitelink,
+};
 use async_trait::async_trait;
-use serde::ser::{Serialize, SerializeMap};
-use std::collections::HashMap;
-use serde_json::{json, Value};
-use crate::{sitelinks_patch::SitelinksPatch, EntityId, FromJson, HeaderInfo, HttpGetEntity, HttpMisc, RestApi, RestApiError, RevisionMatch, Sitelink};
 use derivative::Derivative;
+use serde::ser::{Serialize, SerializeMap};
+use serde_json::{json, Value};
+use std::collections::HashMap;
 
 #[derive(Derivative, Debug, Clone, Default)]
 #[derivative(PartialEq)]
 pub struct Sitelinks {
     sitelinks: Vec<Sitelink>,
-    #[derivative(PartialEq="ignore")]
+    #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
 }
 
 impl HttpMisc for Sitelinks {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!("/entities/{group}/{id}/sitelinks", group = id.group()?))
+        Ok(format!(
+            "/entities/{group}/{id}/sitelinks",
+            group = id.group()?
+        ))
     }
 }
 
@@ -25,21 +31,35 @@ impl FromJson for Sitelinks {
     }
 
     fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
-        let sitelinks = j.as_object()
-            .ok_or(RestApiError::MissingOrInvalidField{field: "Sitelinks".to_string(), j: j.clone()})?
+        let sitelinks = j
+            .as_object()
+            .ok_or(RestApiError::MissingOrInvalidField {
+                field: "Sitelinks".to_string(),
+                j: j.clone(),
+            })?
             .iter()
             .map(|(wiki, j)| Sitelink::from_json(wiki, j))
             .collect::<Result<Vec<Sitelink>, RestApiError>>()?;
-        Ok(Sitelinks { sitelinks, header_info })
+        Ok(Sitelinks {
+            sitelinks,
+            header_info,
+        })
     }
 }
 
 #[async_trait]
 impl HttpGetEntity for Sitelinks {
-    async fn get_match(id: &EntityId, api: &RestApi, rm: RevisionMatch) -> Result<Self, RestApiError> {
+    async fn get_match(
+        id: &EntityId,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError> {
         let path = format!("/entities/{group}/{id}/sitelinks", group = id.group()?);
-        let mut request = api.wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET).await?.build()?;
-        rm.modify_headers(request.headers_mut());
+        let mut request = api
+            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        rm.modify_headers(request.headers_mut())?;
         let response = api.execute(request).await?;
         let header_info = HeaderInfo::from_header(response.headers());
         let j: Value = response.error_for_status()?.json().await?;
@@ -93,10 +113,10 @@ impl Serialize for Sitelinks {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-    use wiremock::{MockServer, Mock, ResponseTemplate};
-    use wiremock::matchers::{method, path};
     use super::*;
+    use serde_json::json;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
     async fn test_sitelinks_get() {
@@ -109,20 +129,37 @@ mod tests {
         Mock::given(method("GET"))
             .and(path(&mock_path))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["sitelinks"]))
-            .mount(&mock_server).await;
-        let api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).build().unwrap();
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
 
-        let sitelinks = Sitelinks::get(&EntityId::item("Q42"),&api).await.unwrap();
+        let sitelinks = Sitelinks::get(&EntityId::item("Q42"), &api).await.unwrap();
         assert_eq!(sitelinks.sitelinks.len(), 122);
-        assert_eq!(sitelinks.get_wiki("enwiki").unwrap().title(),"Douglas Adams");
+        assert_eq!(
+            sitelinks.get_wiki("enwiki").unwrap().title(),
+            "Douglas Adams"
+        );
     }
 
     #[test]
     fn test_sitelinks_json() {
         let sitelinks = Sitelinks {
             sitelinks: vec![
-                Sitelink::new_complete("enwiki".to_string(), "Douglas Adams".to_string(), vec![], Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string())),
-                Sitelink::new_complete("dewiki".to_string(), "Douglas Adams".to_string(), vec![], Some("https://de.wikipedia.org/wiki/Douglas_Adams".to_string())),
+                Sitelink::new_complete(
+                    "enwiki".to_string(),
+                    "Douglas Adams".to_string(),
+                    vec![],
+                    Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string()),
+                ),
+                Sitelink::new_complete(
+                    "dewiki".to_string(),
+                    "Douglas Adams".to_string(),
+                    vec![],
+                    Some("https://de.wikipedia.org/wiki/Douglas_Adams".to_string()),
+                ),
             ],
             header_info: HeaderInfo::default(),
         };
@@ -134,23 +171,55 @@ mod tests {
     #[test]
     fn test_sitelinks_set_wiki() {
         let mut sitelinks = Sitelinks::default();
-        sitelinks.set_wiki(Sitelink::new_complete("enwiki".to_string(), "Douglas Adams".to_string(), vec![], Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string())));
-        assert_eq!(sitelinks.get_wiki("enwiki").unwrap().title(), "Douglas Adams");
-        sitelinks.set_wiki(Sitelink::new_complete("enwiki".to_string(), "Douglas Noël Adams".to_string(), vec![], Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string())));
-        assert_eq!(sitelinks.get_wiki("enwiki").unwrap().title(), "Douglas Noël Adams");
+        sitelinks.set_wiki(Sitelink::new_complete(
+            "enwiki".to_string(),
+            "Douglas Adams".to_string(),
+            vec![],
+            Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string()),
+        ));
+        assert_eq!(
+            sitelinks.get_wiki("enwiki").unwrap().title(),
+            "Douglas Adams"
+        );
+        sitelinks.set_wiki(Sitelink::new_complete(
+            "enwiki".to_string(),
+            "Douglas Noël Adams".to_string(),
+            vec![],
+            Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string()),
+        ));
+        assert_eq!(
+            sitelinks.get_wiki("enwiki").unwrap().title(),
+            "Douglas Noël Adams"
+        );
     }
 
     #[test]
     fn test_sitelinks_get_wiki() {
         let sitelinks = Sitelinks {
             sitelinks: vec![
-                Sitelink::new_complete("enwiki".to_string(), "Douglas Adams".to_string(), vec![], Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string())),
-                Sitelink::new_complete("dewiki".to_string(), "Douglas Adams".to_string(), vec![], Some("https://de.wikipedia.org/wiki/Douglas_Adams".to_string())),
+                Sitelink::new_complete(
+                    "enwiki".to_string(),
+                    "Douglas Adams".to_string(),
+                    vec![],
+                    Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string()),
+                ),
+                Sitelink::new_complete(
+                    "dewiki".to_string(),
+                    "Douglas Adams".to_string(),
+                    vec![],
+                    Some("https://de.wikipedia.org/wiki/Douglas_Adams".to_string()),
+                ),
             ],
             header_info: HeaderInfo::default(),
         };
-        assert_eq!(sitelinks.get_wiki("enwiki").unwrap().title(), "Douglas Adams");
-        assert_eq!(sitelinks.get_wiki("dewiki").unwrap().title(), "Douglas Adams");
+        assert_eq!(
+            sitelinks.get_wiki("enwiki").unwrap().title(),
+            "Douglas Adams"
+        );
+        assert_eq!(
+            sitelinks.get_wiki("dewiki").unwrap().title(),
+            "Douglas Adams"
+        );
         assert!(sitelinks.get_wiki("frwiki").is_none());
     }
 
@@ -165,11 +234,14 @@ mod tests {
 
         let patch = s2.patch(&s1).unwrap();
         let patch_json = json!(patch);
-        assert_eq!(patch_json, json!({"patch":[
-            {"op":"add","path":"/dewiki","value":{"badges":[],"title":"Bar"}},
-            {"op":"replace","path":"/enwiki/title","value":"Baz"},
-            {"op":"remove","path":"/frwiki"}
-        ]}));
+        assert_eq!(
+            patch_json,
+            json!({"patch":[
+                {"op":"add","path":"/dewiki","value":{"badges":[],"title":"Bar"}},
+                {"op":"replace","path":"/enwiki/title","value":"Baz"},
+                {"op":"remove","path":"/frwiki"}
+            ]})
+        );
     }
 
     #[test]
@@ -191,7 +263,10 @@ mod tests {
     #[test]
     fn test_get_rest_api_path() {
         let sitelinks = Sitelinks::default();
-        assert_eq!(sitelinks.get_rest_api_path(&EntityId::item("Q42")).unwrap(), "/entities/items/Q42/sitelinks");
+        assert_eq!(
+            sitelinks.get_rest_api_path(&EntityId::item("Q42")).unwrap(),
+            "/entities/items/Q42/sitelinks"
+        );
     }
 
     #[test]
@@ -204,8 +279,18 @@ mod tests {
     fn test_serialize() {
         let sitelinks = Sitelinks {
             sitelinks: vec![
-                Sitelink::new_complete("enwiki".to_string(), "Douglas Adams".to_string(), vec![], Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string())),
-                Sitelink::new_complete("dewiki".to_string(), "Douglas Adams".to_string(), vec![], Some("https://de.wikipedia.org/wiki/Douglas_Adams".to_string())),
+                Sitelink::new_complete(
+                    "enwiki".to_string(),
+                    "Douglas Adams".to_string(),
+                    vec![],
+                    Some("https://en.wikipedia.org/wiki/Douglas_Adams".to_string()),
+                ),
+                Sitelink::new_complete(
+                    "dewiki".to_string(),
+                    "Douglas Adams".to_string(),
+                    vec![],
+                    Some("https://de.wikipedia.org/wiki/Douglas_Adams".to_string()),
+                ),
             ],
             header_info: HeaderInfo::default(),
         };

@@ -1,9 +1,12 @@
+use crate::{
+    aliases_patch::AliasesPatch, language_strings_patch::LanguageStringsPatch, EntityId, FromJson,
+    HeaderInfo, HttpGetEntity, HttpMisc, LanguageString, RestApi, RestApiError, RevisionMatch,
+};
 use async_trait::async_trait;
-use std::collections::HashMap;
+use derivative::Derivative;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
-use crate::{aliases_patch::AliasesPatch, language_strings_patch::LanguageStringsPatch, EntityId, FromJson, HeaderInfo, HttpGetEntity, HttpMisc, LanguageString, RestApi, RestApiError, RevisionMatch};
-use derivative::Derivative;
+use std::collections::HashMap;
 
 pub trait LanguageStrings {
     fn insert(&mut self, ls: LanguageString);
@@ -13,23 +16,33 @@ pub trait LanguageStrings {
 #[derive(Derivative, Debug, Clone, Default)]
 #[derivative(PartialEq)]
 pub struct LanguageStringsSingle {
-    ls: HashMap<String,String>,
-    #[derivative(PartialEq="ignore")]
+    ls: HashMap<String, String>,
+    #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
 }
 
 impl HttpMisc for LanguageStringsSingle {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!("/entities/{group}/{id}/labels", group = id.group()?))
+        Ok(format!(
+            "/entities/{group}/{id}/labels",
+            group = id.group()?
+        ))
     }
 }
 
 #[async_trait]
 impl HttpGetEntity for LanguageStringsSingle {
-    async fn get_match(id: &EntityId, api: &RestApi, rm: RevisionMatch) -> Result<Self, RestApiError> {
+    async fn get_match(
+        id: &EntityId,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError> {
         let path = format!("/entities/{group}/{id}/labels", group = id.group()?);
-        let mut request = api.wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET).await?.build()?;
-        rm.modify_headers(request.headers_mut());
+        let mut request = api
+            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        rm.modify_headers(request.headers_mut())?;
         let response = api.execute(request).await?;
         let header_info = HeaderInfo::from_header(response.headers());
         let j: Value = response.error_for_status()?.json().await?;
@@ -45,7 +58,7 @@ impl LanguageStringsSingle {
 
     /// Generates a patch to transform `other` into `self`
     pub fn patch_labels(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
-        let patch = json_patch::diff(&json!(&other),& json!(&self));
+        let patch = json_patch::diff(&json!(&other), &json!(&self));
         let patch = LanguageStringsPatch::labels_from_json(&json!(patch))?;
         return Ok(patch);
     }
@@ -61,7 +74,6 @@ impl LanguageStringsSingle {
     pub fn len(&self) -> usize {
         self.ls.len()
     }
-
 }
 
 impl FromJson for LanguageStringsSingle {
@@ -73,15 +85,21 @@ impl FromJson for LanguageStringsSingle {
         let mut ret = LanguageStringsSingle::default();
         ret.ls = j
             .as_object()
-            .ok_or_else(|| RestApiError::WrongType{field: "LanguageStringSingle".to_string(), j: j.to_owned()})?
+            .ok_or_else(|| RestApiError::WrongType {
+                field: "LanguageStringSingle".to_string(),
+                j: j.to_owned(),
+            })?
             .iter()
             .map(|(language, value)| {
                 let value = value
                     .as_str()
-                    .ok_or_else(|| RestApiError::MissingOrInvalidField { field: "LanguageStringSingle".into(), j: value.to_owned() })?;
+                    .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                        field: "LanguageStringSingle".into(),
+                        j: value.to_owned(),
+                    })?;
                 Ok((language.to_owned(), value.to_string()))
             })
-            .collect::<Result<HashMap<String,String>, RestApiError>>()?;
+            .collect::<Result<HashMap<String, String>, RestApiError>>()?;
         ret.header_info = header_info;
         Ok(ret)
     }
@@ -93,7 +111,8 @@ impl LanguageStrings for LanguageStringsSingle {
     }
 
     fn insert(&mut self, ls: LanguageString) {
-        self.ls.insert(ls.language().to_string(), ls.value().to_string());
+        self.ls
+            .insert(ls.language().to_string(), ls.value().to_string());
     }
 }
 
@@ -110,14 +129,13 @@ impl Serialize for LanguageStringsSingle {
     }
 }
 
-
 // ______________________________________________________________________________________________________________
 
 #[derive(Derivative, Debug, Clone, Default)]
 #[derivative(PartialEq)]
 pub struct LanguageStringsMultiple {
-    ls: HashMap<String,Vec<String>>,
-    #[derivative(PartialEq="ignore")]
+    ls: HashMap<String, Vec<String>>,
+    #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
 }
 
@@ -125,7 +143,7 @@ impl LanguageStringsMultiple {
     /// Returns the list of values for a language
     pub fn get_lang<S: Into<String>>(&self, language: S) -> Vec<&str> {
         match self.ls.get(&language.into()) {
-            Some(v) => v.iter().map(|s|s.as_str()).collect(),
+            Some(v) => v.iter().map(|s| s.as_str()).collect(),
             None => vec![],
         }
     }
@@ -147,15 +165,22 @@ impl LanguageStringsMultiple {
         self.ls.len()
     }
 
-    fn from_json_header_info_part(language: &str, v: &Vec<Value>) -> Result<(String, Vec<String>), RestApiError> {
-        let values = v.iter()
-        .map(|v| Ok(v
-            .as_str()
-            .ok_or_else(|| RestApiError::MissingOrInvalidField { field: "LanguageStringsMultiple".into(), j: v.to_owned() })?
-            .to_string()
-        ))
-        .collect::<Result<Vec<String>,RestApiError>>()?;
-        Ok((language.to_owned(),values))
+    fn from_json_header_info_part(
+        language: &str,
+        v: &Vec<Value>,
+    ) -> Result<(String, Vec<String>), RestApiError> {
+        let values = v
+            .iter()
+            .map(|v| {
+                Ok(v.as_str()
+                    .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                        field: "LanguageStringsMultiple".into(),
+                        j: v.to_owned(),
+                    })?
+                    .to_string())
+            })
+            .collect::<Result<Vec<String>, RestApiError>>()?;
+        Ok((language.to_owned(), values))
     }
 }
 
@@ -166,16 +191,21 @@ impl FromJson for LanguageStringsMultiple {
 
     fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
         let mut ret = LanguageStringsMultiple::default();
-        ret.ls = j.as_object()
-            .ok_or_else(|| RestApiError::MissingOrInvalidField { field: "LanguageStringsMultiple".into(), j: j.to_owned() })?
+        ret.ls = j
+            .as_object()
+            .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                field: "LanguageStringsMultiple".into(),
+                j: j.to_owned(),
+            })?
             .iter()
-            .map(|(language, value)| {
-                match value.as_array() {
-                    Some(v) => Self::from_json_header_info_part(language, v),
-                    None => Err(RestApiError::MissingOrInvalidField { field: "LanguageStringsMultiple".into(), j: value.to_owned() }),
-                }
+            .map(|(language, value)| match value.as_array() {
+                Some(v) => Self::from_json_header_info_part(language, v),
+                None => Err(RestApiError::MissingOrInvalidField {
+                    field: "LanguageStringsMultiple".into(),
+                    j: value.to_owned(),
+                }),
             })
-            .collect::<Result<HashMap<String,Vec<String>>,RestApiError>>()?;
+            .collect::<Result<HashMap<String, Vec<String>>, RestApiError>>()?;
         ret.header_info = header_info;
         Ok(ret)
     }
@@ -210,10 +240,10 @@ impl Serialize for LanguageStringsMultiple {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-    use wiremock::{MockServer, Mock, ResponseTemplate};
-    use wiremock::matchers::{method, path};
     use super::*;
+    use serde_json::json;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn test_language_strings_single() {
@@ -269,8 +299,12 @@ mod tests {
         Mock::given(method("GET"))
             .and(path(&mock_path))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["labels"]))
-            .mount(&mock_server).await;
-        let api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).build().unwrap();
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
 
         let id = EntityId::new("Q42").unwrap();
         let ls = LanguageStringsSingle::get(&id, &api).await.unwrap();
@@ -287,7 +321,10 @@ mod tests {
 
         let patch = l2.patch_labels(&l1).unwrap();
         let patch_json = json!(patch);
-        assert_eq!(patch_json, json!({"mode":"Labels","patch":[{"op":"replace","path":"/en","value":"Baz"}]}));
+        assert_eq!(
+            patch_json,
+            json!({"mode":"Labels","patch":[{"op":"replace","path":"/en","value":"Baz"}]})
+        );
     }
 
     #[test]
@@ -300,7 +337,10 @@ mod tests {
 
         let patch = l2.patch_descriptions(&l1).unwrap();
         let patch_json = json!(patch);
-        assert_eq!(patch_json, json!({"mode":"Descriptions","patch":[{"op":"replace","path":"/en","value":"Baz"}]}));
+        assert_eq!(
+            patch_json,
+            json!({"mode":"Descriptions","patch":[{"op":"replace","path":"/en","value":"Baz"}]})
+        );
     }
 
     #[test]
@@ -317,14 +357,20 @@ mod tests {
 
         let patch = l2.patch(&l1).unwrap();
         let patch_json = json!(patch);
-        assert_eq!(patch_json, json!({"patch":[{"op":"add","path":"/de/1","value":"Foobaz"},{"op":"replace","path":"/en/1","value":"Boo"},{"op":"remove","path":"/en/2"}]}));
+        assert_eq!(
+            patch_json,
+            json!({"patch":[{"op":"add","path":"/de/1","value":"Foobaz"},{"op":"replace","path":"/en/1","value":"Boo"},{"op":"remove","path":"/en/2"}]})
+        );
     }
 
     #[test]
     fn test_get_rest_api_path() {
         let l = LanguageStringsSingle::default();
         let id = EntityId::new("Q42").unwrap();
-        assert_eq!(l.get_rest_api_path(&id).unwrap(), "/entities/items/Q42/labels");
+        assert_eq!(
+            l.get_rest_api_path(&id).unwrap(),
+            "/entities/items/Q42/labels"
+        );
     }
 
     #[test]

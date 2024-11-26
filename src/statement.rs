@@ -128,7 +128,7 @@ impl Statement {
             .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
             .await?
             .build()?;
-        rm.modify_headers(request.headers_mut());
+        rm.modify_headers(request.headers_mut())?;
         let response = api.execute(request).await?;
         let header_info = HeaderInfo::from_header(response.headers());
         let j: Value = response.error_for_status()?.json().await?;

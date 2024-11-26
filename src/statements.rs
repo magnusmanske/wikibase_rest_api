@@ -1,16 +1,19 @@
+use crate::{
+    EditMetadata, EntityId, FromJson, HeaderInfo, HttpGetEntity, HttpMisc, RestApi, RestApiError,
+    RevisionMatch, Statement,
+};
 use async_trait::async_trait;
-use serde::ser::{Serialize, SerializeMap};
-use std::collections::HashMap;
-use rayon::prelude::*;
-use serde_json::{json, Value};
-use crate::{EditMetadata, EntityId, FromJson, HeaderInfo, HttpGetEntity, HttpMisc, RestApi, RestApiError, RevisionMatch, Statement};
 use derivative::Derivative;
+use rayon::prelude::*;
+use serde::ser::{Serialize, SerializeMap};
+use serde_json::{json, Value};
+use std::collections::HashMap;
 
 #[derive(Derivative, Debug, Clone, Default)]
 #[derivative(PartialEq)]
 pub struct Statements {
-    statements: HashMap<String,Vec<Statement>>,
-    #[derivative(PartialEq="ignore")]
+    statements: HashMap<String, Vec<Statement>>,
+    #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
 }
 
@@ -25,12 +28,22 @@ impl Statements {
         let mut ret = Self::default();
         let statements = j
             .as_object()
-            .ok_or_else(|| RestApiError::MissingOrInvalidField { field: "Statements".into(), j: j.to_owned() })?;
+            .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                field: "Statements".into(),
+                j: j.to_owned(),
+            })?;
         for (property, statements) in statements {
+            let statements =
+                statements
+                    .as_array()
+                    .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                        field: property.into(),
+                        j: json!(statements),
+                    })?;
             let statements = statements
-                .as_array()
-                .ok_or_else(|| RestApiError::MissingOrInvalidField { field: property.into(), j: json!(statements) })?;
-            let statements = statements.par_iter().map(|s| Statement::from_json(s)).collect::<Result<Vec<Statement>, RestApiError>>()?;
+                .par_iter()
+                .map(|s| Statement::from_json(s))
+                .collect::<Result<Vec<Statement>, RestApiError>>()?;
             ret.statements.insert(property.to_owned(), statements);
         }
         ret.header_info = header_info;
@@ -39,7 +52,7 @@ impl Statements {
 
     /// Returns the number of statements
     pub fn len(&self) -> usize {
-        self.statements.iter().flat_map(|(_,v)| v).count()
+        self.statements.iter().flat_map(|(_, v)| v).count()
     }
 
     /// Returns the Statements for a specific property
@@ -52,17 +65,20 @@ impl Statements {
 
     pub fn insert(&mut self, statement: Statement) {
         let property = statement.property().to_owned();
-        self.statements.entry(property.id().to_owned()).or_insert_with(Vec::new).push(statement);
+        self.statements
+            .entry(property.id().to_owned())
+            .or_insert_with(Vec::new)
+            .push(statement);
     }
-    
-    pub fn statements(&self) -> &HashMap<String,Vec<Statement>> {
+
+    pub fn statements(&self) -> &HashMap<String, Vec<Statement>> {
         &self.statements
     }
-    
-    pub fn statements_mut(&mut self) -> &mut HashMap<String,Vec<Statement>> {
+
+    pub fn statements_mut(&mut self) -> &mut HashMap<String, Vec<Statement>> {
         &mut self.statements
     }
-    
+
     pub fn header_info(&self) -> &HeaderInfo {
         &self.header_info
     }
@@ -71,10 +87,17 @@ impl Statements {
 // GET
 #[async_trait]
 impl HttpGetEntity for Statements {
-    async fn get_match(id: &EntityId, api: &RestApi, rm: RevisionMatch) -> Result<Self, RestApiError> {
+    async fn get_match(
+        id: &EntityId,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError> {
         let path = format!("/entities/{group}/{id}/statements", group = id.group()?);
-        let mut request = api.wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET).await?.build()?;
-        rm.modify_headers(request.headers_mut());
+        let mut request = api
+            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        rm.modify_headers(request.headers_mut())?;
         let response = api.execute(request).await?;
         let header_info = HeaderInfo::from_header(response.headers());
         let j: Value = response.error_for_status()?.json().await?;
@@ -85,15 +108,29 @@ impl HttpGetEntity for Statements {
 // POST
 impl Statements {
     /// Posts a new statement to an entity
-    pub async fn post(&self, id: &EntityId, statement: Statement, api: &mut RestApi) -> Result<Statement, RestApiError> {
-        self.post_meta(id, statement, api, EditMetadata::default()).await
+    pub async fn post(
+        &self,
+        id: &EntityId,
+        statement: Statement,
+        api: &mut RestApi,
+    ) -> Result<Statement, RestApiError> {
+        self.post_meta(id, statement, api, EditMetadata::default())
+            .await
     }
 
     /// Posts a new statement to an entity with metadata
-    pub async fn post_meta(&self, id: &EntityId, mut statement: Statement, api: &mut RestApi, em: EditMetadata) -> Result<Statement, RestApiError> {
+    pub async fn post_meta(
+        &self,
+        id: &EntityId,
+        mut statement: Statement,
+        api: &mut RestApi,
+        em: EditMetadata,
+    ) -> Result<Statement, RestApiError> {
         statement.set_id(None);
         let j = json!({"statement": statement});
-        let request = self.generate_json_request(id, reqwest::Method::POST, j, api, &em).await?;
+        let request = self
+            .generate_json_request(id, reqwest::Method::POST, j, api, &em)
+            .await?;
         let response = api.execute(request).await?;
         let (j, _statement_id) = self.filter_response_error(response).await?;
         // TODO add to self.statements?
@@ -103,7 +140,10 @@ impl Statements {
 
 impl HttpMisc for Statements {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!("/entities/{group}/{id}/statements", group = id.group()?))
+        Ok(format!(
+            "/entities/{group}/{id}/statements",
+            group = id.group()?
+        ))
     }
 }
 
@@ -122,10 +162,10 @@ impl Serialize for Statements {
 
 #[cfg(test)]
 mod tests {
-    use http::{HeaderMap, HeaderValue};
-    use wiremock::{MockServer, Mock, ResponseTemplate};
-    use wiremock::matchers::{bearer_token, body_partial_json, method, path};
     use crate::statement_value::StatementValue;
+    use http::{HeaderMap, HeaderValue};
+    use wiremock::matchers::{bearer_token, body_partial_json, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     use super::*;
 
@@ -139,10 +179,16 @@ mod tests {
         Mock::given(method("GET"))
             .and(path(&mock_path))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["statements"]))
-        .mount(&mock_server).await;
-        let mut api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).build().unwrap();
+            .mount(&mock_server)
+            .await;
+        let mut api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
 
-        let statements = Statements::get(&EntityId::item("Q42"),&mut api).await.unwrap();
+        let statements = Statements::get(&EntityId::item("Q42"), &mut api)
+            .await
+            .unwrap();
         assert!(!statements.property("P31").is_empty());
     }
 
@@ -156,15 +202,27 @@ mod tests {
         let token = "FAKE_TOKEN";
         Mock::given(method("GET"))
             .and(path(&mock_path))
-            .respond_with(ResponseTemplate::new(200).set_body_json(json!({})).insert_header("ETag", "123"))
-            .mount(&mock_server).await;
-        Mock::given(body_partial_json(json!({"statement": {"value":{"content":"Q5"}}})))
-            .and(method("POST"))
-            .and(path(&mock_path))
-            .and(bearer_token(token))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&v))
-            .mount(&mock_server).await;
-        let mut api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).set_access_token(token).build().unwrap();
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(json!({}))
+                    .insert_header("ETag", "123"),
+            )
+            .mount(&mock_server)
+            .await;
+        Mock::given(body_partial_json(
+            json!({"statement": {"value":{"content":"Q5"}}}),
+        ))
+        .and(method("POST"))
+        .and(path(&mock_path))
+        .and(bearer_token(token))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&v))
+        .mount(&mock_server)
+        .await;
+        let mut api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .set_access_token(token)
+            .build()
+            .unwrap();
 
         // Get and check existing statements
         let statements = Statements::get(&id, &api).await.unwrap();
@@ -189,9 +247,18 @@ mod tests {
         let token = "FAKE_TOKEN";
         Mock::given(method("GET"))
             .and(path(&mock_path))
-            .respond_with(ResponseTemplate::new(200).set_body_json(json!({})).insert_header("ETag", "123"))
-            .mount(&mock_server).await;
-        let api = RestApi::builder().api(&(mock_server.uri()+"/w/rest.php")).set_access_token(token).build().unwrap();
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(json!({}))
+                    .insert_header("ETag", "123"),
+            )
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .set_access_token(token)
+            .build()
+            .unwrap();
 
         // Get empty statements but with revision ID
         let statements1 = Statements::get(&id, &api).await.unwrap();
@@ -229,7 +296,10 @@ mod tests {
     fn test_header_info() {
         let mut headers = HeaderMap::new();
         headers.insert("ETag", HeaderValue::from_str("1234567890").unwrap());
-        headers.insert("Last-Modified", HeaderValue::from_str("Wed, 21 Oct 2015 07:28:00 GMT").unwrap());
+        headers.insert(
+            "Last-Modified",
+            HeaderValue::from_str("Wed, 21 Oct 2015 07:28:00 GMT").unwrap(),
+        );
         let hi = HeaderInfo::from_header(&headers);
         let mut statements = Statements::default();
         assert_eq!(statements.header_info(), &HeaderInfo::default());

@@ -54,7 +54,7 @@ pub trait HttpMisc {
         request
             .headers_mut()
             .insert(reqwest::header::CONTENT_TYPE, content_type);
-        em.revision_match().modify_headers(request.headers_mut());
+        em.revision_match().modify_headers(request.headers_mut())?;
         *request.body_mut() = Some(format!("{j}").into());
         Ok(request)
     }

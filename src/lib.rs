@@ -14,7 +14,7 @@
     clippy::missing_const_for_fn,
     missing_copy_implementations,
     missing_debug_implementations,
-    clippy::missing_errors_doc,
+    // clippy::missing_errors_doc,
     clippy::missing_panics_doc,
     clippy::mod_module_files,
     non_ascii_idents,
