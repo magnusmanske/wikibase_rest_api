@@ -62,9 +62,9 @@ impl From<LanguageString> for Description {
     }
 }
 
-impl Into<LanguageString> for Description {
-    fn into(self) -> LanguageString {
-        self.ls
+impl From<Description> for LanguageString {
+    fn from(val: Description) -> Self {
+        val.ls
     }
 }
 
@@ -115,7 +115,7 @@ impl HttpDelete for Description {
         em: EditMetadata,
     ) -> Result<(), RestApiError> {
         let j = json!({});
-        self.run_json_query(&id, reqwest::Method::DELETE, j, api, &em)
+        self.run_json_query(id, reqwest::Method::DELETE, j, api, &em)
             .await?;
         Ok(())
     }
@@ -131,7 +131,7 @@ impl HttpPut for Description {
     ) -> Result<Self, RestApiError> {
         let j = json!({"description": self.ls.value()});
         let (j, header_info) = self
-            .run_json_query(&id, reqwest::Method::PUT, j, api, &em)
+            .run_json_query(id, reqwest::Method::PUT, j, api, &em)
             .await?;
         let value = j
             .as_str()

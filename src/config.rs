@@ -6,7 +6,7 @@ pub struct Config {
 
 impl Config {
     /// Constructs a new `Config` object from item and property letters.
-    pub fn new(item_letter: char, property_letter: char) -> Config {
+    pub const fn new(item_letter: char, property_letter: char) -> Config {
         Config {
             item_letter,
             property_letter,
@@ -14,12 +14,12 @@ impl Config {
     }
 
     /// Returns the letter used for items.
-    pub fn item_letter(&self) -> char {
+    pub const fn item_letter(&self) -> char {
         self.item_letter
     }
 
     /// Returns the letter used for properties.
-    pub fn property_letter(&self) -> char {
+    pub const fn property_letter(&self) -> char {
         self.property_letter
     }
 }

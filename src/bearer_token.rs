@@ -19,8 +19,8 @@ pub struct BearerToken {
 }
 
 impl BearerToken {
-    /// Returns the OAuth2 bearer token
-    pub fn get(&self) -> &Option<String> {
+    /// Returns the `OAuth2` bearer token
+    pub const fn get(&self) -> &Option<String> {
         &self.access_token
     }
 
@@ -66,7 +66,7 @@ impl BearerToken {
         code: &str,
     ) -> Result<Request, RestApiError> {
         let params = self.generate_get_access_token_parameters(api, code)?;
-        let headers = api.headers_from_token(&self).await?;
+        let headers = api.headers_from_token(self).await?;
         let url = format!("{api_url}/oauth2/access_token", api_url = api.api_url());
         let mut request = api
             .client()
@@ -93,7 +93,7 @@ impl BearerToken {
         self.set_tokens_from_json(j)
     }
 
-    /// Sets the OAuth2 bearer token and refresh token from a JSON response
+    /// Sets the `OAuth2` bearer token and refresh token from a JSON response
     fn set_tokens_from_json(&mut self, j: Value) -> Result<(), RestApiError> {
         let access_token = j["access_token"]
             .as_str()
@@ -115,11 +115,11 @@ impl BearerToken {
         self.last_update = Some(std::time::Instant::now());
     }
 
-    pub fn refresh_token(&self) -> &Option<String> {
+    pub const fn refresh_token(&self) -> &Option<String> {
         &self.refresh_token
     }
 
-    /// Sets the renewal interval for the OAuth2 bearer token
+    /// Sets the renewal interval for the `OAuth2` bearer token
     pub fn set_renewal_interval(&mut self, renewal_interval: u64) {
         let renewal_interval = match renewal_interval {
             0 => DEFAULT_RENEWAL_INTERVAL_SEC,
@@ -128,7 +128,7 @@ impl BearerToken {
         self.renewal_interval = std::time::Duration::from_secs(renewal_interval);
     }
 
-    /// Sets the OAuth2 bearer token and refresh token
+    /// Sets the `OAuth2` bearer token and refresh token
     pub fn set_tokens(&mut self, access_token: Option<String>, refresh_token: Option<String>) {
         self.access_token = access_token;
         self.refresh_token = refresh_token;
@@ -146,7 +146,7 @@ impl BearerToken {
         Ok(())
     }
 
-    /// Sets the OAuth2 bearer token (owner-only clients are supported)
+    /// Sets the `OAuth2` bearer token (owner-only clients are supported)
     pub fn set_access_token<S: Into<String>>(&mut self, access_token: S) {
         self.access_token = Some(access_token.into());
     }
@@ -161,13 +161,13 @@ impl BearerToken {
         self.client_secret = Some(client_secret.into());
     }
 
-    /// Returns `true` if an OAuth2 bearer token is present
-    pub fn has_access_token(&self) -> bool {
+    /// Returns `true` if an `OAuth2` bearer token is present
+    pub const fn has_access_token(&self) -> bool {
         self.access_token.is_some()
     }
 
     /// Returns `true` if the client ID and client secret are present
-    fn can_update_access_token(&self) -> bool {
+    const fn can_update_access_token(&self) -> bool {
         self.client_id.is_some() && self.client_secret.is_some()
     }
 
@@ -179,7 +179,7 @@ impl BearerToken {
                 return false;
             }
         }
-        return true;
+        true
     }
 
     fn get_renew_access_token_parameters(
@@ -209,7 +209,7 @@ impl BearerToken {
 
     async fn get_renew_access_token_request(&self, api: &RestApi) -> Result<Request, RestApiError> {
         let params = self.get_renew_access_token_parameters(api)?;
-        let headers = api.headers_from_token(&self).await?;
+        let headers = api.headers_from_token(self).await?;
         let url = format!("{}{}", api.api_url(), "/oauth2/access_token");
         let mut request = api
             .client()
@@ -225,7 +225,7 @@ impl BearerToken {
         Ok(request)
     }
 
-    /// Refresh the OAuth2 bearer token for Non-owner-only clients
+    /// Refresh the `OAuth2` bearer token for Non-owner-only clients
     pub async fn renew_access_token(&mut self, api: &RestApi) -> Result<(), RestApiError> {
         if !self.does_access_token_need_updating() {
             return Ok(());
@@ -247,27 +247,27 @@ mod tests {
     #[test]
     fn test_has_access_token() {
         let mut token = BearerToken::default();
-        assert_eq!(token.has_access_token(), false);
+        assert!(!token.has_access_token());
         token.set_access_token("test");
-        assert_eq!(token.has_access_token(), true);
+        assert!(token.has_access_token());
     }
 
     #[test]
     fn test_can_update_access_token() {
         let mut token = BearerToken::default();
-        assert_eq!(token.can_update_access_token(), false);
+        assert!(!token.can_update_access_token());
         token.set_oauth2_info("client_id", "client_secret");
-        assert_eq!(token.can_update_access_token(), true);
+        assert!(token.can_update_access_token());
     }
 
     #[test]
     fn test_does_access_token_need_updating() {
         let mut token = BearerToken::default();
-        assert_eq!(token.does_access_token_need_updating(), true);
+        assert!(token.does_access_token_need_updating());
         token.touch_access_token();
-        assert_eq!(token.does_access_token_need_updating(), true);
+        assert!(token.does_access_token_need_updating());
         token.set_renewal_interval(0);
-        assert_eq!(token.does_access_token_need_updating(), false);
+        assert!(!token.does_access_token_need_updating());
     }
 
     #[test]
@@ -445,7 +445,7 @@ mod tests {
             .build()
             .unwrap();
         let mut bt = BearerToken::default();
-        bt.last_update = Some(std::time::Instant::now());
+        bt.touch_access_token();
         bt.renewal_interval = std::time::Duration::from_secs(3600);
         // This will fail if not for "no update needed", since client ID and secret are not set
         assert!(bt.renew_access_token(&api).await.is_ok());

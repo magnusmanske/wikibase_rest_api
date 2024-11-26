@@ -22,23 +22,19 @@ impl EntityContainer {
     /// Loads the entities with the given `EntityId`s into the container.
     pub async fn load(&self, entity_ids: &[EntityId]) -> Result<(), RestApiError> {
         let mut items = self.items.write().await;
-        let item_ids = self.get_items_to_load(&items, entity_ids);
+        let item_ids = Self::get_items_to_load(&items, entity_ids);
         self.load_items(&mut items, &item_ids).await?;
         drop(items);
 
         let mut properties = self.properties.write().await;
-        let property_ids = self.get_properties_to_load(&properties, entity_ids);
+        let property_ids = Self::get_properties_to_load(&properties, entity_ids);
         self.load_properties(&mut properties, &property_ids).await?;
         drop(properties);
 
         Ok(())
     }
 
-    fn get_items_to_load(
-        &self,
-        items: &HashMap<String, Item>,
-        entity_ids: &[EntityId],
-    ) -> Vec<String> {
+    fn get_items_to_load(items: &HashMap<String, Item>, entity_ids: &[EntityId]) -> Vec<String> {
         entity_ids
             .iter()
             .filter_map(|id| match id {
@@ -66,17 +62,14 @@ impl EntityContainer {
         let results = results
             .into_iter()
             .collect::<Vec<Result<Item, RestApiError>>>();
-        for item in results {
-            if let Ok(item) = item {
-                let id = item.id().id()?.to_owned();
-                items.insert(id, item);
-            }
+        for item in results.into_iter().flatten() {
+            let id = item.id().id()?.to_owned();
+            items.insert(id, item);
         }
         Ok(())
     }
 
     fn get_properties_to_load(
-        &self,
         properties: &HashMap<String, Property>,
         entity_ids: &[EntityId],
     ) -> Vec<String> {
@@ -107,11 +100,9 @@ impl EntityContainer {
         let results = results
             .into_iter()
             .collect::<Vec<Result<Property, RestApiError>>>();
-        for property in results {
-            if let Ok(property) = property {
-                let id = property.id().id()?.to_owned();
-                properties.insert(id, property);
-            }
+        for property in results.into_iter().flatten() {
+            let id = property.id().id()?.to_owned();
+            properties.insert(id, property);
         }
         Ok(())
     }
@@ -141,7 +132,7 @@ impl EntityContainerBuilder {
     }
 
     /// Sets the maximum number of concurrent loads to perform. Default is 10.
-    pub fn max_concurrent(mut self, max_concurrent_load: usize) -> Self {
+    pub const fn max_concurrent(mut self, max_concurrent_load: usize) -> Self {
         self.max_concurrent_load = max_concurrent_load;
         self
     }
@@ -233,6 +224,16 @@ mod tests {
             .build()
             .unwrap();
         assert_eq!(ec.max_concurrent_load, 5);
+    }
+
+    #[test]
+    fn test_max_concurrent_default() {
+        let api = Arc::new(
+            RestApi::builder()
+                .api("https://test.wikidata.org/w/rest.php")
+                .build()
+                .unwrap(),
+        );
         let ec = EntityContainer::builder()
             .api(api.clone())
             .max_concurrent(0)
