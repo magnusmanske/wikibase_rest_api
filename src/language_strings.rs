@@ -60,19 +60,24 @@ impl LanguageStringsSingle {
     pub fn patch_labels(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
         let patch = json_patch::diff(&json!(&other), &json!(&self));
         let patch = LanguageStringsPatch::labels_from_json(&json!(patch))?;
-        return Ok(patch);
+        Ok(patch)
     }
 
     /// Generates a patch to transform `other` into `self`
     pub fn patch_descriptions(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
         let patch = json_patch::diff(&json!(&other), &json!(&self));
         let patch = LanguageStringsPatch::descriptions_from_json(&json!(patch))?;
-        return Ok(patch);
+        Ok(patch)
     }
 
     /// Returns the number of labels/languages
     pub fn len(&self) -> usize {
         self.ls.len()
+    }
+
+    /// Returns true if there are no labels/languages
+    pub fn is_empty(&self) -> bool {
+        self.ls.is_empty()
     }
 }
 
@@ -82,8 +87,7 @@ impl FromJson for LanguageStringsSingle {
     }
 
     fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
-        let mut ret = LanguageStringsSingle::default();
-        ret.ls = j
+        let ls = j
             .as_object()
             .ok_or_else(|| RestApiError::WrongType {
                 field: "LanguageStringSingle".to_string(),
@@ -100,7 +104,7 @@ impl FromJson for LanguageStringsSingle {
                 Ok((language.to_owned(), value.to_string()))
             })
             .collect::<Result<HashMap<String, String>, RestApiError>>()?;
-        ret.header_info = header_info;
+        let ret = Self { ls, header_info };
         Ok(ret)
     }
 }
@@ -142,22 +146,21 @@ pub struct LanguageStringsMultiple {
 impl LanguageStringsMultiple {
     /// Returns the list of values for a language
     pub fn get_lang<S: Into<String>>(&self, language: S) -> Vec<&str> {
-        match self.ls.get(&language.into()) {
-            Some(v) => v.iter().map(|s| s.as_str()).collect(),
-            None => vec![],
-        }
+        self.ls
+            .get(&language.into())
+            .map_or_else(Vec::new, |v| v.iter().map(|s| s.as_str()).collect())
     }
 
     /// Returns the list of values for a language, mutable
     pub fn get_lang_mut<S: Into<String>>(&mut self, language: S) -> &mut Vec<String> {
-        self.ls.entry(language.into()).or_insert(vec![])
+        self.ls.entry(language.into()).or_default()
     }
 
     /// Generates a patch to transform `other` into `self`
     pub fn patch(&self, other: &Self) -> Result<AliasesPatch, RestApiError> {
         let patch = json_patch::diff(&json!(&other), &json!(&self));
         let patch = AliasesPatch::from_json(&json!(patch))?;
-        return Ok(patch);
+        Ok(patch)
     }
 
     /// Returns the number of languages
@@ -165,11 +168,16 @@ impl LanguageStringsMultiple {
         self.ls.len()
     }
 
+    /// Returns true if there are no language strings
+    pub fn is_empty(&self) -> bool {
+        self.ls.is_empty()
+    }
+
     fn from_json_header_info_part(
         language: &str,
-        v: &Vec<Value>,
+        values: &[Value],
     ) -> Result<(String, Vec<String>), RestApiError> {
-        let values = v
+        let values = values
             .iter()
             .map(|v| {
                 Ok(v.as_str()
@@ -190,23 +198,26 @@ impl FromJson for LanguageStringsMultiple {
     }
 
     fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
-        let mut ret = LanguageStringsMultiple::default();
-        ret.ls = j
+        let ls = j
             .as_object()
             .ok_or_else(|| RestApiError::MissingOrInvalidField {
                 field: "LanguageStringsMultiple".into(),
                 j: j.to_owned(),
             })?
             .iter()
-            .map(|(language, value)| match value.as_array() {
-                Some(v) => Self::from_json_header_info_part(language, v),
-                None => Err(RestApiError::MissingOrInvalidField {
-                    field: "LanguageStringsMultiple".into(),
-                    j: value.to_owned(),
-                }),
+            .map(|(language, value)| {
+                value.as_array().map_or_else(
+                    || {
+                        Err(RestApiError::MissingOrInvalidField {
+                            field: "LanguageStringsMultiple".into(),
+                            j: value.to_owned(),
+                        })
+                    },
+                    |v| Self::from_json_header_info_part(language, v),
+                )
             })
             .collect::<Result<HashMap<String, Vec<String>>, RestApiError>>()?;
-        ret.header_info = header_info;
+        let ret = Self { ls, header_info };
         Ok(ret)
     }
 }
@@ -217,7 +228,7 @@ impl LanguageStrings for LanguageStringsMultiple {
     }
 
     fn insert(&mut self, ls: LanguageString) {
-        let entry = self.ls.entry(ls.language().to_string()).or_insert(vec![]);
+        let entry = self.ls.entry(ls.language().to_string()).or_default();
         if !entry.contains(ls.value()) {
             entry.push(ls.value().to_owned());
         }
@@ -231,7 +242,6 @@ impl Serialize for LanguageStringsMultiple {
     {
         let mut s = serializer.serialize_map(Some(self.ls.len()))?;
         for (language, values) in &self.ls {
-            let values = values.iter().map(|s| s).collect::<Vec<&String>>();
             s.serialize_entry(language, &values)?;
         }
         s.end()
@@ -294,10 +304,10 @@ mod tests {
         let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/Q42/labels");
+        let mock_path = "/w/rest.php/wikibase/v0/entities/items/Q42/labels";
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
-            .and(path(&mock_path))
+            .and(path(mock_path))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["labels"]))
             .mount(&mock_server)
             .await;
@@ -374,10 +384,13 @@ mod tests {
     }
 
     #[test]
-    fn test_header_info() {
+    fn test_header_info_single() {
         let l = LanguageStringsSingle::default();
         assert_eq!(l.header_info(), &HeaderInfo::default());
+    }
 
+    #[test]
+    fn test_header_info_multiple() {
         let l = LanguageStringsMultiple::default();
         assert_eq!(l.header_info(), &HeaderInfo::default());
     }
@@ -390,7 +403,10 @@ mod tests {
         let s = serde_json::to_string(&l).unwrap();
         assert!(s.contains(r#""en":"Foo""#));
         assert!(s.contains(r#""de":"Bar""#));
+    }
 
+    #[test]
+    fn test_serialize2() {
         let mut l = LanguageStringsMultiple::default();
         l.insert(LanguageString::new("en", "Foo"));
         l.insert(LanguageString::new("en", "Bar"));

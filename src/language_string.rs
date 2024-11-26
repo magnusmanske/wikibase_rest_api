@@ -16,16 +16,15 @@ impl LanguageString {
     }
 
     /// Returns the language code of the language string.
-    pub fn language(&self) -> &String {
+    pub const fn language(&self) -> &String {
         &self.language
     }
 
     /// Returns the value (test) of the language string.
-    pub fn value(&self) -> &String {
+    pub const fn value(&self) -> &String {
         &self.value
     }
 }
-
 
 #[cfg(test)]
 mod tests {

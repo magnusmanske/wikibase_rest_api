@@ -169,11 +169,19 @@ mod tests {
     }
 
     #[test]
-    fn test_entity_id_id() {
+    fn test_entity_id_item_id() {
         let id = EntityId::item("Q123");
         assert_eq!(id.id().unwrap(), "Q123");
+    }
+
+    #[test]
+    fn test_entity_id_property_id() {
         let id = EntityId::property("P123");
         assert_eq!(id.id().unwrap(), "P123");
+    }
+
+    #[test]
+    fn test_entity_id_none_id() {
         let id = EntityId::none();
         assert!(id.id().is_err());
     }
