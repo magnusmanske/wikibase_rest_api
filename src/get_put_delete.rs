@@ -41,7 +41,7 @@ pub trait HttpMisc {
         em: &EditMetadata,
     ) -> Result<reqwest::Request, RestApiError> {
         Self::add_metadata_to_json(&mut j, em);
-        let path = self.get_rest_api_path(&id)?;
+        let path = self.get_rest_api_path(id)?;
         let content_type = match method {
             reqwest::Method::PATCH => "application/json-patch+json",
             _ => "application/json",
@@ -64,7 +64,7 @@ pub trait HttpMisc {
         response: reqwest::Response,
     ) -> Result<(Value, HeaderInfo), RestApiError> {
         if !response.status().is_success() {
-            return Err(RestApiError::from_response(response).await.into());
+            return Err(RestApiError::from_response(response).await);
         }
         let header_info = HeaderInfo::from_header(response.headers());
         let j: Value = response.error_for_status()?.json().await?;
@@ -147,7 +147,11 @@ mod tests {
         let response = reqwest::Response::from(http::Response::new("body text"));
         let result = sl.filter_response_error(response).await;
         assert!(result.is_err());
+    }
 
+    #[tokio::test]
+    async fn test_filter_response_error2() {
+        let sl = Sitelinks::default();
         let response = reqwest::Response::from(
             http::Response::builder()
                 .status(400)

@@ -30,12 +30,12 @@ impl FromJson for Sitelinks {
         &self.header_info
     }
 
-    fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
-        let sitelinks = j
+    fn from_json_header_info(json: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
+        let sitelinks = json
             .as_object()
             .ok_or(RestApiError::MissingOrInvalidField {
                 field: "Sitelinks".to_string(),
-                j: j.clone(),
+                j: json.clone(),
             })?
             .iter()
             .map(|(wiki, j)| Sitelink::from_json(wiki, j))
@@ -71,7 +71,7 @@ impl Sitelinks {
     /// Returns the sitelink for a given wiki
     pub fn get_wiki<S: Into<String>>(&self, wiki: S) -> Option<&Sitelink> {
         let wiki = wiki.into();
-        self.sitelinks.iter().filter(|s| s.wiki() == wiki).next()
+        self.sitelinks.iter().find(|s| s.wiki() == wiki)
     }
 
     /// Sets the sitelink for a given wiki
@@ -94,7 +94,7 @@ impl Sitelinks {
     pub fn patch(&self, other: &Self) -> Result<SitelinksPatch, RestApiError> {
         let patch = json_patch::diff(&json!(&other), &json!(&self));
         let patch = SitelinksPatch::from_json(&json!(patch))?;
-        return Ok(patch);
+        Ok(patch)
     }
 }
 

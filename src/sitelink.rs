@@ -95,7 +95,7 @@ impl Sitelink {
     }
 
     /// Returns the badges of the sitelink
-    pub fn badges(&self) -> &Vec<String> {
+    pub const fn badges(&self) -> &Vec<String> {
         &self.badges
     }
 
@@ -119,7 +119,7 @@ impl Serialize for Sitelink {
         s.serialize_field("title", &self.title)?;
         s.serialize_field("badges", &self.badges)?;
         if let Some(url) = &self.url {
-            s.serialize_field("url", url)?
+            s.serialize_field("url", url)?;
         }
         s.end()
     }
@@ -166,7 +166,7 @@ impl HttpDelete for Sitelink {
     ) -> Result<(), RestApiError> {
         let j = json!({});
         let (j, _revision_id) = self
-            .run_json_query(&id, reqwest::Method::DELETE, j, api, &em)
+            .run_json_query(id, reqwest::Method::DELETE, j, api, &em)
             .await?;
         match j.as_str() {
             Some("Sitelink deleted") => Ok(()),
@@ -190,7 +190,7 @@ impl HttpPut for Sitelink {
             }
         });
         let (j, header_info) = self
-            .run_json_query(&id, reqwest::Method::PUT, j, api, &em)
+            .run_json_query(id, reqwest::Method::PUT, j, api, &em)
             .await?;
         let ret = Self::from_json_header_info(&self.wiki, &j, header_info)?;
         Ok(ret)

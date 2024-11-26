@@ -36,7 +36,7 @@ impl Serialize for Statement {
         }
         let mut s = serializer.serialize_struct("Statement", fields)?;
         if let Some(id) = &self.id {
-            s.serialize_field("id", &id)?
+            s.serialize_field("id", &id)?;
         }
         s.serialize_field("property", &self.property)?;
         s.serialize_field("value", &self.value)?;
@@ -141,9 +141,9 @@ impl Statement {
         api: &mut RestApi,
         em: EditMetadata,
     ) -> Result<Self, RestApiError> {
-        let j = json!({"statement": self});
+        let j0 = json!({"statement": self});
         let request = self
-            .generate_json_request(&EntityId::None, reqwest::Method::PUT, j, api, &em)
+            .generate_json_request(&EntityId::None, reqwest::Method::PUT, j0, api, &em)
             .await?;
         let response = api.execute(request).await?;
         let header_info = HeaderInfo::from_header(response.headers());
@@ -157,20 +157,20 @@ impl Statement {
         api: &mut RestApi,
         em: EditMetadata,
     ) -> Result<(), RestApiError> {
-        let j = json!({});
+        let j0 = json!({});
         let request = self
-            .generate_json_request(&EntityId::None, reqwest::Method::DELETE, j, api, &em)
+            .generate_json_request(&EntityId::None, reqwest::Method::DELETE, j0, api, &em)
             .await?;
-        let j: Value = api
+        let message: Value = api
             .execute(request)
             .await?
             .error_for_status()?
             .json()
             .await?;
-        if j == "Statement deleted" {
+        if message == "Statement deleted" {
             return Ok(());
         }
-        Err(RestApiError::UnexpectedResponse(j))
+        Err(RestApiError::UnexpectedResponse(message))
     }
 
     /// Sets the statement property
@@ -253,7 +253,7 @@ impl Statement {
         };
         let patch = json_patch::diff(&json!(&other), &json!(&self));
         let patch = StatementPatch::from_json(statement_id, &json!(patch))?;
-        return Ok(patch);
+        Ok(patch)
     }
 
     fn references_from_json(j: &Value) -> Result<Vec<Reference>, RestApiError> {
@@ -283,7 +283,7 @@ impl Statement {
     }
 
     /// Returns the statement ID
-    pub fn id(&self) -> Option<&String> {
+    pub const fn id(&self) -> Option<&String> {
         self.id.as_ref()
     }
 
@@ -293,17 +293,17 @@ impl Statement {
     }
 
     /// Returns the statement property
-    pub fn property(&self) -> &PropertyType {
+    pub const fn property(&self) -> &PropertyType {
         &self.property
     }
 
     /// Returns the statement value
-    pub fn value(&self) -> &StatementValue {
+    pub const fn value(&self) -> &StatementValue {
         &self.value
     }
 
     /// Returns the statement rank
-    pub fn rank(&self) -> &StatementRank {
+    pub const fn rank(&self) -> &StatementRank {
         &self.rank
     }
 
@@ -427,14 +427,14 @@ mod tests {
             .unwrap();
 
         // Delete
-        let mut statement = Statement::new_string("P31", "Q42");
-        statement.set_id(Some(statement_id.to_string()));
-        assert!(!statement.delete(&mut api).await.is_err());
+        let mut statement0 = Statement::new_string("P31", "Q42");
+        statement0.set_id(Some(statement_id.to_string()));
+        assert!(statement0.delete(&mut api).await.is_ok());
 
         // Delete (error)
-        let mut statement = Statement::new_string("P31", "Q42");
-        statement.set_id(Some(statement_id2.to_string()));
-        let result = statement.delete(&mut api).await.unwrap_err().to_string();
+        let mut statement1 = Statement::new_string("P31", "Q42");
+        statement1.set_id(Some(statement_id2.to_string()));
+        let result = statement1.delete(&mut api).await.unwrap_err().to_string();
         assert_eq!(
             result,
             r#"Unexpected response: {"code":"invalid-statement-id","message":"Not a valid statement ID: no_such_statement"}"#

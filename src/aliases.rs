@@ -73,13 +73,18 @@ impl Aliases {
     }
 
     /// Returns the list of aliases.
-    pub fn values(&self) -> &Vec<String> {
+    pub const fn values(&self) -> &Vec<String> {
         &self.values
     }
 
     /// Returns the number of aliases.
     pub fn len(&self) -> usize {
         self.values.len()
+    }
+
+    /// Returns true if the list of aliases is empty.
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
     }
 
     /// Returns the language code of the aliases.
@@ -101,13 +106,13 @@ impl Aliases {
     ) -> Result<Self, RestApiError> {
         let j = json!({"aliases": self.values});
         let (j, header_info) = self
-            .run_json_query(&id, reqwest::Method::POST, j, api, &em)
+            .run_json_query(id, reqwest::Method::POST, j, api, &em)
             .await?;
         Self::from_json_header_info(&self.language, &j, header_info)
     }
 
     /// Returns the header information of the last HTTP response (revision ID, last modified).
-    pub fn header_info(&self) -> &HeaderInfo {
+    pub const fn header_info(&self) -> &HeaderInfo {
         &self.header_info
     }
 
@@ -172,9 +177,9 @@ mod tests {
     async fn test_aliases_get() {
         let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
-        let id = v["id"].as_str().unwrap();
+        let id_q42 = v["id"].as_str().unwrap();
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/aliases/en");
+        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id_q42}/aliases/en");
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(&mock_path))
@@ -222,16 +227,16 @@ mod tests {
             .build()
             .unwrap();
 
-        let id = EntityId::item("Q42");
-        let aliases = Aliases::get(&id, "en", &api).await.unwrap();
-        let new_aliases = Aliases::new("en", vec![new_alias.to_string()]);
-        let new_aliases = new_aliases.post(&id, &mut api).await.unwrap();
-        assert_eq!(new_aliases.len(), aliases.len() + 1);
-        assert!(new_aliases.values.contains(&new_alias.to_string()));
+        let id2 = EntityId::item("Q42");
+        let aliases = Aliases::get(&id2, "en", &api).await.unwrap();
+        let new_aliases2 = Aliases::new("en", vec![new_alias.to_string()]);
+        let new_aliases2 = new_aliases2.post(&id2, &mut api).await.unwrap();
+        assert_eq!(new_aliases2.len(), aliases.len() + 1);
+        assert!(new_aliases2.values.contains(&new_alias.to_string()));
 
         // Check non-existing item
-        let id = EntityId::item("Q12345");
-        assert_eq!(Aliases::get(&id, "en", &api).await.unwrap().len(), 0);
+        let id3 = EntityId::item("Q12345");
+        assert_eq!(Aliases::get(&id3, "en", &api).await.unwrap().len(), 0);
     }
 
     #[test]
@@ -285,7 +290,7 @@ mod tests {
         let aliases = Aliases::from_json("", &j).unwrap_err();
         assert_eq!(aliases.to_string(), "Empty value: Language");
 
-        let aliases = Aliases::from_json("en", &j).unwrap_err();
-        assert_eq!(aliases.to_string(), "Missing field Aliases: 12345");
+        let aliases2 = Aliases::from_json("en", &j).unwrap_err();
+        assert_eq!(aliases2.to_string(), "Missing field Aliases: 12345");
     }
 }
