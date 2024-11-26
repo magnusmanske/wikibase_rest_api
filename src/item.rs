@@ -204,7 +204,7 @@ mod tests {
         assert!(item.descriptions.has_language("en"));
         assert!(item.aliases.has_language("en"));
         assert!(item.sitelinks.get_wiki("enwiki").is_some());
-        assert!(item.statements.len() > 0);
+        assert!(!item.statements.is_empty());
     }
 
     #[tokio::test]

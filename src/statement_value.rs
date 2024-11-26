@@ -28,7 +28,7 @@ pub enum StatementValueContent {
 }
 
 impl StatementValueContent {
-    /// Creates a new StatementValueContent object from a JSON object.
+    /// Creates a new `StatementValueContent` object from a JSON object.
     pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
         // #lizard forgives the complexity
         if let Some(s) = j.as_str() {
@@ -184,7 +184,7 @@ pub enum StatementValue {
 }
 
 impl StatementValue {
-    /// Creates a new StatementValue object from a JSON object.
+    /// Creates a new `StatementValue` object from a JSON object.
     pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
         let value_type = j["type"]
             .as_str()
@@ -202,7 +202,7 @@ impl StatementValue {
         }
     }
 
-    /// Creates a new StatementValue object from a string, as a String value.
+    /// Creates a new `StatementValue` object from a string, as a String value.
     pub fn new_string<S: Into<String>>(text: S) -> Self {
         StatementValue::Value(StatementValueContent::String(text.into()))
     }
@@ -238,7 +238,7 @@ impl Serialize for StatementValue {
     }
 }
 
-/// Implement the From trait for StatementValueContent to StatementValue, for convenience assignments.
+/// Implement the From trait for `StatementValueContent` to `StatementValue`, for convenience assignments.
 impl From<StatementValueContent> for StatementValue {
     fn from(content: StatementValueContent) -> Self {
         StatementValue::Value(content)
@@ -533,12 +533,15 @@ mod tests {
     }
 
     #[test]
-    fn test_statement_value_contents_serialize() {
+    fn test_statement_value_contents_serialize_string() {
         // #lizard forgives the complexity
         let svc = StatementValueContent::String("foo".to_string());
         let j: Value = serde_json::to_value(&svc).unwrap();
         assert_eq!(j, json!("foo"));
+    }
 
+    #[test]
+    fn test_statement_value_contents_serialize_time() {
         let svc = StatementValueContent::Time {
             time: "+2021-01-01T00:00:00Z".to_string(),
             precision: 11,
@@ -549,7 +552,10 @@ mod tests {
             j,
             json!({"time": "+2021-01-01T00:00:00Z", "precision": 11, "calendarmodel": "http://www.wikidata.org/entity/Q1985727"})
         );
+    }
 
+    #[test]
+    fn test_statement_value_contents_serialize_location() {
         let svc = StatementValueContent::Location {
             latitude: 37.786971,
             longitude: -122.399677,
@@ -561,7 +567,10 @@ mod tests {
             j,
             json!({"latitude": 37.786971, "longitude": -122.399677, "precision": 0.0001, "globe": "http://www.wikidata.org/entity/Q2"})
         );
+    }
 
+    #[test]
+    fn test_statement_value_contents_serialize_quantity() {
         let svc = StatementValueContent::Quantity {
             amount: "42".to_string(),
             unit: "http://www.wikidata.org/entity/Q11573".to_string(),
@@ -571,7 +580,10 @@ mod tests {
             j,
             json!({"amount": "42", "unit": "http://www.wikidata.org/entity/Q11573"})
         );
+    }
 
+    #[test]
+    fn test_statement_value_contents_serialize_monolingual_text() {
         let svc = StatementValueContent::MonolingualText {
             language: "en".to_string(),
             text: "foo".to_string(),

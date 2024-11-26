@@ -26,13 +26,13 @@ impl Statements {
     /// Creates a new `Statements` object from a JSON structure with header info
     pub fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
         let mut ret = Self::default();
-        let statements = j
+        let statements_j = j
             .as_object()
             .ok_or_else(|| RestApiError::MissingOrInvalidField {
                 field: "Statements".into(),
                 j: j.to_owned(),
             })?;
-        for (property, statements) in statements {
+        for (property, statements) in statements_j {
             let statements =
                 statements
                     .as_array()
@@ -42,7 +42,7 @@ impl Statements {
                     })?;
             let statements = statements
                 .par_iter()
-                .map(|s| Statement::from_json(s))
+                .map(Statement::from_json)
                 .collect::<Result<Vec<Statement>, RestApiError>>()?;
             ret.statements.insert(property.to_owned(), statements);
         }
@@ -55,23 +55,27 @@ impl Statements {
         self.statements.iter().flat_map(|(_, v)| v).count()
     }
 
+    /// Returns true if there are no statements
+    pub fn is_empty(&self) -> bool {
+        self.statements.is_empty()
+    }
+
     /// Returns the Statements for a specific property
     pub fn property<S: Into<String>>(&self, property: S) -> Vec<&Statement> {
-        match self.statements.get(&property.into()) {
-            Some(v) => v.iter().collect(),
-            None => vec![],
-        }
+        self.statements
+            .get(&property.into())
+            .map_or_else(Vec::new, |v| v.iter().collect())
     }
 
     pub fn insert(&mut self, statement: Statement) {
         let property = statement.property().to_owned();
         self.statements
             .entry(property.id().to_owned())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(statement);
     }
 
-    pub fn statements(&self) -> &HashMap<String, Vec<Statement>> {
+    pub const fn statements(&self) -> &HashMap<String, Vec<Statement>> {
         &self.statements
     }
 
@@ -79,7 +83,7 @@ impl Statements {
         &mut self.statements
     }
 
-    pub fn header_info(&self) -> &HeaderInfo {
+    pub const fn header_info(&self) -> &HeaderInfo {
         &self.header_info
     }
 }
@@ -127,9 +131,9 @@ impl Statements {
         em: EditMetadata,
     ) -> Result<Statement, RestApiError> {
         statement.set_id(None);
-        let j = json!({"statement": statement});
+        let j0 = json!({"statement": statement});
         let request = self
-            .generate_json_request(id, reqwest::Method::POST, j, api, &em)
+            .generate_json_request(id, reqwest::Method::POST, j0, api, &em)
             .await?;
         let response = api.execute(request).await?;
         let (j, _statement_id) = self.filter_response_error(response).await?;
@@ -174,21 +178,19 @@ mod tests {
         let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/Q42/statements");
+        let mock_path = "/w/rest.php/wikibase/v0/entities/items/Q42/statements";
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
-            .and(path(&mock_path))
+            .and(path(mock_path))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["statements"]))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder()
+        let api = RestApi::builder()
             .api(&(mock_server.uri() + "/w/rest.php"))
             .build()
             .unwrap();
 
-        let statements = Statements::get(&EntityId::item("Q42"), &mut api)
-            .await
-            .unwrap();
+        let statements = Statements::get(&EntityId::item("Q42"), &api).await.unwrap();
         assert!(!statements.property("P31").is_empty());
     }
 
@@ -197,11 +199,11 @@ mod tests {
         let id = EntityId::item("Q42");
         let v = std::fs::read_to_string("test_data/test_statements_post.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/Q42/statements");
+        let mock_path = "/w/rest.php/wikibase/v0/entities/items/Q42/statements";
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(method("GET"))
-            .and(path(&mock_path))
+            .and(path(mock_path))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(json!({}))
@@ -213,7 +215,7 @@ mod tests {
             json!({"statement": {"value":{"content":"Q5"}}}),
         ))
         .and(method("POST"))
-        .and(path(&mock_path))
+        .and(path(mock_path))
         .and(bearer_token(token))
         .respond_with(ResponseTemplate::new(200).set_body_json(&v))
         .mount(&mock_server)
@@ -242,11 +244,11 @@ mod tests {
     async fn test_eq() {
         // To ensure that statement lists with and without header info are equal
         let id = EntityId::item("Q42");
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/Q42/statements");
+        let mock_path = "/w/rest.php/wikibase/v0/entities/items/Q42/statements";
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(method("GET"))
-            .and(path(&mock_path))
+            .and(path(mock_path))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(json!({}))
@@ -303,7 +305,7 @@ mod tests {
         let hi = HeaderInfo::from_header(&headers);
         let mut statements = Statements::default();
         assert_eq!(statements.header_info(), &HeaderInfo::default());
-        statements.header_info = hi.clone();
+        statements.header_info = hi.to_owned();
         assert_eq!(statements.header_info(), &hi);
     }
 }

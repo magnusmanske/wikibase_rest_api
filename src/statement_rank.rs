@@ -9,8 +9,8 @@ pub enum StatementRank {
 }
 
 impl StatementRank {
-    /// Create a new StatementRank from a string
-    pub fn from_str<S: Into<String>>(s: S) -> Result<Self, RestApiError> {
+    /// Create a new `StatementRank` from a string
+    pub fn new<S: Into<String>>(s: S) -> Result<Self, RestApiError> {
         match s.into().to_lowercase().as_str() {
             "normal" => Ok(StatementRank::Normal),
             "preferred" => Ok(StatementRank::Preferred),
@@ -19,14 +19,13 @@ impl StatementRank {
         }
     }
 
-    /// Returns the StatementRank as a string
-    pub fn as_str(&self) -> &str {
+    /// Returns the `StatementRank` as a string
+    pub const fn as_str(&self) -> &str {
         match self {
             StatementRank::Normal => "normal",
             StatementRank::Preferred => "preferred",
             StatementRank::Deprecated => "deprecated",
         }
-    
     }
 }
 
@@ -36,10 +35,16 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        assert_eq!(StatementRank::from_str("normal").unwrap(), StatementRank::Normal);
-        assert_eq!(StatementRank::from_str("preferred").unwrap(), StatementRank::Preferred);
-        assert_eq!(StatementRank::from_str("deprecated").unwrap(), StatementRank::Deprecated);
-        assert!(StatementRank::from_str("unknown").is_err());
+        assert_eq!(StatementRank::new("normal").unwrap(), StatementRank::Normal);
+        assert_eq!(
+            StatementRank::new("preferred").unwrap(),
+            StatementRank::Preferred
+        );
+        assert_eq!(
+            StatementRank::new("deprecated").unwrap(),
+            StatementRank::Deprecated
+        );
+        assert!(StatementRank::new("unknown").is_err());
     }
 
     #[test]

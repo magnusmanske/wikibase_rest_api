@@ -217,7 +217,7 @@ impl Statement {
                 field: "rank".into(),
                 j: j.to_owned(),
             })?;
-        let rank = StatementRank::from_str(rank_text)?;
+        let rank = StatementRank::new(rank_text)?;
         Ok((id, rank))
     }
 }
