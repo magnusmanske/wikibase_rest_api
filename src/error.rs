@@ -1,6 +1,6 @@
 use reqwest::header::InvalidHeaderValue;
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::{
     collections::HashMap,
     error::Error,
@@ -31,7 +31,13 @@ impl RestApiErrorPayload {
 
 impl Display for RestApiErrorPayload {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}: {} / {:?}", self.code, self.message, self.context)
+        write!(
+            f,
+            "{}: {} / {}",
+            self.code,
+            self.message,
+            json!(self.context)
+        )
     }
 }
 
@@ -239,7 +245,7 @@ mod tests {
         };
         assert_eq!(
             error.to_string(),
-            "400 Bad Request Bad Request / code: message / {\"key\": String(\"value\")}"
+            "400 Bad Request Bad Request / code: message / {\"key\":\"value\"}"
         );
     }
 
@@ -301,7 +307,7 @@ mod tests {
                 .collect(),
         };
         let s = format!("{payload}");
-        assert_eq!(s, "code: message / {\"key\": String(\"value\")}");
+        assert_eq!(s, "code: message / {\"key\":\"value\"}");
     }
 
     #[test]
