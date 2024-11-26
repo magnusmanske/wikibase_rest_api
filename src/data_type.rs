@@ -27,7 +27,9 @@ pub enum DataType {
 
 impl DataType {
     /// Constructs a new `DataType` object from a (valid) string.
-    pub fn from_str<S: Into<String>>(s: S) -> Result<Self, RestApiError> {
+    /// # Errors
+    /// Returns a `RestApiError` if the string is not a valid `DataType`.
+    pub fn new<S: Into<String>>(s: S) -> Result<Self, RestApiError> {
         match s.into().as_str() {
             "wikibase-item" => Ok(DataType::WikibaseItem),
             "external-id" => Ok(DataType::ExternalId),
@@ -54,7 +56,7 @@ impl DataType {
     }
 
     /// Returns the string representation of the data type.
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
             DataType::WikibaseItem => "wikibase-item",
             DataType::ExternalId => "external-id",
@@ -82,21 +84,37 @@ impl DataType {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use crate::RestApi;
     use super::*;
+    use crate::RestApi;
+    use std::collections::HashMap;
 
     #[tokio::test]
     async fn test_data_type_from_str() {
         // Useful to have this query the live API, and fast enough.
-        let api = RestApi::builder().api("https://www.wikidata.org/w/rest.php").build().unwrap();
-        let request = api.wikibase_request_builder("/property-data-types", HashMap::new(), reqwest::Method::GET).await.unwrap().build().unwrap();
-        let h: HashMap<String,String> = api.execute(request).await.unwrap().error_for_status().unwrap().json().await.unwrap();
-        for (k,_v) in h {
-            let dt = DataType::from_str(&k).unwrap();
+        let api = RestApi::builder()
+            .api("https://www.wikidata.org/w/rest.php")
+            .build()
+            .unwrap();
+        let request = api
+            .wikibase_request_builder("/property-data-types", HashMap::new(), reqwest::Method::GET)
+            .await
+            .unwrap()
+            .build()
+            .unwrap();
+        let h: HashMap<String, String> = api
+            .execute(request)
+            .await
+            .unwrap()
+            .error_for_status()
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        for (k, _v) in h {
+            let dt = DataType::new(&k).unwrap();
             assert_eq!(dt.as_str(), k);
         }
-        assert!(DataType::from_str("not-a-data-type").is_err());
+        assert!(DataType::new("not-a-data-type").is_err());
     }
 
     #[test]
@@ -119,5 +137,7 @@ mod tests {
         assert_eq!(DataType::Math.as_str(), "math");
         assert_eq!(DataType::Item.as_str(), "item");
         assert_eq!(DataType::Property.as_str(), "property");
+        assert_eq!(DataType::MusicalNotation.as_str(), "musical-notation");
+        assert_eq!(DataType::EntitySchema.as_str(), "entity-schema");
     }
 }

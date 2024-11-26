@@ -10,49 +10,56 @@ pub struct PropertyType {
 }
 
 impl PropertyType {
-    /// Creates a new PropertyType object from an ID and a `DataType``.
+    /// Creates a new PropertyType object from an ID and a `DataType`.
     pub fn new<S: Into<String>>(id: S, datatype: Option<DataType>) -> Self {
         Self {
             id: id.into(),
             datatype,
         }
     }
-    
+
     /// Creates a new PropertyType object from a JSON object.
     pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
-        let datatype_text = j["data-type"]
-            .as_str()
-            .ok_or_else(|| RestApiError::MissingOrInvalidField { field: "data-type".into(), j: j.to_owned() })?;
-        let datatype = DataType::from_str(datatype_text).ok();
+        let datatype_text =
+            j["data-type"]
+                .as_str()
+                .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                    field: "data-type".into(),
+                    j: j.to_owned(),
+                })?;
+        let datatype = DataType::new(datatype_text).ok();
         Ok(Self {
             id: j["id"]
                 .as_str()
-                .ok_or_else(|| RestApiError::MissingOrInvalidField { field: "id".into(), j: j.to_owned() })?
+                .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                    field: "id".into(),
+                    j: j.to_owned(),
+                })?
                 .to_string(),
             datatype,
         })
     }
 
-    /// Creates a new PropertyType object from an ID, with a default DataType::WikibaseItem.
+    /// Creates a new `PropertyType` object from an ID, with a default `DataType::WikibaseItem`.
     pub fn property<S: Into<String>>(id: S) -> Self {
         Self {
             id: id.into(),
             datatype: None,
         }
     }
-    
-    /// Returns the ID of the PropertyType.
+
+    /// Returns the ID of the `PropertyType`.
     pub fn id(&self) -> &str {
         &self.id
     }
-    
-    /// Returns the DataType of the PropertyType.
+
+    /// Returns the `DataType` of the `PropertyType`.
     pub fn datatype(&self) -> &Option<DataType> {
         &self.datatype
     }
 }
 
-impl Serialize  for PropertyType {
+impl Serialize for PropertyType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -68,7 +75,7 @@ impl Serialize  for PropertyType {
 }
 
 /// Implement the From trait for &str to PropertyType, for convenience assignments.
-impl From <&str> for PropertyType {
+impl From<&str> for PropertyType {
     fn from(s: &str) -> Self {
         Self::property(s)
     }
@@ -82,16 +89,13 @@ pub struct PropertyValue {
 
 impl PropertyValue {
     pub fn new(property: PropertyType, value: StatementValue) -> Self {
-        Self {
-            property,
-            value,
-        }
+        Self { property, value }
     }
-    
+
     pub fn property(&self) -> &PropertyType {
         &self.property
     }
-    
+
     pub fn value(&self) -> &StatementValue {
         &self.value
     }
@@ -107,7 +111,6 @@ impl Serialize for PropertyValue {
         s.serialize_field("value", &self.value)?;
         s.end()
     }
-
 }
 
 #[cfg(test)]
@@ -115,7 +118,7 @@ mod tests {
     use crate::statement_value::StatementValueContent;
 
     use super::*;
-    
+
     #[test]
     fn test_property_type() {
         let j = serde_json::json!({
@@ -126,7 +129,7 @@ mod tests {
         assert_eq!(p.id(), "P123");
         assert_eq!(p.datatype(), &Some(DataType::String));
     }
-    
+
     #[test]
     fn test_property_value() {
         let j = serde_json::json!({
@@ -138,7 +141,10 @@ mod tests {
         let pv = PropertyValue::new(p, v.into());
         assert_eq!(pv.property().id(), "P123");
         assert_eq!(pv.property().datatype(), &Some(DataType::String));
-        assert_eq!(pv.value(), &StatementValue::Value(StatementValueContent::String("Hello".to_string())));
+        assert_eq!(
+            pv.value(),
+            &StatementValue::Value(StatementValueContent::String("Hello".to_string()))
+        );
     }
 
     #[test]
