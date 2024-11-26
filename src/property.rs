@@ -81,7 +81,7 @@ impl Serialize for Property {
 
 impl Property {
     /// Returns the statements of the property
-    pub fn statements(&self) -> &Statements {
+    pub const fn statements(&self) -> &Statements {
         &self.statements
     }
 
@@ -91,7 +91,7 @@ impl Property {
     }
 
     /// Returns the labels of the property
-    pub fn labels(&self) -> &LanguageStringsSingle {
+    pub const fn labels(&self) -> &LanguageStringsSingle {
         &self.labels
     }
 
@@ -101,7 +101,7 @@ impl Property {
     }
 
     /// Returns the descriptions of the property
-    pub fn descriptions(&self) -> &LanguageStringsSingle {
+    pub const fn descriptions(&self) -> &LanguageStringsSingle {
         &self.descriptions
     }
 
@@ -111,7 +111,7 @@ impl Property {
     }
 
     /// Returns the aliases of the property
-    pub fn aliases(&self) -> &LanguageStringsMultiple {
+    pub const fn aliases(&self) -> &LanguageStringsMultiple {
         &self.aliases
     }
 
@@ -133,7 +133,7 @@ impl Property {
     }
 
     /// Returns the header info of the property
-    pub fn header_info(&self) -> &HeaderInfo {
+    pub const fn header_info(&self) -> &HeaderInfo {
         &self.header_info
     }
 }
@@ -150,14 +150,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_property_get_and_json_serialize() {
-        let v = std::fs::read_to_string("test_data/P214.json").unwrap();
-        let v: Value = serde_json::from_str(&v).unwrap();
+        let p214 = std::fs::read_to_string("test_data/P214.json").unwrap();
+        let v214: Value = serde_json::from_str(&p214).unwrap();
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/properties/P214");
+        let mock_path = "/w/rest.php/wikibase/v0/entities/properties/P214";
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
-            .and(path(&mock_path))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&v))
+            .and(path(mock_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&v214))
             .mount(&mock_server)
             .await;
         let api = RestApi::builder()
@@ -288,9 +288,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_item_post() {
-        let v = std::fs::read_to_string("test_data/P214.json").unwrap();
-        let v: Value = serde_json::from_str(&v).unwrap();
-        let mut property = Property::from_json(v).unwrap();
+        let j214 = std::fs::read_to_string("test_data/P214.json").unwrap();
+        let v214: Value = serde_json::from_str(&j214).unwrap();
+        let mut property = Property::from_json(v214).unwrap();
         let v = property.to_owned();
 
         let mock_server = MockServer::start().await;
@@ -308,12 +308,12 @@ mod tests {
             .unwrap();
 
         // Check that an error is returned when trying to post an item that already has an ID
-        let r = property.post(&api).await;
-        assert_eq!(r.err().unwrap().to_string(), "ID already set");
+        let r0 = property.post(&api).await;
+        assert_eq!(r0.err().unwrap().to_string(), "ID already set");
 
         // Clear the ID and try again
         property.id = EntityId::None;
-        let r = property.post(&api).await.unwrap();
-        assert_eq!(r.id(), v.id());
+        let r1 = property.post(&api).await.unwrap();
+        assert_eq!(r1.id(), v.id());
     }
 }

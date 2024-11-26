@@ -86,7 +86,7 @@ impl Serialize for Item {
 
 impl Item {
     /// Returns the statements of the item.
-    pub fn statements(&self) -> &Statements {
+    pub const fn statements(&self) -> &Statements {
         &self.statements
     }
 
@@ -96,7 +96,7 @@ impl Item {
     }
 
     /// Returns the labels of the item.
-    pub fn labels(&self) -> &LanguageStringsSingle {
+    pub const fn labels(&self) -> &LanguageStringsSingle {
         &self.labels
     }
 
@@ -106,7 +106,7 @@ impl Item {
     }
 
     /// Returns the descriptions of the item.
-    pub fn descriptions(&self) -> &LanguageStringsSingle {
+    pub const fn descriptions(&self) -> &LanguageStringsSingle {
         &self.descriptions
     }
 
@@ -116,7 +116,7 @@ impl Item {
     }
 
     /// Returns the aliases of the item.
-    pub fn aliases(&self) -> &LanguageStringsMultiple {
+    pub const fn aliases(&self) -> &LanguageStringsMultiple {
         &self.aliases
     }
 
@@ -138,7 +138,7 @@ impl Item {
     }
 
     /// Returns the sitelinks of the item.
-    pub fn sitelinks(&self) -> &Sitelinks {
+    pub const fn sitelinks(&self) -> &Sitelinks {
         &self.sitelinks
     }
 
@@ -148,7 +148,7 @@ impl Item {
     }
 
     /// Returns the header information of the item.
-    pub fn header_info(&self) -> &HeaderInfo {
+    pub const fn header_info(&self) -> &HeaderInfo {
         &self.header_info
     }
 }
@@ -227,13 +227,13 @@ mod tests {
             .unwrap();
 
         // Check that an error is returned when trying to post an item that already has an ID
-        let r = item.post(&api).await;
-        assert_eq!(r.err().unwrap().to_string(), "ID already set");
+        let r0 = item.post(&api).await;
+        assert_eq!(r0.err().unwrap().to_string(), "ID already set");
 
         // Clear the ID and try again
         item.id = EntityId::None;
-        let r = item.post(&api).await.unwrap();
-        assert_eq!(r.id(), v.id());
+        let r1 = item.post(&api).await.unwrap();
+        assert_eq!(r1.id(), v.id());
     }
 
     #[tokio::test]

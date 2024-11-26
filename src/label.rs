@@ -62,9 +62,9 @@ impl From<LanguageString> for Label {
     }
 }
 
-impl Into<LanguageString> for Label {
-    fn into(self) -> LanguageString {
-        self.ls
+impl From<Label> for LanguageString {
+    fn from(val: Label) -> Self {
+        val.ls
     }
 }
 
@@ -116,7 +116,7 @@ impl HttpDelete for Label {
     ) -> Result<(), RestApiError> {
         let j = json!({});
         let (j, _header_info) = self
-            .run_json_query(&id, reqwest::Method::DELETE, j, api, &em)
+            .run_json_query(id, reqwest::Method::DELETE, j, api, &em)
             .await?;
         match j.as_str() {
             Some("Label deleted") => Ok(()),
@@ -136,7 +136,7 @@ impl HttpPut for Label {
     ) -> Result<Self, RestApiError> {
         let j = json!({"label": self.ls.value()});
         let (j, header_info) = self
-            .run_json_query(&id, reqwest::Method::PUT, j, api, &em)
+            .run_json_query(id, reqwest::Method::PUT, j, api, &em)
             .await?;
         let value = j
             .as_str()
