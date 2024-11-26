@@ -15,6 +15,8 @@ pub struct Reference {
 
 impl Reference {
     /// Creates a new Reference object from a JSON structure
+    /// # Errors
+    /// Returns an error if the JSON structure is missing a required field or if a field is invalid
     pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
         // #lizard forgives the complexity
         let hash = j["hash"]

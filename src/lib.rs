@@ -14,7 +14,6 @@
     clippy::missing_const_for_fn,
     missing_copy_implementations,
     missing_debug_implementations,
-    clippy::missing_docs_in_private_items,
     clippy::missing_errors_doc,
     clippy::missing_panics_doc,
     clippy::mod_module_files,
@@ -45,56 +44,56 @@
 //! It provides a set of types and methods for interacting with the API,
 //! and implements all the [API endpoints](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
 
-pub mod rest_api;
-pub mod revision_match;
-pub mod entity_id;
+pub mod aliases;
+pub mod aliases_patch;
+pub mod bearer_token;
+pub mod config;
+pub mod data_type;
+pub mod description;
+pub mod edit_metadata;
 pub mod entity;
-pub mod property;
+pub mod entity_container;
+pub mod entity_id;
+pub mod error;
+pub mod get_put_delete;
+pub mod header_info;
 pub mod item;
-pub mod patch_entry;
-pub mod sitelink;
-pub mod sitelinks;
-pub mod sitelinks_patch;
+pub mod label;
 pub mod language_string;
 pub mod language_strings;
 pub mod language_strings_patch;
-pub mod data_type;
-pub mod statement;
+pub mod patch;
+pub mod patch_entry;
+pub mod prelude;
+pub mod property;
+pub mod property_value;
 pub mod reference;
+pub mod rest_api;
+pub mod revision_match;
+pub mod sitelink;
+pub mod sitelinks;
+pub mod sitelinks_patch;
+pub mod statement;
+pub mod statement_patch;
 pub mod statement_rank;
 pub mod statement_value;
-pub mod statement_patch;
-pub mod property_value;
 pub mod statements;
-pub mod edit_metadata;
-pub mod get_put_delete;
-pub mod config;
-pub mod label;
-pub mod aliases;
-pub mod aliases_patch;
-pub mod description;
-pub mod entity_container;
-pub mod patch;
-pub mod header_info;
-pub mod bearer_token;
-pub mod error;
-pub mod prelude;
 
-pub use sitelink::Sitelink;
-pub use sitelinks::Sitelinks;
+pub use config::Config;
+pub use data_type::DataType;
+pub use edit_metadata::EditMetadata;
+pub use entity_id::EntityId;
+pub use error::RestApiError;
+pub use get_put_delete::*;
+pub use header_info::HeaderInfo;
+pub use item::Item;
+pub use language_string::LanguageString;
+pub use patch::*;
+pub use property::Property;
+pub use reference::Reference;
 pub use rest_api::{RestApi, RestApiBuilder};
 pub use revision_match::RevisionMatch;
-pub use item::Item;
-pub use property::Property;
-pub use language_string::LanguageString;
-pub use entity_id::EntityId;
-pub use data_type::DataType;
-pub use reference::Reference;
-pub use statement_rank::StatementRank;
+pub use sitelink::Sitelink;
+pub use sitelinks::Sitelinks;
 pub use statement::Statement;
-pub use edit_metadata::EditMetadata;
-pub use config::Config;
-pub use get_put_delete::*;
-pub use patch::*;
-pub use header_info::HeaderInfo;
-pub use error::RestApiError;
+pub use statement_rank::StatementRank;

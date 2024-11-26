@@ -15,6 +15,7 @@ pub struct RestApi {
     client: reqwest::Client,
     user_agent: String,
     api_url: String,
+    api_version: u8,
     pub token: Arc<RwLock<BearerToken>>,
 }
 
@@ -25,6 +26,8 @@ impl RestApi {
     }
 
     /// Returns a `RequestBuilder` for a Wikibase REST API request
+    /// # Errors
+    /// Returns an error if the headers cannot be created
     pub async fn wikibase_request_builder<S: Into<String>>(
         &self,
         path: S,
@@ -38,7 +41,7 @@ impl RestApi {
     }
 
     fn wikibase_root(&self) -> String {
-        format!("/wikibase/v{WIKIBASE_REST_API_VERSION}")
+        format!("/wikibase/v{}", self.api_version)
     }
 
     fn request_builder<S: Into<String>>(
@@ -59,13 +62,13 @@ impl RestApi {
         })
     }
 
-    /// Returns a `HeaderMap` with the user agent and OAuth2 bearer token (if present)
+    /// Returns a `HeaderMap` with the user agent and `OAuth2` bearer token (if present)
     async fn headers(&self) -> Result<HeaderMap, RestApiError> {
         let token = self.token.read().await;
         self.headers_from_token(&token).await
     }
 
-    /// Returns a `HeaderMap` with the user agent and OAuth2 bearer token (if present)
+    /// Returns a `HeaderMap` with the user agent and `OAuth2` bearer token (if present)
     pub(crate) async fn headers_from_token(
         &self,
         token: &BearerToken,
@@ -83,17 +86,19 @@ impl RestApi {
 
     pub fn array2hashmap(&self, array: &[(&str, &str)]) -> HashMap<String, String> {
         array
-            .into_iter()
+            .iter()
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect()
     }
 
     /// Executes a `reqwest::Request`, and returns a `reqwest::Response`.
+    /// # Errors
+    /// Returns an error if the request cannot be executed
     pub async fn execute(
         &self,
         request: reqwest::Request,
     ) -> Result<reqwest::Response, RestApiError> {
-        self.token.write().await.check(&self, &request).await?;
+        self.token.write().await.check(self, &request).await?;
         let response = self.client.execute(request).await?;
         Ok(response)
     }
@@ -102,7 +107,7 @@ impl RestApi {
         &self.api_url
     }
 
-    pub fn client(&self) -> &reqwest::Client {
+    pub const fn client(&self) -> &reqwest::Client {
         &self.client
     }
 }
@@ -113,6 +118,7 @@ pub struct RestApiBuilder {
     token: BearerToken,
     user_agent: Option<String>,
     api_url: Option<String>,
+    api_version: Option<u8>,
     renewal_interval: Option<std::time::Duration>,
 }
 
@@ -123,13 +129,18 @@ impl RestApiBuilder {
         self
     }
 
-    /// Sets the OAuth2 bearer token.
+    pub const fn api_version(mut self, api_version: u8) -> Self {
+        self.api_version = Some(api_version);
+        self
+    }
+
+    /// Sets the `OAuth2` bearer token.
     pub fn set_access_token<S: Into<String>>(mut self, access_token: S) -> Self {
         self.token.set_access_token(access_token);
         self
     }
 
-    /// Sets the user agent. By default, the user agent is "Rust Wikibase REST API; {package_name}/{package_version}"
+    /// Sets the user agent. By default, the user agent is "Rust Wikibase REST API; {`package_name`}/{`package_version`}"
     pub fn user_agent<S: Into<String>>(mut self, user_agent: S) -> Self {
         self.user_agent = Some(user_agent.into());
         self
@@ -141,7 +152,7 @@ impl RestApiBuilder {
         self
     }
 
-    /// Sets the OAuth2 client ID and client secret
+    /// Sets the `OAuth2` client ID and client secret
     #[cfg(not(tarpaulin_include))]
     pub fn oauth2_info<S1: Into<String>, S2: Into<String>>(
         mut self,
@@ -160,32 +171,38 @@ impl RestApiBuilder {
         let (base, _rest) = api_url
             .split_once("/rest.php")
             .ok_or_else(|| RestApiError::RestApiUrlInvalid(api_url.to_owned()))?;
-        let api_url = format!("{base}/rest.php");
-        Ok(api_url)
+        let ret = format!("{base}/rest.php");
+        Ok(ret)
     }
 
     /// Builds the `RestApi`. Returns an error if no REST API URL is set.
+    /// # Errors
+    /// Returns an error if no REST API URL is set.
     pub fn build(&self) -> Result<RestApi, RestApiError> {
         let api_url = self.validate_api_url()?;
         let mut token = self.token.to_owned();
         token.set_renewal_interval(0); // Will use default value instead of 0
         Ok(RestApi {
             client: self.client.clone(),
-            user_agent: self.user_agent.clone().unwrap_or(self.default_user_agent()),
+            user_agent: self
+                .user_agent
+                .clone()
+                .unwrap_or(Self::default_user_agent()),
             api_url,
+            api_version: self.api_version.unwrap_or(WIKIBASE_REST_API_VERSION),
             token: Arc::new(RwLock::new(token)),
         })
     }
 
-    /// Sets the interval for bearer token renewal. By default, the interval is `DEFAULT_RENEWAL_INTERVAL_SEC``.
+    /// Sets the interval for bearer token renewal. By default, the interval is `DEFAULT_RENEWAL_INTERVAL_SEC`.
     #[cfg(not(tarpaulin_include))]
-    pub fn access_token_renewal(mut self, renewal_interval: std::time::Duration) -> Self {
+    pub const fn access_token_renewal(mut self, renewal_interval: std::time::Duration) -> Self {
         self.renewal_interval = Some(renewal_interval);
         self
     }
 
     /// Returns the default user agent, a versioned string based on `DEFAULT_USER_AGENT`.
-    fn default_user_agent(&self) -> String {
+    fn default_user_agent() -> String {
         format!(
             "{DEFAULT_USER_AGENT}; {}/{}",
             env!("CARGO_PKG_NAME"),
@@ -212,23 +229,28 @@ mod tests {
 
     #[test]
     fn test_default_user_agent() {
-        let builder = RestApiBuilder::default();
-        let user_agent = builder.default_user_agent();
+        let user_agent = RestApiBuilder::default_user_agent();
         assert!(user_agent.starts_with(DEFAULT_USER_AGENT));
         assert!(user_agent.contains(env!("CARGO_PKG_NAME")));
         assert!(user_agent.contains(env!("CARGO_PKG_VERSION")));
     }
 
     #[test]
-    fn test_validate_api_url() {
+    fn test_validate_api_url_default() {
         let builder = RestApiBuilder::default();
         let api_url = builder.validate_api_url();
         assert!(api_url.is_err());
+    }
 
+    #[test]
+    fn test_validate_api_url_api() {
         let builder = RestApiBuilder::default().api("https://www.wikidata.org/w/api.php");
         let api_url = builder.validate_api_url();
         assert!(api_url.is_err());
+    }
 
+    #[test]
+    fn test_validate_api_url_rest_api() {
         let builder = RestApiBuilder::default().api("https://www.wikidata.org/w/rest.php");
         let api_url = builder.validate_api_url();
         assert!(api_url.is_ok());
@@ -240,7 +262,7 @@ mod tests {
             .api("https://test.wikidata.org/w/rest.php")
             .build()
             .unwrap();
-        assert_eq!(api.user_agent, RestApi::builder().default_user_agent());
+        assert_eq!(api.user_agent, RestApiBuilder::default_user_agent());
 
         let builder = RestApi::builder()
             .user_agent("Test User Agent")

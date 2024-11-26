@@ -10,7 +10,7 @@ pub struct PropertyType {
 }
 
 impl PropertyType {
-    /// Creates a new PropertyType object from an ID and a `DataType`.
+    /// Creates a new `PropertyType` object from an ID and a `DataType`.
     pub fn new<S: Into<String>>(id: S, datatype: Option<DataType>) -> Self {
         Self {
             id: id.into(),
@@ -18,7 +18,9 @@ impl PropertyType {
         }
     }
 
-    /// Creates a new PropertyType object from a JSON object.
+    /// Creates a new `PropertyType` object from a JSON object.
+    /// # Errors
+    /// Returns an error if the JSON object does not contain the required fields.
     pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
         let datatype_text =
             j["data-type"]
@@ -54,7 +56,7 @@ impl PropertyType {
     }
 
     /// Returns the `DataType` of the `PropertyType`.
-    pub fn datatype(&self) -> &Option<DataType> {
+    pub const fn datatype(&self) -> &Option<DataType> {
         &self.datatype
     }
 }
@@ -74,7 +76,7 @@ impl Serialize for PropertyType {
     }
 }
 
-/// Implement the From trait for &str to PropertyType, for convenience assignments.
+/// Implement the From trait for &str to `PropertyType`, for convenience assignments.
 impl From<&str> for PropertyType {
     fn from(s: &str) -> Self {
         Self::property(s)
@@ -88,15 +90,15 @@ pub struct PropertyValue {
 }
 
 impl PropertyValue {
-    pub fn new(property: PropertyType, value: StatementValue) -> Self {
+    pub const fn new(property: PropertyType, value: StatementValue) -> Self {
         Self { property, value }
     }
 
-    pub fn property(&self) -> &PropertyType {
+    pub const fn property(&self) -> &PropertyType {
         &self.property
     }
 
-    pub fn value(&self) -> &StatementValue {
+    pub const fn value(&self) -> &StatementValue {
         &self.value
     }
 }
