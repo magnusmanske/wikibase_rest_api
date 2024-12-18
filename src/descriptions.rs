@@ -17,6 +17,15 @@ pub struct Descriptions {
     header_info: HeaderInfo,
 }
 
+impl Descriptions {
+    /// Generates a patch to transform `other` into `self`
+    pub fn patch(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
+        let patch = json_patch::diff(&json!(&other), &json!(&self));
+        let patch = LanguageStringsPatch::descriptions_from_json(&json!(patch))?;
+        Ok(patch)
+    }
+}
+
 impl HttpMisc for Descriptions {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
@@ -49,20 +58,6 @@ impl HttpGetEntity for Descriptions {
 impl LanguageStringsSingle for Descriptions {
     fn ls(&self) -> &HashMap<String, String> {
         &self.ls
-    }
-
-    /// Generates a patch to transform `other` into `self`
-    fn patch_labels(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
-        let patch = json_patch::diff(&json!(&other), &json!(&self));
-        let patch = LanguageStringsPatch::labels_from_json(&json!(patch))?;
-        Ok(patch)
-    }
-
-    /// Generates a patch to transform `other` into `self`
-    fn patch_descriptions(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
-        let patch = json_patch::diff(&json!(&other), &json!(&self));
-        let patch = LanguageStringsPatch::descriptions_from_json(&json!(patch))?;
-        Ok(patch)
     }
 }
 
@@ -177,7 +172,7 @@ mod tests {
         let mut l2 = l1.clone();
         l2.insert(LanguageString::new("en", "Baz"));
 
-        let patch = l2.patch_descriptions(&l1).unwrap();
+        let patch = l2.patch(&l1).unwrap();
         let patch_json = json!(patch);
         assert_eq!(
             patch_json,

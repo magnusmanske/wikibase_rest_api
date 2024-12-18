@@ -17,6 +17,15 @@ pub struct Labels {
     header_info: HeaderInfo,
 }
 
+impl Labels {
+    /// Generates a patch to transform `other` into `self`
+    pub fn patch(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
+        let patch = json_patch::diff(&json!(&other), &json!(&self));
+        let patch = LanguageStringsPatch::labels_from_json(&json!(patch))?;
+        Ok(patch)
+    }
+}
+
 impl HttpMisc for Labels {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
@@ -49,20 +58,6 @@ impl HttpGetEntity for Labels {
 impl LanguageStringsSingle for Labels {
     fn ls(&self) -> &HashMap<String, String> {
         &self.ls
-    }
-
-    /// Generates a patch to transform `other` into `self`
-    fn patch_labels(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
-        let patch = json_patch::diff(&json!(&other), &json!(&self));
-        let patch = LanguageStringsPatch::labels_from_json(&json!(patch))?;
-        Ok(patch)
-    }
-
-    /// Generates a patch to transform `other` into `self`
-    fn patch_descriptions(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
-        let patch = json_patch::diff(&json!(&other), &json!(&self));
-        let patch = LanguageStringsPatch::descriptions_from_json(&json!(patch))?;
-        Ok(patch)
     }
 }
 
@@ -177,27 +172,11 @@ mod tests {
         let mut l2 = l1.clone();
         l2.insert(LanguageString::new("en", "Baz"));
 
-        let patch = l2.patch_labels(&l1).unwrap();
+        let patch = l2.patch(&l1).unwrap();
         let patch_json = json!(patch);
         assert_eq!(
             patch_json,
             json!({"mode":"Labels","patch":[{"op":"replace","path":"/en","value":"Baz"}]})
-        );
-    }
-
-    #[test]
-    fn test_patch_descriptions() {
-        let mut l1 = Labels::default();
-        l1.insert(LanguageString::new("en", "Foo"));
-        l1.insert(LanguageString::new("de", "Bar"));
-        let mut l2 = l1.clone();
-        l2.insert(LanguageString::new("en", "Baz"));
-
-        let patch = l2.patch_descriptions(&l1).unwrap();
-        let patch_json = json!(patch);
-        assert_eq!(
-            patch_json,
-            json!({"mode":"Descriptions","patch":[{"op":"replace","path":"/en","value":"Baz"}]})
         );
     }
 

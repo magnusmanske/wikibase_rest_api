@@ -1,7 +1,4 @@
-use crate::{
-    aliases_patch::AliasesPatch, language_strings_patch::LanguageStringsPatch, FromJson,
-    HeaderInfo, LanguageString, RestApiError,
-};
+use crate::{aliases_patch::AliasesPatch, FromJson, HeaderInfo, LanguageString, RestApiError};
 use derivative::Derivative;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
@@ -21,10 +18,7 @@ pub trait LanguageStringsSingle {
     }
 
     /// Generates a patch to transform `other` into `self`
-    fn patch_labels(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError>;
-
-    /// Generates a patch to transform `other` into `self`
-    fn patch_descriptions(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError>;
+    // fn patch(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError>;
 
     /// Returns the number of labels/languages
     fn len(&self) -> usize {
