@@ -139,7 +139,7 @@ impl Property {
 #[cfg(test)]
 mod tests {
     use crate::language_strings::LanguageStrings;
-    use crate::{LanguageString, LanguageStringsSingle, RestApi, Statement};
+    use crate::{LanguageString, RestApi, Statement};
     use serde_json::json;
     use wiremock::matchers::{body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};

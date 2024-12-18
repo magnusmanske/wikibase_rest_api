@@ -154,7 +154,7 @@ impl Item {
 mod tests {
     use super::*;
     use crate::language_strings::LanguageStrings;
-    use crate::{LanguageString, LanguageStringsSingle, RestApi, Sitelink, Statement};
+    use crate::{LanguageString, RestApi, Sitelink, Statement};
     use serde_json::json;
     use wiremock::matchers::{body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};

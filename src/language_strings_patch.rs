@@ -152,8 +152,6 @@ impl HttpMisc for LanguageStringsPatch {
 
 #[cfg(test)]
 mod tests {
-    use crate::LanguageStringsSingle;
-
     use super::*;
     use serde_json::Value;
     use wiremock::matchers::{bearer_token, body_partial_json, header, method, path};

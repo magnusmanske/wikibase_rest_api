@@ -1,7 +1,6 @@
 use crate::{
-    language_strings::LanguageStringsSingle, language_strings_patch::LanguageStringsPatch,
-    prelude::LanguageStrings, EntityId, FromJson, HeaderInfo, HttpGetEntity, HttpMisc,
-    LanguageString, RestApi, RestApiError, RevisionMatch,
+    language_strings_patch::LanguageStringsPatch, prelude::LanguageStrings, EntityId, FromJson,
+    HeaderInfo, HttpGetEntity, HttpMisc, LanguageString, RestApi, RestApiError, RevisionMatch,
 };
 use async_trait::async_trait;
 use derivative::Derivative;
@@ -18,6 +17,21 @@ pub struct Labels {
 }
 
 impl Labels {
+    /// Returns the value for a language
+    pub fn get_lang<S: Into<String>>(&self, language: S) -> Option<&str> {
+        self.ls.get(&language.into()).map(|s| s.as_str())
+    }
+
+    /// Returns the number of labels/languages
+    pub fn len(&self) -> usize {
+        self.ls.len()
+    }
+
+    /// Returns true if there are no labels/languages
+    pub fn is_empty(&self) -> bool {
+        self.ls.is_empty()
+    }
+
     /// Generates a patch to transform `other` into `self`
     pub fn patch(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
         let patch = json_patch::diff(&json!(&other), &json!(&self));
@@ -52,12 +66,6 @@ impl HttpGetEntity for Labels {
         let header_info = HeaderInfo::from_header(response.headers());
         let j: Value = response.error_for_status()?.json().await?;
         Self::from_json_header_info(&j, header_info)
-    }
-}
-
-impl LanguageStringsSingle for Labels {
-    fn ls(&self) -> &HashMap<String, String> {
-        &self.ls
     }
 }
 

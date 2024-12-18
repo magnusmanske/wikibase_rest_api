@@ -17,9 +17,6 @@ pub trait LanguageStringsSingle {
         self.ls().get(&language.into()).map(|s| s.as_str())
     }
 
-    /// Generates a patch to transform `other` into `self`
-    // fn patch(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError>;
-
     /// Returns the number of labels/languages
     fn len(&self) -> usize {
         self.ls().len()
