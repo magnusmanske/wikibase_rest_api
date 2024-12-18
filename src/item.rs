@@ -1,6 +1,11 @@
 use crate::{
-    aliases::Aliases, descriptions::Descriptions, entity::Entity, labels::Labels,
-    language_strings::LanguageStringsMultiple, sitelinks::Sitelinks, statements::Statements,
+    aliases::Aliases,
+    descriptions::Descriptions,
+    entity::{Entity, EntityType},
+    labels::Labels,
+    language_strings::LanguageStringsMultiple,
+    sitelinks::Sitelinks,
+    statements::Statements,
     EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
 };
 use async_trait::async_trait;
@@ -53,7 +58,7 @@ impl Entity for Item {
     }
 
     async fn post(&self, api: &RestApi) -> Result<Self, RestApiError> {
-        self.post_with_type("item", "items", api).await
+        self.post_with_type(EntityType::Item, api).await
     }
 }
 

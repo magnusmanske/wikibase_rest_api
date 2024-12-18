@@ -1,7 +1,11 @@
 use crate::{
-    aliases::Aliases, descriptions::Descriptions, entity::Entity, labels::Labels,
-    language_strings::LanguageStringsMultiple, statements::Statements, EntityId, FromJson,
-    HeaderInfo, HttpMisc, RestApi, RestApiError,
+    aliases::Aliases,
+    descriptions::Descriptions,
+    entity::{Entity, EntityType},
+    labels::Labels,
+    language_strings::LanguageStringsMultiple,
+    statements::Statements,
+    EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
 };
 use async_trait::async_trait;
 use derivative::Derivative;
@@ -50,7 +54,7 @@ impl Entity for Property {
     }
 
     async fn post(&self, api: &RestApi) -> Result<Self, RestApiError> {
-        self.post_with_type("property", "properties", api).await
+        self.post_with_type(EntityType::Property, api).await
     }
 }
 

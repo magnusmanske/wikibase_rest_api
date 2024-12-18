@@ -5,6 +5,41 @@ use serde::ser::Serialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EntityType {
+    Item,
+    Property,
+}
+
+impl EntityType {
+    pub const fn type_name(&self) -> &str {
+        match self {
+            EntityType::Item => "item",
+            EntityType::Property => "property",
+        }
+    }
+
+    pub const fn group_name(&self) -> &str {
+        match self {
+            EntityType::Item => "items",
+            EntityType::Property => "properties",
+        }
+    }
+}
+
+// impl Serialize for EntityType {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: serde::Serializer,
+//     {
+//         let mut s = serializer.serialize_map(Some(self.ls.len()))?;
+//         for (language, ls) in &self.ls {
+//             s.serialize_entry(language, ls)?;
+//         }
+//         s.end()
+//     }
+// }
+
 #[async_trait]
 pub trait Entity: Default + Sized + Serialize + HttpMisc {
     fn id(&self) -> EntityId;
@@ -52,17 +87,16 @@ pub trait Entity: Default + Sized + Serialize + HttpMisc {
 
     async fn post_with_type(
         &self,
-        entity_type: &str,
-        entity_group: &str,
+        entity_type: EntityType,
         api: &RestApi,
     ) -> Result<Self, RestApiError> {
-        self.post_with_type_and_metadata(entity_type, entity_group, api, EditMetadata::default())
+        self.post_with_type_and_metadata(entity_type, api, EditMetadata::default())
             .await
     }
 
     async fn build_post_with_type_and_metadata_request(
         &self,
-        entity_type: &str,
+        entity_type: EntityType,
         path: &str,
         api: &RestApi,
         em: EditMetadata,
@@ -71,7 +105,7 @@ pub trait Entity: Default + Sized + Serialize + HttpMisc {
             .wikibase_request_builder(path, HashMap::new(), reqwest::Method::POST)
             .await?
             .build()?;
-        let mut j: Value = json!({entity_type: self});
+        let mut j: Value = json!({entity_type.type_name(): self});
         Self::add_metadata_to_json(&mut j, &em);
         *request.body_mut() = Some(format!("{j}").into());
         Ok(request)
@@ -96,15 +130,14 @@ pub trait Entity: Default + Sized + Serialize + HttpMisc {
 
     async fn post_with_type_and_metadata(
         &self,
-        entity_type: &str,
-        entity_group: &str,
+        entity_type: EntityType,
         api: &RestApi,
         em: EditMetadata,
     ) -> Result<Self, RestApiError> {
         if self.id().is_some() {
             return Err(RestApiError::HasId);
         }
-        let path = format!("/entities/{entity_group}");
+        let path = format!("/entities/{group}", group = entity_type.group_name());
         let request = self
             .build_post_with_type_and_metadata_request(entity_type, &path, api, em)
             .await?;
