@@ -159,4 +159,24 @@ mod tests {
         let json = serde_json::to_string(&p).unwrap();
         assert_eq!(json, r#"{"id":"P123","data-type":"string"}"#);
     }
+
+    #[test]
+    fn test_property_type_serialize_faulty_data_type() {
+        let j = serde_json::json!({
+            "id": "P123",
+            "data-type": 567,
+        });
+        let pt = PropertyType::from_json(&j);
+        assert!(pt.is_err());
+    }
+
+    #[test]
+    fn test_property_type_serialize_faulty_id() {
+        let j = serde_json::json!({
+            "id": 123,
+            "data-type": "string",
+        });
+        let pt = PropertyType::from_json(&j);
+        assert!(pt.is_err());
+    }
 }

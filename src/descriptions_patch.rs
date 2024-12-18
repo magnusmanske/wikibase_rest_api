@@ -6,62 +6,16 @@ use async_trait::async_trait;
 use serde::Serialize;
 use serde_json::{json, Value};
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-enum Mode {
-    Labels,
-    Descriptions,
-}
-
-impl Mode {
-    const fn as_str(&self) -> &str {
-        match self {
-            Mode::Labels => "labels",
-            Mode::Descriptions => "descriptions",
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct LanguageStringsPatch {
+#[derive(Debug, Clone, PartialEq, Serialize, Default)]
+pub struct DescriptionsPatch {
     patch: Vec<PatchEntry>,
-    mode: Mode,
 }
 
-impl LanguageStringsPatch {
-    pub const fn labels() -> Self {
-        Self {
-            patch: vec![],
-            mode: Mode::Labels,
-        }
-    }
-
-    pub const fn descriptions() -> Self {
-        Self {
-            patch: vec![],
-            mode: Mode::Descriptions,
-        }
-    }
-
-    /// Generates a patch from JSON, presumably from `json_patch`
-    pub fn labels_from_json(j: &Value) -> Result<Self, RestApiError> {
-        Ok(Self {
-            patch: Self::from_json(j)?,
-            mode: Mode::Labels,
-        })
-    }
-
-    /// Generates a patch from JSON, presumably from `json_patch`
-    pub fn descriptions_from_json(j: &Value) -> Result<Self, RestApiError> {
-        Ok(Self {
-            patch: Self::from_json(j)?,
-            mode: Mode::Descriptions,
-        })
-    }
-
-    fn from_json(j: &Value) -> Result<Vec<PatchEntry>, RestApiError> {
+impl DescriptionsPatch {
+    pub fn from_json(j: &Value) -> Result<Vec<PatchEntry>, RestApiError> {
         j.as_array()
             .ok_or_else(|| RestApiError::MissingOrInvalidField {
-                field: "LanguageStringsPatch".into(),
+                field: "DescriptionsPatch".into(),
                 j: j.to_owned(),
             })?
             .iter()
@@ -89,7 +43,7 @@ impl LanguageStringsPatch {
 }
 
 #[async_trait]
-impl Patch<Labels> for LanguageStringsPatch {
+impl Patch<Labels> for DescriptionsPatch {
     fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
     }
@@ -115,7 +69,7 @@ impl Patch<Labels> for LanguageStringsPatch {
 }
 
 #[async_trait]
-impl Patch<Descriptions> for LanguageStringsPatch {
+impl Patch<Descriptions> for DescriptionsPatch {
     fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
     }
@@ -140,68 +94,23 @@ impl Patch<Descriptions> for LanguageStringsPatch {
     }
 }
 
-impl HttpMisc for LanguageStringsPatch {
+impl HttpMisc for DescriptionsPatch {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
-            "/entities/{group}/{id}/{mode}",
-            group = id.group()?,
-            mode = self.mode.as_str()
+            "/entities/{group}/{id}/descriptions",
+            group = id.group()?
         ))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::LanguageStringsSingle;
-
     use super::*;
     use serde_json::Value;
-    use wiremock::matchers::{bearer_token, body_partial_json, header, method, path};
-    use wiremock::{Mock, MockServer, ResponseTemplate};
-
-    #[tokio::test]
-    async fn test_language_strings_single_patch() {
-        let id = "Q42";
-        let page_title = "Foo Bar";
-        let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
-        let v: Value = serde_json::from_str(&v).unwrap();
-        let mut new_label = v["labels"].clone();
-        new_label["en"] = json!(page_title);
-
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/labels");
-        let mock_server = MockServer::start().await;
-        let token = "FAKE_TOKEN";
-        Mock::given(body_partial_json(
-            json!({"patch":[{"op": "replace","path": "/en","value": page_title}]}),
-        ))
-        .and(method("PATCH"))
-        .and(path(&mock_path))
-        .and(bearer_token(token))
-        .and(header("content-type", "application/json-patch+json"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .insert_header("ETag", "12345")
-                .set_body_json(new_label),
-        )
-        .mount(&mock_server)
-        .await;
-        let mut api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
-            .set_access_token(token)
-            .build()
-            .unwrap();
-
-        // Apply patch and check API response
-        let id = EntityId::new(id).unwrap();
-        let mut patch = LanguageStringsPatch::labels();
-        patch.replace("en", page_title);
-        let ls: Labels = patch.apply(&id, &mut api).await.unwrap();
-        assert_eq!(ls.get_lang("en").unwrap(), page_title);
-    }
 
     #[test]
     fn test_remove() {
-        let mut patch = LanguageStringsPatch::labels();
+        let mut patch = DescriptionsPatch::default();
         patch.remove("en");
         assert_eq!(
             patch.patch,
@@ -211,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_patch() {
-        let mut patch = LanguageStringsPatch::labels();
+        let mut patch = DescriptionsPatch::default();
         patch.replace("en", "Foo Bar");
         assert_eq!(
             patch.patch,
@@ -221,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_descriptions() {
-        let mut patch = LanguageStringsPatch::descriptions();
+        let mut patch = DescriptionsPatch::default();
         patch.replace("en", "Foo Bar");
         assert_eq!(
             patch.patch,
@@ -230,17 +139,11 @@ mod tests {
     }
 
     #[test]
-    fn test_mode_as_str() {
-        assert_eq!(Mode::Labels.as_str(), "labels");
-        assert_eq!(Mode::Descriptions.as_str(), "descriptions");
-    }
-
-    #[test]
     fn test_patch_fn() {
-        let mut patch = LanguageStringsPatch::labels();
+        let mut patch = DescriptionsPatch::default();
         patch.replace("en", "Foo Bar");
         assert_eq!(
-            *<LanguageStringsPatch as Patch<Labels>>::patch(&patch),
+            *<DescriptionsPatch as Patch<Descriptions>>::patch(&patch),
             vec![PatchEntry::new("replace", "/en", json!("Foo Bar"))]
         );
     }
@@ -251,7 +154,7 @@ mod tests {
             {"op": "replace", "path": "/en", "value": "Foo Bar"},
             {"op": "remove", "path": "/de"}
         ]);
-        let patch = LanguageStringsPatch::from_json(&j).unwrap();
+        let patch = DescriptionsPatch::from_json(&j).unwrap();
         assert_eq!(
             patch,
             vec![

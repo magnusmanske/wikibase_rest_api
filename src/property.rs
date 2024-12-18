@@ -1,9 +1,7 @@
 use crate::{
-    aliases::Aliases,
-    entity::Entity,
-    language_strings::{LanguageStringsMultiple, LanguageStringsSingle},
-    statements::Statements,
-    EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
+    aliases::Aliases, descriptions::Descriptions, entity::Entity, labels::Labels,
+    language_strings::LanguageStringsMultiple, statements::Statements, EntityId, FromJson,
+    HeaderInfo, HttpMisc, RestApi, RestApiError,
 };
 use async_trait::async_trait;
 use derivative::Derivative;
@@ -14,8 +12,8 @@ use serde_json::Value;
 #[derivative(PartialEq)]
 pub struct Property {
     id: EntityId,
-    labels: LanguageStringsSingle,
-    descriptions: LanguageStringsSingle,
+    labels: Labels,
+    descriptions: Descriptions,
     aliases: LanguageStringsMultiple,
     statements: Statements,
     #[derivative(PartialEq = "ignore")]
@@ -43,8 +41,8 @@ impl Entity for Property {
             })?;
         Ok(Self {
             id: EntityId::property(id),
-            labels: LanguageStringsSingle::from_json(&j["labels"])?,
-            descriptions: LanguageStringsSingle::from_json(&j["descriptions"])?,
+            labels: Labels::from_json(&j["labels"])?,
+            descriptions: Descriptions::from_json(&j["descriptions"])?,
             aliases: LanguageStringsMultiple::from_json(&j["aliases"])?,
             statements: Statements::from_json(&j["statements"])?,
             header_info,
@@ -91,22 +89,22 @@ impl Property {
     }
 
     /// Returns the labels of the property
-    pub const fn labels(&self) -> &LanguageStringsSingle {
+    pub const fn labels(&self) -> &Labels {
         &self.labels
     }
 
     /// Returns the labels of the property, mutable
-    pub fn labels_mut(&mut self) -> &mut LanguageStringsSingle {
+    pub fn labels_mut(&mut self) -> &mut Labels {
         &mut self.labels
     }
 
     /// Returns the descriptions of the property
-    pub const fn descriptions(&self) -> &LanguageStringsSingle {
+    pub const fn descriptions(&self) -> &Descriptions {
         &self.descriptions
     }
 
     /// Returns the descriptions of the property, mutable
-    pub fn descriptions_mut(&mut self) -> &mut LanguageStringsSingle {
+    pub fn descriptions_mut(&mut self) -> &mut Descriptions {
         &mut self.descriptions
     }
 
@@ -141,7 +139,7 @@ impl Property {
 #[cfg(test)]
 mod tests {
     use crate::language_strings::LanguageStrings;
-    use crate::{LanguageString, RestApi, Statement};
+    use crate::{LanguageString, LanguageStringsSingle, RestApi, Statement};
     use serde_json::json;
     use wiremock::matchers::{body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
