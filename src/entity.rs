@@ -150,3 +150,16 @@ pub trait Entity: Default + Sized + Serialize + HttpMisc {
         Ok(ret)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_entity_type() {
+        assert_eq!(EntityType::Item.type_name(), "item");
+        assert_eq!(EntityType::Property.type_name(), "property");
+        assert_eq!(EntityType::Item.group_name(), "items");
+        assert_eq!(EntityType::Property.group_name(), "properties");
+    }
+}
