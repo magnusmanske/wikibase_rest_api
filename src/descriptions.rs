@@ -78,7 +78,7 @@ impl FromJson for Descriptions {
         let ls = j
             .as_object()
             .ok_or_else(|| RestApiError::WrongType {
-                field: "LanguageStringSingle".to_string(),
+                field: "Descriptions".to_string(),
                 j: j.to_owned(),
             })?
             .iter()
@@ -86,7 +86,7 @@ impl FromJson for Descriptions {
                 let value = value
                     .as_str()
                     .ok_or_else(|| RestApiError::MissingOrInvalidField {
-                        field: "LanguageStringSingle".into(),
+                        field: "Descriptions".into(),
                         j: value.to_owned(),
                     })?;
                 Ok((language.to_owned(), value.to_string()))

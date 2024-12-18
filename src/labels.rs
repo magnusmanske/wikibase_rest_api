@@ -78,7 +78,7 @@ impl FromJson for Labels {
         let ls = j
             .as_object()
             .ok_or_else(|| RestApiError::WrongType {
-                field: "LanguageStringSingle".to_string(),
+                field: "Labels".to_string(),
                 j: j.to_owned(),
             })?
             .iter()
@@ -86,7 +86,7 @@ impl FromJson for Labels {
                 let value = value
                     .as_str()
                     .ok_or_else(|| RestApiError::MissingOrInvalidField {
-                        field: "LanguageStringSingle".into(),
+                        field: "Labels".into(),
                         j: value.to_owned(),
                     })?;
                 Ok((language.to_owned(), value.to_string()))
