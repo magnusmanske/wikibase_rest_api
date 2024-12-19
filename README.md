@@ -3,16 +3,16 @@
 - [x] `post`
 - [x] `get`
 - [ ] `patch`
+## properties
+- [x] `post`
+- [x] `get`
+- [ ] `patch`
 ## sitelinks
 - [x] `get item_id`
 - [x] `patch`
 - [x] `get itemid/sitelink_id`
 - [x] `put itemid/sitelink_id`
 - [x] `delete itemid/sitelink_id`
-## properties
-- [x] `post`
-- [x] `get`
-- [ ] `patch`
 ## labels
 - [x] `get item_id`
 - [x] `patch item_id`
