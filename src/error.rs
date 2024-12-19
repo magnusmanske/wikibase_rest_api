@@ -3,9 +3,9 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
     collections::HashMap,
-    error::Error,
     fmt::{self, Display, Formatter},
 };
+use thiserror::Error;
 
 #[derive(Debug, Clone, Deserialize, Default, PartialEq)]
 pub struct RestApiErrorPayload {
@@ -41,137 +41,62 @@ impl Display for RestApiErrorPayload {
     }
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum RestApiError {
+    #[error("ApiError: {status} {status_text} / {payload:?}")]
     ApiError {
         status: reqwest::StatusCode,
         status_text: String,
         payload: RestApiErrorPayload,
     },
+    #[error("Client ID required")]
     ClientIdRequired,
+    #[error("Client secret required")]
     ClientSecretRequired,
+    #[error("Refresh token required")]
     RefreshTokenRequired,
+    #[error("Access token required")]
     AccessTokenRequired,
+    #[error("Reqwest Error: {0}")]
     Reqwest(reqwest::Error),
+    #[error("Invalid header value: {0}")]
     InvalidHeaderValue(InvalidHeaderValue),
+    #[error("Method {method} not implemented for path {path} in REST API")]
     NotImplementedInRestApi {
         method: reqwest::Method,
         path: String,
     },
+    #[error("Unexpected response: {0}")]
     UnexpectedResponse(Value),
+    #[error("Missing ID")]
     MissingId,
+    #[error("ID already set")]
     HasId,
-    MissingOrInvalidField {
-        field: String,
-        j: Value,
-    },
-    WrongType {
-        field: String,
-        j: Value,
-    },
+    #[error("Missing field {field}: {j}")]
+    MissingOrInvalidField { field: String, j: Value },
+    #[error("Wrong type for {field}: {j}")]
+    WrongType { field: String, j: Value },
+    #[error("Entity ID is None")]
     IsNone,
+    #[error("Unrecognized entity ID letter: {0}")]
     UnknownEntityLetter(String),
+    #[error("Unknown value: {0}")]
     UnknownValue(String),
+    #[error("Unknown data type: {0}")]
     UnknownDataType(String),
+    #[error("Serde JSON error: {0}")]
     SerdeJson(serde_json::Error),
+    #[error("Unknown statement rank: {0}")]
     UnknownStatementRank(String),
+    #[error("API not set")]
     ApiNotSet,
+    #[error("Empty value: {0}")]
     EmptyValue(String),
+    #[error("Unsupported method: {0}")]
     UnsupportedMethod(reqwest::Method),
+    #[error("REST API URL is invalid: {0}")]
     RestApiUrlInvalid(String),
 }
-
-impl Display for RestApiError {
-    #[cfg(not(tarpaulin_include))]
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        // #lizard forgives the complexity
-        match self {
-            RestApiError::ApiError {
-                status,
-                status_text,
-                payload,
-            } => {
-                write!(f, "{} {} / {}", status, status_text, payload)
-            }
-            RestApiError::Reqwest(e) => {
-                write!(f, "{}", e)
-            }
-            RestApiError::InvalidHeaderValue(e) => {
-                write!(f, "{}", e)
-            }
-            RestApiError::NotImplementedInRestApi { method, path } => {
-                write!(
-                    f,
-                    "Method {} not implemented for path {} in REST API",
-                    method, path
-                )
-            }
-            RestApiError::ClientIdRequired => {
-                write!(f, "Client ID required")
-            }
-            RestApiError::ClientSecretRequired => {
-                write!(f, "Client secret required")
-            }
-            RestApiError::RefreshTokenRequired => {
-                write!(f, "Refresh token required")
-            }
-            RestApiError::AccessTokenRequired => {
-                write!(f, "Access token required")
-            }
-            RestApiError::UnexpectedResponse(v) => {
-                write!(f, "Unexpected response: {}", v)
-            }
-            RestApiError::MissingId => {
-                write!(f, "Missing ID")
-            }
-            RestApiError::HasId => {
-                write!(f, "ID already set")
-            }
-            RestApiError::MissingOrInvalidField { field, j } => {
-                if j.get(field).is_none() {
-                    write!(f, "Missing field {}: {}", field, j)
-                } else {
-                    write!(f, "Invalid field type for {}: {}", field, j)
-                }
-            }
-            RestApiError::WrongType { field, j } => {
-                write!(f, "Wrong type for {}: {}", field, j)
-            }
-            RestApiError::IsNone => {
-                write!(f, "Entity ID is None")
-            }
-            RestApiError::UnknownEntityLetter(s) => {
-                write!(f, "Unrecognized entity ID letter: {}", s)
-            }
-            RestApiError::UnknownValue(s) => {
-                write!(f, "Unknown value: {}", s)
-            }
-            RestApiError::SerdeJson(e) => {
-                write!(f, "{}", e)
-            }
-            RestApiError::ApiNotSet => {
-                write!(f, "API not set")
-            }
-            RestApiError::UnknownDataType(s) => {
-                write!(f, "Unknown data type: {}", s)
-            }
-            RestApiError::UnknownStatementRank(s) => {
-                write!(f, "Unknown statement rank: {}", s)
-            }
-            RestApiError::EmptyValue(s) => {
-                write!(f, "Empty value: {}", s)
-            }
-            RestApiError::UnsupportedMethod(m) => {
-                write!(f, "Unsupported method: {}", m)
-            }
-            RestApiError::RestApiUrlInvalid(s) => {
-                write!(f, "REST API URL does not contain '/rest.php': {}", s)
-            }
-        }
-    }
-}
-
-impl Error for RestApiError {}
 
 impl From<reqwest::Error> for RestApiError {
     fn from(e: reqwest::Error) -> Self {
@@ -245,7 +170,7 @@ mod tests {
         };
         assert_eq!(
             error.to_string(),
-            "400 Bad Request Bad Request / code: message / {\"key\":\"value\"}"
+            "ApiError: 400 Bad Request Bad Request / RestApiErrorPayload { code: \"code\", message: \"message\", context: {\"key\": String(\"value\")} }"
         );
     }
 
@@ -253,14 +178,17 @@ mod tests {
     async fn test_error_reqwest() {
         let error = reqwest::get("not a url").await.unwrap_err();
         let rest_api_error: RestApiError = error.into();
-        assert_eq!(rest_api_error.to_string(), "builder error");
+        assert_eq!(rest_api_error.to_string(), "Reqwest Error: builder error");
     }
 
     #[test]
     fn test_invalid_header_value() {
         let error = HeaderValue::from_str("\u{0}").unwrap_err();
         let rest_api_error: RestApiError = error.into();
-        assert_eq!(rest_api_error.to_string(), "failed to parse header value");
+        assert_eq!(
+            rest_api_error.to_string(),
+            "Invalid header value: failed to parse header value"
+        );
     }
 
     #[test]
@@ -316,7 +244,7 @@ mod tests {
         let rest_api_error: RestApiError = error.into();
         assert_eq!(
             rest_api_error.to_string(),
-            "EOF while parsing an object at line 1 column 1"
+            "Serde JSON error: EOF while parsing an object at line 1 column 1"
         );
     }
 }

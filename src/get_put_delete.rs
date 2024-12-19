@@ -162,7 +162,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            "400 Bad Request Bad Request / foo: bar / {}"
+            "ApiError: 400 Bad Request Bad Request / RestApiErrorPayload { code: \"foo\", message: \"bar\", context: {} }"
         );
     }
 }
