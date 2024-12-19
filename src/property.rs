@@ -1,9 +1,9 @@
 use crate::{
     aliases::Aliases,
+    aliases_in_language::AliasesInLanguage,
     descriptions::Descriptions,
     entity::{Entity, EntityType},
     labels::Labels,
-    language_strings::LanguageStringsMultiple,
     statements::Statements,
     EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
 };
@@ -18,7 +18,7 @@ pub struct Property {
     id: EntityId,
     labels: Labels,
     descriptions: Descriptions,
-    aliases: LanguageStringsMultiple,
+    aliases: Aliases,
     statements: Statements,
     #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
@@ -47,7 +47,7 @@ impl Entity for Property {
             id: EntityId::property(id),
             labels: Labels::from_json(&j["labels"])?,
             descriptions: Descriptions::from_json(&j["descriptions"])?,
-            aliases: LanguageStringsMultiple::from_json(&j["aliases"])?,
+            aliases: Aliases::from_json(&j["aliases"])?,
             statements: Statements::from_json(&j["statements"])?,
             header_info,
         })
@@ -113,17 +113,17 @@ impl Property {
     }
 
     /// Returns the aliases of the property
-    pub const fn aliases(&self) -> &LanguageStringsMultiple {
+    pub const fn aliases(&self) -> &Aliases {
         &self.aliases
     }
 
     /// Returns the aliases of the property, mutable
-    pub fn aliases_mut(&mut self) -> &mut LanguageStringsMultiple {
+    pub fn aliases_mut(&mut self) -> &mut Aliases {
         &mut self.aliases
     }
 
     /// Returns the aliases of the property for a specific language, as an `Aliases` object
-    pub fn as_aliases<S: Into<String>>(&self, lang: S) -> Aliases {
+    pub fn as_aliases<S: Into<String>>(&self, lang: S) -> AliasesInLanguage {
         let lang: String = lang.into();
         let v: Vec<String> = self
             .aliases
@@ -131,7 +131,7 @@ impl Property {
             .iter()
             .map(|x| x.to_string())
             .collect();
-        Aliases::new(lang, v)
+        AliasesInLanguage::new(lang, v)
     }
 
     /// Returns the header info of the property

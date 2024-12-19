@@ -1,6 +1,6 @@
 use crate::{
-    language_strings::LanguageStringsMultiple, patch_entry::PatchEntry, EditMetadata, EntityId,
-    FromJson, HttpMisc, Patch, RestApi, RestApiError,
+    aliases::Aliases, patch_entry::PatchEntry, EditMetadata, EntityId, FromJson, HttpMisc, Patch,
+    RestApi, RestApiError,
 };
 use async_trait::async_trait;
 use serde::Serialize;
@@ -19,7 +19,7 @@ impl AliasesPatch {
         num: usize,
         value: S2,
     ) {
-        <Self as Patch<LanguageStringsMultiple>>::replace(
+        <Self as Patch<Aliases>>::replace(
             self,
             format!("/{}/{num}", language.into()),
             value.into().into(),
@@ -28,10 +28,7 @@ impl AliasesPatch {
 
     /// Adds a command to remove an alias in a specific language, at a specific position
     pub fn remove<S: Into<String>>(&mut self, language: S, num: usize) {
-        <Self as Patch<LanguageStringsMultiple>>::remove(
-            self,
-            format!("/{}/{num}", language.into()),
-        );
+        <Self as Patch<Aliases>>::remove(self, format!("/{}/{num}", language.into()));
     }
 
     /// Generates a patch from JSON, presumably from `json_patch`
@@ -50,7 +47,7 @@ impl AliasesPatch {
 }
 
 #[async_trait]
-impl Patch<LanguageStringsMultiple> for AliasesPatch {
+impl Patch<Aliases> for AliasesPatch {
     fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
     }
@@ -64,14 +61,14 @@ impl Patch<LanguageStringsMultiple> for AliasesPatch {
         id: &EntityId,
         api: &mut RestApi,
         em: EditMetadata,
-    ) -> Result<LanguageStringsMultiple, RestApiError> {
+    ) -> Result<Aliases, RestApiError> {
         let j = json!({"patch": self.patch});
         let request = self
             .generate_json_request(id, reqwest::Method::PATCH, j, api, &em)
             .await?;
         let response = api.execute(request).await?;
         let (j2, header_info) = self.filter_response_error(response).await?;
-        LanguageStringsMultiple::from_json_header_info(&j2, header_info)
+        Aliases::from_json_header_info(&j2, header_info)
     }
 }
 

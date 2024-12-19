@@ -1,9 +1,9 @@
 use crate::{
     aliases::Aliases,
+    aliases_in_language::AliasesInLanguage,
     descriptions::Descriptions,
     entity::{Entity, EntityType},
     labels::Labels,
-    language_strings::LanguageStringsMultiple,
     sitelinks::Sitelinks,
     statements::Statements,
     EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
@@ -19,7 +19,7 @@ pub struct Item {
     id: EntityId,
     labels: Labels,
     descriptions: Descriptions,
-    aliases: LanguageStringsMultiple,
+    aliases: Aliases,
     sitelinks: Sitelinks,
     statements: Statements,
     #[derivative(PartialEq = "ignore")]
@@ -50,7 +50,7 @@ impl Entity for Item {
             id: EntityId::Item(id),
             labels: Labels::from_json(&j["labels"])?,
             descriptions: Descriptions::from_json(&j["descriptions"])?,
-            aliases: LanguageStringsMultiple::from_json(&j["aliases"])?,
+            aliases: Aliases::from_json(&j["aliases"])?,
             sitelinks: Sitelinks::from_json(&j["sitelinks"])?,
             statements: Statements::from_json(&j["statements"])?,
             header_info,
@@ -118,17 +118,17 @@ impl Item {
     }
 
     /// Returns the aliases of the item.
-    pub const fn aliases(&self) -> &LanguageStringsMultiple {
+    pub const fn aliases(&self) -> &Aliases {
         &self.aliases
     }
 
     /// Returns the aliases of the item (mutable).
-    pub fn aliases_mut(&mut self) -> &mut LanguageStringsMultiple {
+    pub fn aliases_mut(&mut self) -> &mut Aliases {
         &mut self.aliases
     }
 
     /// Returns the aliases of the item as an `Aliases` object.
-    pub fn as_aliases<S: Into<String>>(&self, lang: S) -> Aliases {
+    pub fn as_aliases<S: Into<String>>(&self, lang: S) -> AliasesInLanguage {
         let lang: String = lang.into();
         let v: Vec<String> = self
             .aliases
@@ -136,7 +136,7 @@ impl Item {
             .iter()
             .map(|x| x.to_string())
             .collect();
-        Aliases::new(lang, v)
+        AliasesInLanguage::new(lang, v)
     }
 
     /// Returns the sitelinks of the item.

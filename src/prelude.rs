@@ -4,7 +4,7 @@ pub use crate::get_put_delete::*;
 pub use crate::language_strings::LanguageStrings;
 
 // Structs and enums
-pub use crate::aliases::Aliases;
+pub use crate::aliases_in_language::AliasesInLanguage;
 pub use crate::description::Description;
 pub use crate::entity_container::*;
 pub use crate::entity_id::EntityId;

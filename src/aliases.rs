@@ -1,296 +1,186 @@
 use crate::{
-    EditMetadata, EntityId, HeaderInfo, HttpGet, HttpMisc, RestApi, RestApiError, RevisionMatch,
+    aliases_patch::AliasesPatch, prelude::LanguageStrings, FromJson, HeaderInfo, LanguageString,
+    RestApiError,
 };
-use async_trait::async_trait;
 use derivative::Derivative;
-use reqwest::{Response, StatusCode};
+use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-/// A group of aliases in a specific language.
-#[derive(Derivative, Debug, Clone)]
+#[derive(Derivative, Debug, Clone, Default)]
 #[derivative(PartialEq)]
 pub struct Aliases {
-    language: String,
-    values: Vec<String>,
+    ls: HashMap<String, Vec<String>>,
     #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
 }
 
 impl Aliases {
-    /// Constructs a new `Aliases` object from a language code and a list of aliases.
-    pub fn new<S: Into<String>>(language: S, values: Vec<String>) -> Self {
-        Self {
-            language: language.into(),
-            values,
-            header_info: HeaderInfo::default(),
-        }
+    /// Returns the list of values for a language
+    pub fn get_lang<S: Into<String>>(&self, language: S) -> Vec<&str> {
+        self.ls
+            .get(&language.into())
+            .map_or_else(Vec::new, |v| v.iter().map(|s| s.as_str()).collect())
     }
 
-    /// Constructs a new `Aliases` object from a language code and a JSON array of (string) aliases.
-    pub fn from_json<S: Into<String>>(language: S, j: &Value) -> Result<Self, RestApiError> {
-        Self::from_json_header_info(language, j, HeaderInfo::default())
+    /// Returns the list of values for a language, mutable
+    pub fn get_lang_mut<S: Into<String>>(&mut self, language: S) -> &mut Vec<String> {
+        self.ls.entry(language.into()).or_default()
     }
 
-    /// Constructs a new `Aliases` object from a language code and a JSON array of (string) aliases.
-    pub fn from_json_header_info<S: Into<String>>(
-        language: S,
-        j: &Value,
-        header_info: HeaderInfo,
-    ) -> Result<Self, RestApiError> {
-        let language = language.into();
-        if language.trim().is_empty() {
-            return Err(RestApiError::EmptyValue("Language".into()));
-        }
-        let aliases = j
-            .as_array()
-            .ok_or_else(|| RestApiError::MissingOrInvalidField {
-                field: "Aliases".into(),
-                j: j.to_owned(),
-            })?
+    /// Generates a patch to transform `other` into `self`
+    pub fn patch(&self, other: &Self) -> Result<AliasesPatch, RestApiError> {
+        let patch = json_patch::diff(&json!(&other), &json!(&self));
+        let patch = AliasesPatch::from_json(&json!(patch))?;
+        Ok(patch)
+    }
+
+    /// Returns the number of languages
+    pub fn len(&self) -> usize {
+        self.ls.len()
+    }
+
+    /// Returns true if there are no language strings
+    pub fn is_empty(&self) -> bool {
+        self.ls.is_empty()
+    }
+
+    fn from_json_header_info_part(
+        language: &str,
+        values: &[Value],
+    ) -> Result<(String, Vec<String>), RestApiError> {
+        let values = values
             .iter()
             .map(|v| {
                 Ok(v.as_str()
                     .ok_or_else(|| RestApiError::MissingOrInvalidField {
-                        field: "Aliases".into(),
+                        field: "LanguageStringsMultiple".into(),
                         j: v.to_owned(),
                     })?
                     .to_string())
             })
             .collect::<Result<Vec<String>, RestApiError>>()?;
-        Ok(Self {
-            language,
-            values: aliases,
-            header_info,
-        })
+        Ok((language.to_owned(), values))
     }
+}
 
-    /// Adds an alias to the list of aliases (only if it is not already present).
-    pub fn push(&mut self, alias: String) {
-        if !self.values.contains(&alias) {
-            self.values.push(alias);
-        }
-    }
-
-    /// Returns the list of aliases.
-    pub const fn values(&self) -> &Vec<String> {
-        &self.values
-    }
-
-    /// Returns the number of aliases.
-    pub fn len(&self) -> usize {
-        self.values.len()
-    }
-
-    /// Returns true if the list of aliases is empty.
-    pub fn is_empty(&self) -> bool {
-        self.values.is_empty()
-    }
-
-    /// Returns the language code of the aliases.
-    pub fn language(&self) -> &str {
-        &self.language
-    }
-
-    /// Adds one or more aliases to the list of aliases.
-    pub async fn post(&self, id: &EntityId, api: &mut RestApi) -> Result<Self, RestApiError> {
-        self.post_meta(id, api, EditMetadata::default()).await
-    }
-
-    /// Adds one or more aliases to the list of aliases, using conditions and edit metadata.
-    pub async fn post_meta(
-        &self,
-        id: &EntityId,
-        api: &mut RestApi,
-        em: EditMetadata,
-    ) -> Result<Self, RestApiError> {
-        let j = json!({"aliases": self.values});
-        let (j, header_info) = self
-            .run_json_query(id, reqwest::Method::POST, j, api, &em)
-            .await?;
-        Self::from_json_header_info(&self.language, &j, header_info)
-    }
-
-    /// Returns the header information of the last HTTP response (revision ID, last modified).
-    pub const fn header_info(&self) -> &HeaderInfo {
+impl FromJson for Aliases {
+    fn header_info(&self) -> &HeaderInfo {
         &self.header_info
     }
 
-    async fn check_get_match_response(
-        language: &str,
-        response: Response,
-    ) -> Result<Self, RestApiError> {
-        let header_info = HeaderInfo::from_header(response.headers());
-        let j: Value = match response.error_for_status() {
-            Ok(response) => response.json().await?,
-            Err(e) => {
-                if e.status() == Some(StatusCode::NOT_FOUND) {
-                    json!([])
-                } else {
-                    return Err(e.into());
-                }
-            }
-        };
-        Self::from_json_header_info(language, &j, header_info)
+    fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
+        let ls = j
+            .as_object()
+            .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                field: "LanguageStringsMultiple".into(),
+                j: j.to_owned(),
+            })?
+            .iter()
+            .map(|(language, value)| {
+                value.as_array().map_or_else(
+                    || {
+                        Err(RestApiError::MissingOrInvalidField {
+                            field: "LanguageStringsMultiple".into(),
+                            j: value.to_owned(),
+                        })
+                    },
+                    |v| Self::from_json_header_info_part(language, v),
+                )
+            })
+            .collect::<Result<HashMap<String, Vec<String>>, RestApiError>>()?;
+        let ret = Self { ls, header_info };
+        Ok(ret)
     }
 }
 
-impl HttpMisc for Aliases {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!(
-            "/entities/{group}/{id}/aliases/{language}",
-            group = id.group()?,
-            language = self.language
-        ))
+impl LanguageStrings for Aliases {
+    fn has_language<S: Into<String>>(&self, language: S) -> bool {
+        self.ls.contains_key(&language.into())
+    }
+
+    fn insert(&mut self, ls: LanguageString) {
+        let entry = self.ls.entry(ls.language().to_string()).or_default();
+        if !entry.contains(ls.value()) {
+            entry.push(ls.value().to_owned());
+        }
     }
 }
 
-#[async_trait]
-impl HttpGet for Aliases {
-    async fn get_match(
-        id: &EntityId,
-        language: &str,
-        api: &RestApi,
-        rm: RevisionMatch,
-    ) -> Result<Self, RestApiError> {
-        let path = format!(
-            "/entities/{group}/{id}/aliases/{language}",
-            group = id.group()?
-        );
-        let mut request = api
-            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
-            .await?
-            .build()?;
-        rm.modify_headers(request.headers_mut())?;
-        let response = api.execute(request).await?;
-        Self::check_get_match_response(language, response).await
+impl Serialize for Aliases {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_map(Some(self.ls.len()))?;
+        for (language, values) in &self.ls {
+            s.serialize_entry(language, &values)?;
+        }
+        s.end()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wiremock::matchers::{bearer_token, body_partial_json, method, path};
-    use wiremock::{Mock, MockServer, ResponseTemplate};
+    use serde_json::json;
 
-    #[tokio::test]
-    async fn test_aliases_get() {
-        let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
-        let v: Value = serde_json::from_str(&v).unwrap();
-        let id_q42 = v["id"].as_str().unwrap();
-
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id_q42}/aliases/en");
-        let mock_server = MockServer::start().await;
-        Mock::given(method("GET"))
-            .and(path(&mock_path))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&v["aliases"]["en"]))
-            .mount(&mock_server)
-            .await;
-        let api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
-
-        let id = EntityId::item("Q42");
-        let aliases = Aliases::get(&id, "en", &api).await.unwrap();
-        assert!(aliases.values.contains(&"Douglas Noël Adams".to_string()));
-    }
-
-    #[tokio::test]
-    async fn test_aliases_post() {
-        // #lizard forgives the complexity
-        let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
-        let v: Value = serde_json::from_str(&v).unwrap();
-        let id = v["id"].as_str().unwrap();
-        let new_alias = "Foo bar baz";
-        let mut new_aliases = v["aliases"]["en"].to_owned();
-        new_aliases.as_array_mut().unwrap().push(json!(new_alias));
-
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/aliases/en");
-        let mock_server = MockServer::start().await;
-        let token = "FAKE_TOKEN";
-        Mock::given(method("GET"))
-            .and(path(&mock_path))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&v["aliases"]["en"]))
-            .mount(&mock_server)
-            .await;
-        Mock::given(body_partial_json(json!({"aliases": [new_alias]})))
-            .and(method("POST"))
-            .and(path(&mock_path))
-            .and(bearer_token(token))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&new_aliases))
-            .mount(&mock_server)
-            .await;
-        let mut api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
-            .set_access_token(token)
-            .build()
-            .unwrap();
-
-        let id2 = EntityId::item("Q42");
-        let aliases = Aliases::get(&id2, "en", &api).await.unwrap();
-        let new_aliases2 = Aliases::new("en", vec![new_alias.to_string()]);
-        let new_aliases2 = new_aliases2.post(&id2, &mut api).await.unwrap();
-        assert_eq!(new_aliases2.len(), aliases.len() + 1);
-        assert!(new_aliases2.values.contains(&new_alias.to_string()));
-
-        // Check non-existing item
-        let id3 = EntityId::item("Q12345");
-        assert_eq!(Aliases::get(&id3, "en", &api).await.unwrap().len(), 0);
+    #[test]
+    fn test_aliases() {
+        let j = json!({
+            "en": ["Hello", "Hi"],
+            "de": ["Hallo", "Hi"],
+        });
+        let ls = Aliases::from_json(&j).unwrap();
+        assert_eq!(ls.get_lang("en"), vec!["Hello", "Hi"]);
+        assert_eq!(ls.get_lang("de"), vec!["Hallo", "Hi"]);
+        assert!(ls.get_lang("fr").is_empty());
     }
 
     #[test]
-    fn test_aliases_new() {
-        let aliases = Aliases::new("en", vec!["Foo".to_string(), "Bar".to_string()]);
-        assert_eq!(aliases.language(), "en");
-        assert_eq!(aliases.len(), 2);
+    fn test_aliases_insert() {
+        let mut ls = Aliases::default();
+        ls.insert(LanguageString::new("en", "Hello"));
+        ls.insert(LanguageString::new("de", "Hallo"));
+        ls.insert(LanguageString::new("en", "Hi"));
+        assert_eq!(ls.get_lang("en"), vec!["Hello", "Hi"]);
+        assert_eq!(ls.get_lang("de"), vec!["Hallo"]);
     }
 
     #[test]
-    fn test_aliases_from_json() {
-        let j = json!(["Foo", "Bar"]);
-        let aliases = Aliases::from_json("en", &j).unwrap();
-        assert_eq!(aliases.language(), "en");
-        assert_eq!(aliases.len(), 2);
-    }
+    fn test_patch_aliases() {
+        let mut l1 = Aliases::default();
+        l1.insert(LanguageString::new("en", "Foo"));
+        l1.insert(LanguageString::new("en", "Bar"));
+        l1.insert(LanguageString::new("en", "Baz"));
+        l1.insert(LanguageString::new("de", "Foobar"));
+        let mut l2 = l1.clone();
+        l2.get_lang_mut("en")[2] = "Boo".to_string();
+        l2.get_lang_mut("en").remove(1);
+        l2.insert(LanguageString::new("de", "Foobaz"));
 
-    #[test]
-    fn test_aliases_push() {
-        let mut aliases = Aliases::new("en", vec!["Foo".to_string()]);
-        aliases.push("Bar".to_string());
-        aliases.push("Foo".to_string());
-        assert_eq!(aliases.len(), 2);
-    }
-
-    #[test]
-    fn test_aliases_values() {
-        let aliases = Aliases::new("en", vec!["Foo".to_string(), "Bar".to_string()]);
+        let patch = l2.patch(&l1).unwrap();
+        let patch_json = json!(patch);
         assert_eq!(
-            aliases.values(),
-            &vec!["Foo".to_string(), "Bar".to_string()]
+            patch_json,
+            json!({"patch":[{"op":"add","path":"/de/1","value":"Foobaz"},{"op":"replace","path":"/en/1","value":"Boo"},{"op":"remove","path":"/en/2"}]})
         );
     }
 
     #[test]
-    fn test_aliases_len() {
-        let aliases = Aliases::new("en", vec!["Foo".to_string(), "Bar".to_string()]);
-        assert_eq!(aliases.len(), 2);
+    fn test_header_info_multiple() {
+        let l = Aliases::default();
+        assert_eq!(l.header_info(), &HeaderInfo::default());
     }
 
     #[test]
-    fn test_aliases_header_info() {
-        let aliases = Aliases::new("en", vec!["Foo".to_string(), "Bar".to_string()]);
-        assert_eq!(aliases.header_info(), &HeaderInfo::default());
-    }
-
-    #[test]
-    fn test_from_json_header_info() {
-        let j = json!(12345);
-
-        let aliases = Aliases::from_json("", &j).unwrap_err();
-        assert_eq!(aliases.to_string(), "Empty value: Language");
-
-        let aliases2 = Aliases::from_json("en", &j).unwrap_err();
-        assert_eq!(aliases2.to_string(), "Missing field Aliases: 12345");
+    fn test_serialize2() {
+        let mut l = Aliases::default();
+        l.insert(LanguageString::new("en", "Foo"));
+        l.insert(LanguageString::new("en", "Bar"));
+        l.insert(LanguageString::new("de", "Baz"));
+        let s = serde_json::to_string(&l).unwrap();
+        assert!(s.contains(r#""en":["Foo","Bar"]"#));
+        assert!(s.contains(r#""de":["Baz"]"#));
     }
 }

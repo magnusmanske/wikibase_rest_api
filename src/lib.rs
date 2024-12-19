@@ -45,6 +45,7 @@
 //! and implements all the [API endpoints](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
 
 pub mod aliases;
+pub mod aliases_in_language;
 pub mod aliases_patch;
 pub mod bearer_token;
 pub mod config;
