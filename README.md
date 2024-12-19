@@ -21,11 +21,11 @@
 - [x] `get item_id/language_code`
 - [x] `put item_id/language_code`
 - [x] `delete item_id/language_code`
-- [ ] `get item_id/language_code` with fallback language
+- [x] `get item_id/language_code` with fallback language
 - [x] `get property_id/language_code`
 - [x] `put property_id/language_code`
 - [x] `delete property_id/language_code`
-- [ ] `get property_id/language_code` with fallback language
+- [x] `get property_id/language_code` with fallback language
 ## descriptions
 - [x] `get item_id`
 - [x] `patch item_id`
@@ -34,11 +34,11 @@
 - [x] `get item_id/language_code`
 - [x] `put item_id/language_code`
 - [x] `delete item_id/language_code`
-- [ ] `get item_id/language_code` with fallback language
+- [x] `get item_id/language_code` with fallback language
 - [x] `get property_id/language_code`
 - [x] `put property_id/language_code`
 - [x] `delete property_id/language_code`
-- [ ] `get property_id/language_code` with fallback language
+- [x] `get property_id/language_code` with fallback language
 ## aliases
 - [x] `get item_id`
 - [x] `patch item_id`

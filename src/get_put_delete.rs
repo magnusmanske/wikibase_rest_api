@@ -135,6 +135,27 @@ pub trait HttpGetEntity: Sized + HttpMisc {
     }
 }
 
+#[async_trait]
+pub trait HttpGetEntityWithFallback: Sized + HttpMisc {
+    async fn get_match_with_fallback(
+        id: &EntityId,
+        language: &str,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError>;
+
+    async fn get_with_fallback(
+        id: &EntityId,
+        language: &str,
+        api: &RestApi,
+    ) -> Result<Self, RestApiError>
+    where
+        Self: Sized,
+    {
+        Self::get_match_with_fallback(id, language, api, RevisionMatch::default()).await
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Sitelinks;

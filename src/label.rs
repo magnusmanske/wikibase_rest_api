@@ -1,6 +1,6 @@
 use crate::{
-    EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpMisc, HttpPut, LanguageString,
-    RestApi, RestApiError, RevisionMatch,
+    EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpGetEntityWithFallback, HttpMisc,
+    HttpPut, LanguageString, RestApi, RestApiError, RevisionMatch,
 };
 use async_trait::async_trait;
 use derivative::Derivative;
@@ -31,9 +31,10 @@ impl Label {
         language: &str,
         api: &RestApi,
         rm: RevisionMatch,
+        mode: &str,
     ) -> Result<Request, RestApiError> {
         let path = format!(
-            "/entities/{group}/{id}/labels/{language}",
+            "/entities/{group}/{id}/{mode}/{language}",
             group = id.group()?
         );
         let mut request = api
@@ -79,6 +80,41 @@ impl HttpMisc for Label {
 }
 
 #[async_trait]
+impl HttpGetEntityWithFallback for Label {
+    async fn get_match_with_fallback(
+        id: &EntityId,
+        language: &str,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError> {
+        let request = Self::generate_get_match_request(
+            id,
+            language,
+            api,
+            rm,
+            "labels_with_language_fallback",
+        )
+        .await?;
+        let j: Value = api
+            .execute(request)
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        let s = j
+            .as_str()
+            .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                field: "Label".into(),
+                j: j.to_owned(),
+            })?;
+        Ok(Self {
+            ls: LanguageString::new(language, s),
+            header_info: HeaderInfo::default(),
+        })
+    }
+}
+
+#[async_trait]
 impl HttpGet for Label {
     async fn get_match(
         id: &EntityId,
@@ -86,7 +122,7 @@ impl HttpGet for Label {
         api: &RestApi,
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
-        let request = Self::generate_get_match_request(id, language, api, rm).await?;
+        let request = Self::generate_get_match_request(id, language, api, rm, "labels").await?;
         let j: Value = api
             .execute(request)
             .await?
@@ -152,10 +188,32 @@ impl HttpPut for Label {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use wiremock::matchers::{bearer_token, body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
-    use super::*;
+    #[tokio::test]
+    async fn test_labels_get_match_with_fallback() {
+        let id = "Q42";
+        let mock_path = format!(
+            "/w/rest.php/wikibase/v0/entities/items/{id}/labels_with_language_fallback/foo"
+        );
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(&mock_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!("Douglas Adams")))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
+
+        let id = EntityId::item(id);
+        let label = Label::get_with_fallback(&id, "foo", &api).await.unwrap();
+        assert_eq!(label.language(), "foo");
+        assert_eq!(label.value(), "Douglas Adams");
+    }
 
     #[tokio::test]
     async fn test_label_get() {

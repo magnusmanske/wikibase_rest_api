@@ -1,3 +1,4 @@
+use crate::HttpGetEntityWithFallback;
 use crate::{
     get_put_delete::HttpMisc, EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpPut,
     LanguageString, RestApi, RestApiError, RevisionMatch,
@@ -31,9 +32,10 @@ impl Description {
         language: &str,
         api: &RestApi,
         rm: RevisionMatch,
+        mode: &str,
     ) -> Result<Request, RestApiError> {
         let path = format!(
-            "/entities/{group}/{id}/descriptions/{language}",
+            "/entities/{group}/{id}/{mode}/{language}",
             group = id.group()?
         );
         let mut request = api
@@ -79,6 +81,41 @@ impl HttpMisc for Description {
 }
 
 #[async_trait]
+impl HttpGetEntityWithFallback for Description {
+    async fn get_match_with_fallback(
+        id: &EntityId,
+        language: &str,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError> {
+        let request = Self::generate_get_match_request(
+            id,
+            language,
+            api,
+            rm,
+            "descriptions_with_language_fallback",
+        )
+        .await?;
+        let j: Value = api
+            .execute(request)
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        let s = j
+            .as_str()
+            .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                field: "Descriptions".into(),
+                j: j.to_owned(),
+            })?;
+        Ok(Self {
+            ls: LanguageString::new(language, s),
+            header_info: HeaderInfo::default(),
+        })
+    }
+}
+
+#[async_trait]
 impl HttpGet for Description {
     async fn get_match(
         id: &EntityId,
@@ -86,7 +123,8 @@ impl HttpGet for Description {
         api: &RestApi,
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
-        let request = Self::generate_get_match_request(id, language, api, rm).await?;
+        let request =
+            Self::generate_get_match_request(id, language, api, rm, "descriptions").await?;
         let j: Value = api
             .execute(request)
             .await?
@@ -150,6 +188,31 @@ mod tests {
     use super::*;
     use wiremock::matchers::{bearer_token, body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[tokio::test]
+    async fn test_descriptions_get_match_with_fallback() {
+        let id = "Q42";
+        let mock_path = format!(
+            "/w/rest.php/wikibase/v0/entities/items/{id}/descriptions_with_language_fallback/foo"
+        );
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(&mock_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!("Douglas Adams")))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
+
+        let id = EntityId::item(id);
+        let description = Description::get_with_fallback(&id, "foo", &api)
+            .await
+            .unwrap();
+        assert_eq!(description.language(), "foo");
+        assert_eq!(description.value(), "Douglas Adams");
+    }
 
     #[tokio::test]
     async fn test_description_get() {

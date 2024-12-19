@@ -109,18 +109,11 @@ async fn create_item_demo() -> Result<(), RestApiError> {
 #[cfg(not(tarpaulin_include))]
 #[tokio::main]
 async fn main() -> Result<(), RestApiError> {
-    let id = EntityId::new("Q42")?;
-    let api = RestApi::builder()
-        .api("https://www.wikidata.org/w/rest.php")
-        .build()?;
-    let aliases = wikibase_rest_api::aliases::Aliases::get(&id, &api).await?;
-    println!("{aliases:?}");
+    q42_demo().await?;
 
-    if false {
-        q42_demo().await?;
-        container_demo().await?;
-        create_item_demo().await?;
-    }
+    container_demo().await?;
+
+    create_item_demo().await?;
 
     Ok(())
 }
