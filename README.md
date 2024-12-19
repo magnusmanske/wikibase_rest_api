@@ -40,10 +40,10 @@
 - [x] `delete property_id/language_code`
 - [ ] `get property_id/language_code` with fallback language
 ## aliases
-- [ ] `get item_id`
-- [ ] `patch item_id`
-- [ ] `get property_id`
-- [ ] `patch property_id`
+- [x] `get item_id`
+- [x] `patch item_id`
+- [x] `get property_id`
+- [x] `patch property_id`
 - [x] `get item_id/language_code`
 - [x] `post item_id/language_code`
 - [x] `get property_id/language_code`

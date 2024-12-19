@@ -1,8 +1,9 @@
 use crate::{
-    aliases_patch::AliasesPatch, prelude::LanguageStrings, FromJson, HeaderInfo, LanguageString,
-    RestApiError,
+    aliases_patch::AliasesPatch, prelude::LanguageStrings, EntityId, FromJson, HeaderInfo,
+    LanguageString, RestApi, RestApiError, RevisionMatch,
 };
 use derivative::Derivative;
+use reqwest::StatusCode;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -16,6 +17,41 @@ pub struct Aliases {
 }
 
 impl Aliases {
+    /// Creates a new `Aliases` struct for the given entity ID.
+    /// If the API cannot find anything, the `Aliases` struct will be empty.
+    pub async fn get_match(
+        id: &EntityId,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError> {
+        let path = format!("/entities/{group}/{id}/aliases", group = id.group()?);
+        let mut request = api
+            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        rm.modify_headers(request.headers_mut())?;
+        let response = api.execute(request).await?;
+
+        let header_info = HeaderInfo::from_header(response.headers());
+        let ls: HashMap<String, Vec<String>> = match response.error_for_status() {
+            Ok(response) => response.json().await?,
+            Err(e) => {
+                if e.status() == Some(StatusCode::NOT_FOUND) {
+                    HashMap::new()
+                } else {
+                    return Err(e.into());
+                }
+            }
+        };
+        Ok(Self { ls, header_info })
+    }
+
+    /// Creates a new `Aliases` struct for the given entity ID.
+    /// If the API cannot find anything, the `Aliases` struct will be empty.
+    pub async fn get(id: &EntityId, api: &RestApi) -> Result<Self, RestApiError> {
+        Self::get_match(id, api, RevisionMatch::default()).await
+    }
+
     /// Returns the list of values for a language
     pub fn get_lang<S: Into<String>>(&self, language: S) -> Vec<&str> {
         self.ls
@@ -124,6 +160,32 @@ impl Serialize for Aliases {
 mod tests {
     use super::*;
     use serde_json::json;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[tokio::test]
+    async fn test_aliases_get() {
+        let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
+        let v: Value = serde_json::from_str(&v).unwrap();
+        let id = v["id"].as_str().unwrap();
+        let v: Value = v["aliases"].clone();
+
+        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/aliases");
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(&mock_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&v))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
+
+        let sitelinks = Aliases::get(&EntityId::item("Q42"), &api).await.unwrap();
+        assert_eq!(sitelinks.ls.len(), 64);
+        assert_eq!(sitelinks.get_lang("tok")[0], "jan Takala Atan");
+    }
 
     #[test]
     fn test_aliases() {
