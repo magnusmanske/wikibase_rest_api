@@ -103,6 +103,16 @@ impl RestApi {
         Ok(response)
     }
 
+    pub async fn get_openapi_json(&self) -> Result<serde_json::Value, RestApiError> {
+        let request = self
+            .wikibase_request_builder("/openapi.json", HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        let response = self.execute(request).await?;
+        let json = response.json().await?;
+        Ok(json)
+    }
+
     pub fn api_url(&self) -> &str {
         &self.api_url
     }
@@ -214,6 +224,28 @@ impl RestApiBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[tokio::test]
+    async fn test_get_openapi_json() {
+        let expected_json = std::fs::read_to_string("test_data/openapi.json").unwrap();
+        let expected_json: serde_json::Value = serde_json::from_str(&expected_json).unwrap();
+        let mock_path = "/w/rest.php/wikibase/v0/openapi.json";
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(mock_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(expected_json.clone()))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder()
+            .api(&(mock_server.uri() + "/w/rest.php"))
+            .build()
+            .unwrap();
+
+        let json = api.get_openapi_json().await.unwrap();
+        assert_eq!(json, expected_json);
+    }
 
     #[test]
     fn test_array2hashmap() {

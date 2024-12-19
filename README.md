@@ -66,7 +66,7 @@
 - [x] `patch statement_id`
 - [x] `delete statement_id`
 ## misc
-- [ ] `/openapi.json` _out of scope_
+- [x] `/openapi.json`
 - [x] `/property-data-types`
 
 # TODO
