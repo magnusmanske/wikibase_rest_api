@@ -3,7 +3,7 @@ It is based on the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master
 It works on any MediaWiki installation with the Wikibase extension and an enabled Wikibase REST API.
 
 # Usage
-See also the [examples](src/bin/main.js).
+See also the [examples](src/bin/main.rs).
 ```rust
 // Create an API (use the Wikidata API shortcut)
 let wikidata_api = RestApi::wikidata().unwrap();
