@@ -40,6 +40,12 @@ impl RestApi {
         self.request_builder(&wikibase_path, headers, params, method)
     }
 
+    pub fn wikidata() -> Result<RestApi, RestApiError> {
+        RestApi::builder()
+            .api("https://www.wikidata.org/w/rest.php")
+            .build()
+    }
+
     fn wikibase_root(&self) -> String {
         format!("/wikibase/v{}", self.api_version)
     }

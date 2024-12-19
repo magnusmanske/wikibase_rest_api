@@ -1,3 +1,58 @@
+This Rust crate provides a REST API for Wikibase.
+It is based on the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
+It works on any MediaWiki installation with the Wikibase extension and an enabled Wikibase REST API.
+
+# Usage
+See also the [examples](src/bin/main.js).
+```rust
+// Create an API (use the Wikidata API shortcut)
+let wikidata_api = RestApi::wikidata().unwrap();
+
+// Use Q42 (Douglas Adams) as an example item
+let id = EntityId::new("Q42")?;
+
+// Get the label and sitelink of Q42
+let q42_label_en = Label::get(&id, "en", &api).await?.value().to_owned();
+let q42_sitelink = Sitelink::get(&id, "enwiki", &api).await?.title().to_owned();
+println!("Q42 '{q42_label_en}' => [[enwiki:{q42_sitelink}]]");
+
+
+// Create a new item
+let token = "MY_ACCESS_TOKEN";
+let mut item = Item::default();
+item.labels_mut()
+    .insert(LanguageString::new("en", "My label"));
+item.statements_mut()
+    .insert(Statement::new_string("P31", "Q42"));
+let item: Item = item.post(&api).await.unwrap();
+println!("Created new item {}", item.id());
+
+
+// Load multiple entities concurrently
+let entity_ids = [
+    "Q42", "Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "P214",
+]
+.iter()
+.map(|id| EntityId::new(*id))
+.collect::<Result<Vec<_>, RestApiError>>()?;
+
+// A container will manage the concurrent loading of entities.
+let entity_container = EntityContainer::builder()
+    .api(api)
+    .max_concurrent(50)
+    .build()?;
+entity_container.load(&entity_ids).await?;
+let q42 = entity_container
+    .items()
+    .read()
+    .await
+    .get("Q42")
+    .unwrap()
+    .to_owned();
+let q42_label_en = q42.labels().get_lang("en").unwrap();
+
+```
+
 # Implemented REST API actions
 ## items
 - [x] `post`
@@ -69,10 +124,10 @@
 - [x] `/openapi.json`
 - [x] `/property-data-types`
 
-# TODO
+# Developer notes
+## TODO
 - Maxlag/rate limits?
 
-# Notes
 ## Code coverage
 ```bash
 cargo install cargo-tarpaulin # Once
