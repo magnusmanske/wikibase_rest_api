@@ -57,6 +57,7 @@ pub mod edit_metadata;
 pub mod entity;
 pub mod entity_container;
 pub mod entity_id;
+pub mod entity_patch;
 pub mod error;
 pub mod get_put_delete;
 pub mod header_info;

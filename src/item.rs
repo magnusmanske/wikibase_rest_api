@@ -3,10 +3,11 @@ use crate::{
     aliases_in_language::AliasesInLanguage,
     descriptions::Descriptions,
     entity::{Entity, EntityType},
+    entity_patch::EntityPatch,
     labels::Labels,
     sitelinks::Sitelinks,
     statements::Statements,
-    EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
+    EntityId, FromJson, HeaderInfo, HttpMisc, Patch, RestApi, RestApiError,
 };
 use async_trait::async_trait;
 use derivative::Derivative;
@@ -152,6 +153,25 @@ impl Item {
     /// Returns the header information of the item.
     pub const fn header_info(&self) -> &HeaderInfo {
         &self.header_info
+    }
+
+    /// Generates a patch to transform `other` into `self`
+    pub fn patch(&self, other: &Self) -> Result<EntityPatch, RestApiError> {
+        let labels_patch = self.labels.patch(other.labels())?;
+        let descriptions_patch = self.descriptions.patch(other.descriptions())?;
+        let aliases_patch = self.aliases.patch(other.aliases())?;
+        let sitelinks_patch = self.sitelinks.patch(other.sitelinks())?;
+        // let statements_patch = self.statements.patch(other.statements())?;
+
+        let mut ret = EntityPatch::item();
+        // ret.patch_mut().extend(labels_patch.patch().to_owned());
+        // patch.labels = Some(labels_patch);
+        // patch.descriptions = Some(descriptions_patch);
+        // patch.aliases = Some(aliases_patch);
+        // patch.sitelinks = Some(sitelinks_patch);
+        //     patch.statements = Some(statements_patch);
+
+        Ok(ret)
     }
 }
 
