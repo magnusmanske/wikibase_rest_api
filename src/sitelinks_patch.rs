@@ -1,4 +1,7 @@
-use crate::{patch_entry::PatchEntry, EntityId, HttpMisc, Patch, RestApiError, Sitelinks};
+use crate::{
+    patch_entry::PatchEntry, EntityId, HttpMisc, Patch, PatchApply, RestApiError, Sitelinks,
+};
+use async_trait::async_trait;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -28,7 +31,7 @@ impl SitelinksPatch {
     }
 }
 
-impl Patch<Sitelinks> for SitelinksPatch {
+impl Patch for SitelinksPatch {
     fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
     }
@@ -37,6 +40,9 @@ impl Patch<Sitelinks> for SitelinksPatch {
         &mut self.patch
     }
 }
+
+#[async_trait]
+impl PatchApply<Sitelinks> for SitelinksPatch {}
 
 impl HttpMisc for SitelinksPatch {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {

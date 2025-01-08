@@ -164,7 +164,7 @@ impl Item {
         // let statements_patch = self.statements.patch(other.statements())?;
 
         let mut ret = EntityPatch::item();
-        // ret.patch_mut().extend(labels_patch.patch().to_owned());
+        ret.patch_mut().extend(labels_patch.patch().to_owned());
         // patch.labels = Some(labels_patch);
         // patch.descriptions = Some(descriptions_patch);
         // patch.aliases = Some(aliases_patch);

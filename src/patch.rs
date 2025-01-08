@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 
 #[async_trait]
-pub trait Patch<T: FromJson>: Sized + HttpMisc {
+pub trait Patch: Sized + HttpMisc {
     /// Returns the patch entries
     fn patch(&self) -> &Vec<PatchEntry>;
 
@@ -34,7 +34,10 @@ pub trait Patch<T: FromJson>: Sized + HttpMisc {
     fn is_empty(&self) -> bool {
         self.patch().is_empty()
     }
+}
 
+#[async_trait]
+pub trait PatchApply<T: FromJson>: Sized + HttpMisc + Patch {
     /// Applies the entire patch against the API
     async fn apply(&self, id: &EntityId, api: &mut RestApi) -> Result<T, RestApiError> {
         self.apply_match(id, api, EditMetadata::default()).await

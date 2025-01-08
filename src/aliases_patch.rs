@@ -1,6 +1,6 @@
 use crate::{
     aliases::Aliases, patch_entry::PatchEntry, EditMetadata, EntityId, FromJson, HttpMisc, Patch,
-    RestApi, RestApiError,
+    PatchApply, RestApi, RestApiError,
 };
 use async_trait::async_trait;
 use serde::Serialize;
@@ -19,7 +19,7 @@ impl AliasesPatch {
         num: usize,
         value: S2,
     ) {
-        <Self as Patch<Aliases>>::replace(
+        <Self as Patch>::replace(
             self,
             format!("/{}/{num}", language.into()),
             value.into().into(),
@@ -28,7 +28,7 @@ impl AliasesPatch {
 
     /// Adds a command to remove an alias in a specific language, at a specific position
     pub fn remove<S: Into<String>>(&mut self, language: S, num: usize) {
-        <Self as Patch<Aliases>>::remove(self, format!("/{}/{num}", language.into()));
+        <Self as Patch>::remove(self, format!("/{}/{num}", language.into()));
     }
 
     /// Generates a patch from JSON, presumably from `json_patch`
@@ -46,8 +46,7 @@ impl AliasesPatch {
     }
 }
 
-#[async_trait]
-impl Patch<Aliases> for AliasesPatch {
+impl Patch for AliasesPatch {
     fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
     }
@@ -55,7 +54,10 @@ impl Patch<Aliases> for AliasesPatch {
     fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
         &mut self.patch
     }
+}
 
+#[async_trait]
+impl PatchApply<Aliases> for AliasesPatch {
     async fn apply_match(
         &self,
         id: &EntityId,

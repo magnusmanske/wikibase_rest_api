@@ -1,6 +1,6 @@
 use crate::{
     descriptions::Descriptions, labels::Labels, patch_entry::PatchEntry, EditMetadata, EntityId,
-    FromJson, HttpMisc, Patch, RestApi, RestApiError,
+    FromJson, HttpMisc, Patch, PatchApply, RestApi, RestApiError,
 };
 use async_trait::async_trait;
 use serde::Serialize;
@@ -74,22 +74,17 @@ impl LanguageStringsPatch {
     /// Adds a command to replace the value of a language string.
     /// TODO Labels?
     pub fn replace<S1: Into<String>, S2: Into<String>>(&mut self, language: S1, value: S2) {
-        <Self as Patch<Labels>>::replace(
-            self,
-            format!("/{}", language.into()),
-            value.into().into(),
-        );
+        <Self as Patch>::replace(self, format!("/{}", language.into()), value.into().into());
     }
 
     /// Adds a command to remove the value for the language.
     /// TODO Labels?
     pub fn remove<S: Into<String>>(&mut self, language: S) {
-        <Self as Patch<Labels>>::remove(self, format!("/{}", language.into()));
+        <Self as Patch>::remove(self, format!("/{}", language.into()));
     }
 }
 
-#[async_trait]
-impl Patch<Labels> for LanguageStringsPatch {
+impl Patch for LanguageStringsPatch {
     fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
     }
@@ -97,7 +92,10 @@ impl Patch<Labels> for LanguageStringsPatch {
     fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
         &mut self.patch
     }
+}
 
+#[async_trait]
+impl PatchApply<Labels> for LanguageStringsPatch {
     async fn apply_match(
         &self,
         id: &EntityId,
@@ -115,15 +113,7 @@ impl Patch<Labels> for LanguageStringsPatch {
 }
 
 #[async_trait]
-impl Patch<Descriptions> for LanguageStringsPatch {
-    fn patch(&self) -> &Vec<PatchEntry> {
-        &self.patch
-    }
-
-    fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
-        &mut self.patch
-    }
-
+impl PatchApply<Descriptions> for LanguageStringsPatch {
     async fn apply_match(
         &self,
         id: &EntityId,
@@ -238,7 +228,7 @@ mod tests {
         let mut patch = LanguageStringsPatch::labels();
         patch.replace("en", "Foo Bar");
         assert_eq!(
-            *<LanguageStringsPatch as Patch<Labels>>::patch(&patch),
+            *<LanguageStringsPatch as Patch>::patch(&patch),
             vec![PatchEntry::new("replace", "/en", json!("Foo Bar"))]
         );
     }

@@ -1,6 +1,6 @@
 use crate::{
-    patch_entry::PatchEntry, EditMetadata, EntityId, FromJson, HttpMisc, Patch, RestApi,
-    RestApiError, Statement,
+    patch_entry::PatchEntry, EditMetadata, EntityId, FromJson, HttpMisc, Patch, PatchApply,
+    RestApi, RestApiError, Statement,
 };
 use async_trait::async_trait;
 use serde::Serialize;
@@ -63,12 +63,12 @@ impl StatementPatch {
         api: &mut RestApi,
         em: EditMetadata,
     ) -> Result<Statement, RestApiError> {
-        <Self as Patch<Statement>>::apply_match(self, &EntityId::None, api, em).await
+        <Self as PatchApply<Statement>>::apply_match(self, &EntityId::None, api, em).await
     }
 }
 
 #[async_trait]
-impl Patch<Statement> for StatementPatch {
+impl Patch for StatementPatch {
     fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
     }
@@ -76,7 +76,10 @@ impl Patch<Statement> for StatementPatch {
     fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
         &mut self.patch
     }
+}
 
+#[async_trait]
+impl PatchApply<Statement> for StatementPatch {
     async fn apply_match(
         &self,
         _id: &EntityId,
