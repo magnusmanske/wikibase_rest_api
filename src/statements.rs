@@ -1,6 +1,6 @@
 use crate::{
-    EditMetadata, EntityId, FromJson, HeaderInfo, HttpGetEntity, HttpMisc, RestApi, RestApiError,
-    RevisionMatch, Statement,
+    statements_patch::StatementsPatch, EditMetadata, EntityId, FromJson, HeaderInfo, HttpGetEntity,
+    HttpMisc, Patch, RestApi, RestApiError, RevisionMatch, Statement,
 };
 use async_trait::async_trait;
 use derivative::Derivative;
@@ -12,7 +12,7 @@ use std::collections::HashMap;
 #[derive(Derivative, Debug, Clone, Default)]
 #[derivative(PartialEq)]
 pub struct Statements {
-    statements: HashMap<String, Vec<Statement>>,
+    statements: HashMap<String, Vec<Statement>>, // property => Statements
     #[derivative(PartialEq = "ignore")]
     header_info: HeaderInfo,
 }
@@ -85,6 +85,63 @@ impl Statements {
 
     pub const fn header_info(&self) -> &HeaderInfo {
         &self.header_info
+    }
+
+    // Returns a list of all statements with an ID, as HashMap ID => &Statement
+    fn get_id_statement_map(&self) -> HashMap<&String, &Statement> {
+        self.statements
+            .values()
+            .flat_map(|v| v.iter())
+            .filter_map(|statement| Some((statement.id()?, statement)))
+            .collect()
+    }
+
+    // Returns a list of all statements without IDs
+    fn get_statements_without_id(&self) -> Vec<&Statement> {
+        self.statements
+            .values()
+            .flat_map(|v| v.iter())
+            .filter(|statement| statement.id().is_none())
+            .collect()
+    }
+
+    pub fn patch(&self, other: &Self) -> Result<StatementsPatch, RestApiError> {
+        // Statements without ID in other => fail
+        if !other.get_statements_without_id().is_empty() {
+            return Err(RestApiError::MissingId);
+        }
+
+        let mut patch = StatementsPatch::default();
+        let from_statements_with_id = self.get_id_statement_map();
+        let to_statements_with_id = other.get_id_statement_map();
+
+        // Modify/remove
+        for (statement_id, from_statement) in &from_statements_with_id {
+            match to_statements_with_id.get(statement_id) {
+                Some(to_statement) => {
+                    // Modify statement
+                    let statement_patch = from_statement.patch(to_statement)?;
+                    patch.patch_mut().extend(statement_patch.patch().to_owned());
+                }
+                None => {
+                    // Remove statement
+                    let statement_path = format!("/statements/{statement_id}"); // TODO check
+                    patch.remove(statement_path);
+                }
+            }
+        }
+
+        // Add new statements
+        for (statement_id, to_statement) in &to_statements_with_id {
+            if !from_statements_with_id.contains_key(statement_id) {
+                // Add new statement
+                let add_path = format!("/statements/{statement_id}"); // TODO check
+                let value = json!(to_statement);
+                patch.add(add_path, value);
+            }
+        }
+
+        Ok(patch)
     }
 }
 

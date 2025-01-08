@@ -97,12 +97,10 @@ impl EntityPatch {
     //         .push(PatchEntry::new("remove", path.into(), Value::Null));
     // }
 
-    // /// checks if the patch list is empty
-    // pub fn is_empty(&self) -> bool {
-    //     self.patch().is_empty()
-    // }
-
-    // TODO property
+    /// checks if the patch list is empty
+    pub fn is_empty(&self) -> bool {
+        self.patch().is_empty()
+    }
 
     /// Applies the entire patch against the API
     pub async fn apply_item(&self, id: &EntityId, api: &mut RestApi) -> Result<Item, RestApiError> {

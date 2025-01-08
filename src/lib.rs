@@ -84,6 +84,7 @@ pub mod statement_patch;
 pub mod statement_rank;
 pub mod statement_value;
 pub mod statements;
+pub mod statements_patch;
 
 pub use config::Config;
 pub use data_type::DataType;

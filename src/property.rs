@@ -3,6 +3,7 @@ use crate::{
     aliases_in_language::AliasesInLanguage,
     descriptions::Descriptions,
     entity::{Entity, EntityType},
+    entity_patch::EntityPatch,
     labels::Labels,
     statements::Statements,
     EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
@@ -137,6 +138,11 @@ impl Property {
     /// Returns the header info of the property
     pub const fn header_info(&self) -> &HeaderInfo {
         &self.header_info
+    }
+
+    /// Generates a patch to transform `other` into `self`
+    pub fn patch(&self, _other: &Self) -> Result<EntityPatch, RestApiError> {
+        todo!()
     }
 }
 

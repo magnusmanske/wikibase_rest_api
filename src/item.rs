@@ -161,15 +161,15 @@ impl Item {
         let descriptions_patch = self.descriptions.patch(other.descriptions())?;
         let aliases_patch = self.aliases.patch(other.aliases())?;
         let sitelinks_patch = self.sitelinks.patch(other.sitelinks())?;
-        // let statements_patch = self.statements.patch(other.statements())?;
+        let statements_patch = self.statements.patch(other.statements())?;
 
         let mut ret = EntityPatch::item();
         ret.patch_mut().extend(labels_patch.patch().to_owned());
-        // patch.labels = Some(labels_patch);
-        // patch.descriptions = Some(descriptions_patch);
-        // patch.aliases = Some(aliases_patch);
-        // patch.sitelinks = Some(sitelinks_patch);
-        //     patch.statements = Some(statements_patch);
+        ret.patch_mut()
+            .extend(descriptions_patch.patch().to_owned());
+        ret.patch_mut().extend(aliases_patch.patch().to_owned());
+        ret.patch_mut().extend(sitelinks_patch.patch().to_owned());
+        ret.patch_mut().extend(statements_patch.patch().to_owned());
 
         Ok(ret)
     }
