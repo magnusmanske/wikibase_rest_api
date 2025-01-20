@@ -78,9 +78,12 @@ async fn container_demo() -> Result<(), RestApiError> {
         .read()
         .await
         .get("Q42")
-        .unwrap()
+        .ok_or_else(|| RestApiError::IsNone)?
         .to_owned();
-    let q42_label_en = q42.labels().get_lang("en").unwrap();
+    let q42_label_en = q42
+        .labels()
+        .get_lang("en")
+        .ok_or_else(|| RestApiError::IsNone)?;
     println!("Container item Q42 label is '{q42_label_en}'");
 
     Ok(())
