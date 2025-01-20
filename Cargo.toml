@@ -12,6 +12,9 @@ categories = ["api-bindings"]
 unsafe_code = "forbid"
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
 
+[lints.clippy]
+unwrap_used = "deny"
+
 [dependencies]
 async-trait = "0.1"
 chrono = "0.4"

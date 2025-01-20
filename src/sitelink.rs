@@ -65,7 +65,8 @@ impl Sitelink {
                 j: j.clone(),
             })?
             .iter()
-            .map(|b| b.as_str().unwrap().to_string())
+            .filter_map(|b| b.as_str())
+            .map(|s| s.to_string())
             .collect())
     }
 
