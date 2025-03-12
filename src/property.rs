@@ -167,10 +167,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v214))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let property = Property::get(EntityId::property("P214"), &api)
             .await
@@ -309,10 +308,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         // Check that an error is returned when trying to post an item that already has an ID
         let r0 = property.post(&api).await;

@@ -204,10 +204,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Douglas Adams")))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let id = EntityId::item(id);
         let label = Label::get_with_fallback(&id, "foo", &api).await.unwrap();
@@ -225,10 +224,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Douglas Adams")))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let id = EntityId::item(id);
         let label = Label::get(&id, "en", &api).await.unwrap();
@@ -250,11 +248,10 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!(label)))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
             .with_access_token(token)
-            .build()
-            .unwrap();
+            .build();
 
         let id = EntityId::item(id);
         let new_label = Label::new("en", label);
@@ -275,11 +272,10 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Label deleted")))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
             .with_access_token(token)
-            .build()
-            .unwrap();
+            .build();
 
         let id = EntityId::item(id);
         let label = Label::new("en", "");

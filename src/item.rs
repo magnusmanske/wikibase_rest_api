@@ -205,10 +205,9 @@ mod tests {
             .and(path("/w/rest.php/wikibase/v1/entities/items/Q6"))
             .respond_with(ResponseTemplate::new(404).set_body_json(json!({"code": "item-not-found","message": "Could not find an item with the ID: Q6"})))
             .mount(&mock_server).await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         Item::get(EntityId::item(id), &api).await
     }
@@ -243,10 +242,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         // Check that an error is returned when trying to post an item that already has an ID
         let r0 = item.post(&api).await;
@@ -262,10 +260,9 @@ mod tests {
     async fn test_item_post_404() {
         let item = Item::default();
         let mock_server = MockServer::start().await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
         let r = item.post(&api).await;
         assert_eq!(
             r.err().unwrap().to_string(),

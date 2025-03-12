@@ -201,10 +201,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Douglas Adams")))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let id = EntityId::item(id);
         let description = Description::get_with_fallback(&id, "foo", &api)
@@ -225,10 +224,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(mock_description))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let id = EntityId::item(id);
         let description = Description::get(&id, "en", &api).await.unwrap();
@@ -250,11 +248,10 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!(description)))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
             .with_access_token(token)
-            .build()
-            .unwrap();
+            .build();
 
         let id = EntityId::item(id);
         let new_description = Description::new("en", description);
@@ -275,11 +272,10 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Description deleted")))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
             .with_access_token(token)
-            .build()
-            .unwrap();
+            .build();
 
         let id = EntityId::item(id);
         let description = Description::new("en", "");

@@ -266,10 +266,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let item = Item::get(EntityId::item(id), &api).await.unwrap();
         let prop = item.statements().property("P2021")[0].to_owned();
@@ -290,10 +289,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let item = Item::get(EntityId::item(id), &api).await.unwrap();
         let prop = item.statements().property("P40")[0];

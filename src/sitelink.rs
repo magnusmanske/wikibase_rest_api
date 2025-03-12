@@ -235,10 +235,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["sitelinks"]["enwiki"]))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let sitelink = Sitelink::get(&EntityId::item(id), "enwiki", &api)
             .await
@@ -273,11 +272,10 @@ mod tests {
         )
         .mount(&mock_server)
         .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
             .with_access_token(token)
-            .build()
-            .unwrap();
+            .build();
 
         let id = EntityId::item(id);
         let sitelink = Sitelink::new("enwiki", page_title);
@@ -301,11 +299,10 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Sitelink deleted")))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
             .with_access_token(token)
-            .build()
-            .unwrap();
+            .build();
 
         let id = EntityId::item(id);
         let new_sitelink = Sitelink::new("enwiki", "doesn't matter");

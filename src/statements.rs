@@ -242,10 +242,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["statements"]))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let statements = Statements::get(&EntityId::item("Q42"), &api).await.unwrap();
         assert!(!statements.property("P31").is_empty());
@@ -277,11 +276,10 @@ mod tests {
         .respond_with(ResponseTemplate::new(200).set_body_json(&v))
         .mount(&mock_server)
         .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
             .with_access_token(token)
-            .build()
-            .unwrap();
+            .build();
 
         // Get and check existing statements
         let statements = Statements::get(&id, &api).await.unwrap();
@@ -313,11 +311,10 @@ mod tests {
             )
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
             .with_access_token(token)
-            .build()
-            .unwrap();
+            .build();
 
         // Get empty statements but with revision ID
         let statements1 = Statements::get(&id, &api).await.unwrap();

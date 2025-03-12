@@ -186,10 +186,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["aliases"]["en"]))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let id = EntityId::item("Q42");
         let aliases = AliasesInLanguage::get(&id, "en", &api).await.unwrap();
@@ -221,11 +220,10 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&new_aliases))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
             .with_access_token(token)
-            .build()
-            .unwrap();
+            .build();
 
         let id2 = EntityId::item("Q42");
         let aliases = AliasesInLanguage::get(&id2, "en", &api).await.unwrap();

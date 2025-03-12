@@ -340,10 +340,9 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
         let statement = Statement::get(&statement_id, &api).await.unwrap();
         assert_eq!(statement.id().unwrap(), &statement_id);
         assert_eq!(
@@ -381,10 +380,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["after"]))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         // Get and check statement
         let mut statement = Statement::get(statement_id, &api).await.unwrap();
@@ -421,10 +419,9 @@ mod tests {
             })))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         // Delete
         let mut statement0 = Statement::new_string("P31", "Q42");

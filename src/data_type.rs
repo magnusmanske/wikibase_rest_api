@@ -91,10 +91,9 @@ mod tests {
     #[tokio::test]
     async fn test_data_type_from_str() {
         // Useful to have this query the live API, and fast enough.
-        let api = RestApi::builder()
-            .with_api("https://www.wikidata.org/w/rest.php")
-            .build()
-            .unwrap();
+        let api = RestApi::builder("https://www.wikidata.org/w/rest.php")
+            .unwrap()
+            .build();
         let request = api
             .wikibase_request_builder("/property-data-types", HashMap::new(), reqwest::Method::GET)
             .await

@@ -4,9 +4,7 @@ use wikibase_rest_api::prelude::*;
 #[cfg(not(tarpaulin_include))]
 async fn q42_demo() -> Result<(), RestApiError> {
     // #lizard forgives the complexity
-    let api = RestApi::builder()
-        .with_api("https://www.wikidata.org/w/rest.php")
-        .build()?;
+    let api = RestApi::builder("https://www.wikidata.org/w/rest.php")?.build();
 
     // Use Q42 as an example item
     let id = EntityId::new("Q42")?;
@@ -34,9 +32,7 @@ async fn q42_demo() -> Result<(), RestApiError> {
 #[cfg(not(tarpaulin_include))]
 async fn container_demo() -> Result<(), RestApiError> {
     // #lizard forgives the complexity
-    let api = RestApi::builder()
-        .with_api("https://www.wikidata.org/w/rest.php")
-        .build()?;
+    let api = RestApi::builder("https://www.wikidata.org/w/rest.php")?.build();
     let api = Arc::new(api);
 
     // Load several items at once
@@ -93,10 +89,9 @@ async fn container_demo() -> Result<(), RestApiError> {
 async fn create_item_demo() -> Result<(), RestApiError> {
     // #lizard forgives the complexity
     let token = "MY_ACCESS_TOKEN";
-    let api = RestApi::builder()
-        .with_api("https://test.wikidata.org/w/rest.php")
+    let api = RestApi::builder("https://test.wikidata.org/w/rest.php")?
         .with_access_token(token)
-        .build()?;
+        .build();
     let mut item = Item::default();
     item.labels_mut()
         .insert(LanguageString::new("en", "My label"));

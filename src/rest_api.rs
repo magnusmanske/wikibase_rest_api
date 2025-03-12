@@ -13,11 +13,12 @@ pub struct RestApi {
 }
 
 impl RestApi {
-    /// Returns an empty `RestApiBuilder`
-    pub fn builder() -> RestApiBuilder {
-        RestApiBuilder::default()
+    /// Returns a `RestApiBuilder`
+    pub fn builder<S: Into<String>>(api_url: S) -> Result<RestApiBuilder, RestApiError> {
+        RestApiBuilder::new(api_url)
     }
 
+    /// Creates a new `RestApi` instance. Only available internally, use `RestApi::builder()` instead.
     pub(crate) const fn new(
         client: reqwest::Client,
         user_agent: String,
@@ -34,6 +35,7 @@ impl RestApi {
         }
     }
 
+    /// Returns the user agent
     pub fn user_agent(&self) -> &str {
         &self.user_agent
     }
@@ -54,9 +56,7 @@ impl RestApi {
     }
 
     pub fn wikidata() -> Result<RestApi, RestApiError> {
-        RestApi::builder()
-            .with_api("https://www.wikidata.org/w/rest.php")
-            .build()
+        Ok(RestApi::builder("https://www.wikidata.org/w/rest.php")?.build())
     }
 
     fn wikibase_root(&self) -> String {
@@ -151,10 +151,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(expected_json.clone()))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let json = api.get_openapi_json().await.unwrap();
         assert_eq!(json, expected_json);
@@ -163,11 +162,10 @@ mod tests {
     #[test]
     fn test_client() {
         let client = reqwest::Client::new();
-        let api = RestApi::builder()
+        let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
             .with_client(client.clone())
-            .with_api("https://test.wikidata.org/w/rest.php")
-            .build()
-            .unwrap();
+            .build();
         assert_eq!(format!("{:?}", api.client), format!("{:?}", client));
     }
 }

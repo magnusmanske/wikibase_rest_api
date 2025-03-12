@@ -187,10 +187,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&p214))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let ec = EntityContainer::builder()
             .api(Arc::new(api))
@@ -213,10 +212,9 @@ mod tests {
     #[test]
     fn test_max_concurrent() {
         let api = Arc::new(
-            RestApi::builder()
-                .with_api("https://test.wikidata.org/w/rest.php")
-                .build()
-                .unwrap(),
+            RestApi::builder("https://test.wikidata.org/w/rest.php")
+                .unwrap()
+                .build(),
         );
         let ec = EntityContainer::builder()
             .api(api.clone())
@@ -229,10 +227,9 @@ mod tests {
     #[test]
     fn test_max_concurrent_default() {
         let api = Arc::new(
-            RestApi::builder()
-                .with_api("https://test.wikidata.org/w/rest.php")
-                .build()
-                .unwrap(),
+            RestApi::builder("https://test.wikidata.org/w/rest.php")
+                .unwrap()
+                .build(),
         );
         let ec = EntityContainer::builder()
             .api(api.clone())

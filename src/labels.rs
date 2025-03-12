@@ -162,10 +162,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["labels"]))
             .mount(&mock_server)
             .await;
-        let api = RestApi::builder()
-            .with_api(&(mock_server.uri() + "/w/rest.php"))
-            .build()
-            .unwrap();
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
 
         let id = EntityId::new("Q42").unwrap();
         let ls = Labels::get(&id, &api).await.unwrap();
