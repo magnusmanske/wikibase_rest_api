@@ -188,7 +188,7 @@ mod tests {
             .mount(&mock_server)
             .await;
         let api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
+            .with_api(&(mock_server.uri() + "/w/rest.php"))
             .build()
             .unwrap();
 
@@ -214,7 +214,7 @@ mod tests {
     fn test_max_concurrent() {
         let api = Arc::new(
             RestApi::builder()
-                .api("https://test.wikidata.org/w/rest.php")
+                .with_api("https://test.wikidata.org/w/rest.php")
                 .build()
                 .unwrap(),
         );
@@ -230,7 +230,7 @@ mod tests {
     fn test_max_concurrent_default() {
         let api = Arc::new(
             RestApi::builder()
-                .api("https://test.wikidata.org/w/rest.php")
+                .with_api("https://test.wikidata.org/w/rest.php")
                 .build()
                 .unwrap(),
         );

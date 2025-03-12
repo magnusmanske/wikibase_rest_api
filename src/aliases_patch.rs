@@ -114,8 +114,8 @@ mod tests {
         .mount(&mock_server)
         .await;
         let mut api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
-            .set_access_token(token)
+            .with_api(&(mock_server.uri() + "/w/rest.php"))
+            .with_access_token(token)
             .build()
             .unwrap();
 

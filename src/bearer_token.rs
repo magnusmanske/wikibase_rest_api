@@ -285,7 +285,7 @@ mod tests {
     fn test_authorization_code_url() {
         let mut token = BearerToken::default();
         let api = RestApi::builder()
-            .api("https://www.wikidata.org/w/rest.php")
+            .with_api("https://www.wikidata.org/w/rest.php")
             .build()
             .unwrap();
         token.set_oauth2_info("client_id", "client_secret");
@@ -334,7 +334,7 @@ mod tests {
             .mount(&mock_server)
             .await;
         let api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
+            .with_api(&(mock_server.uri() + "/w/rest.php"))
             .build()
             .unwrap();
 
@@ -399,7 +399,7 @@ mod tests {
             .mount(&mock_server)
             .await;
         let api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
+            .with_api(&(mock_server.uri() + "/w/rest.php"))
             .build()
             .unwrap();
 
@@ -444,7 +444,7 @@ mod tests {
     #[tokio::test]
     async fn test_renew_access_token_no_need() {
         let api = RestApi::builder()
-            .api("https://test.wikidata.org/w/rest.php")
+            .with_api("https://test.wikidata.org/w/rest.php")
             .build()
             .unwrap();
         let mut bt = BearerToken::default();

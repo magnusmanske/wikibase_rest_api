@@ -206,7 +206,7 @@ mod tests {
             .respond_with(ResponseTemplate::new(404).set_body_json(json!({"code": "item-not-found","message": "Could not find an item with the ID: Q6"})))
             .mount(&mock_server).await;
         let api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
+            .with_api(&(mock_server.uri() + "/w/rest.php"))
             .build()
             .unwrap();
 
@@ -244,7 +244,7 @@ mod tests {
             .mount(&mock_server)
             .await;
         let api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
+            .with_api(&(mock_server.uri() + "/w/rest.php"))
             .build()
             .unwrap();
 
@@ -263,7 +263,7 @@ mod tests {
         let item = Item::default();
         let mock_server = MockServer::start().await;
         let api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
+            .with_api(&(mock_server.uri() + "/w/rest.php"))
             .build()
             .unwrap();
         let r = item.post(&api).await;

@@ -92,7 +92,7 @@ mod tests {
     async fn test_data_type_from_str() {
         // Useful to have this query the live API, and fast enough.
         let api = RestApi::builder()
-            .api("https://www.wikidata.org/w/rest.php")
+            .with_api("https://www.wikidata.org/w/rest.php")
             .build()
             .unwrap();
         let request = api

@@ -42,7 +42,7 @@ impl RestApi {
 
     pub fn wikidata() -> Result<RestApi, RestApiError> {
         RestApi::builder()
-            .api("https://www.wikidata.org/w/rest.php")
+            .with_api("https://www.wikidata.org/w/rest.php")
             .build()
     }
 
@@ -133,38 +133,48 @@ pub struct RestApiBuilder {
 
 impl RestApiBuilder {
     /// Sets the REST API URL, specifically the URL ending in "rest.php". This in mandatory.
-    pub fn api<S: Into<String>>(mut self, api_url: S) -> Self {
+    pub fn with_api<S: Into<String>>(mut self, api_url: S) -> Self {
         self.api_url = Some(api_url.into());
         self
     }
 
     /// Sets the API version (u8). Default is 1.
-    pub const fn api_version(mut self, api_version: u8) -> Self {
+    pub const fn with_api_version(mut self, api_version: u8) -> Self {
         self.api_version = Some(api_version);
         self
     }
 
     /// Sets the `OAuth2` bearer token.
-    pub fn set_access_token<S: Into<String>>(mut self, access_token: S) -> Self {
+    pub fn with_access_token<S: Into<String>>(mut self, access_token: S) -> Self {
         self.token.set_access_token(access_token);
         self
     }
 
     /// Sets the user agent. By default, the user agent is "Rust Wikibase REST API; {`package_name`}/{`package_version`}"
-    pub fn user_agent<S: Into<String>>(mut self, user_agent: S) -> Self {
+    pub fn with_user_agent<S: Into<String>>(mut self, user_agent: S) -> Self {
         self.user_agent = Some(user_agent.into());
         self
     }
 
     /// Sets the `reqwest::Client`. By default, a new `reqwest::Client` is created.
-    pub fn client(mut self, client: reqwest::Client) -> Self {
+    pub fn with_client(mut self, client: reqwest::Client) -> Self {
         self.client = client;
+        self
+    }
+
+    /// Sets the interval for bearer token renewal. By default, the interval is `DEFAULT_RENEWAL_INTERVAL_SEC`.
+    #[cfg(not(tarpaulin_include))]
+    pub const fn with_access_token_renewal(
+        mut self,
+        renewal_interval: std::time::Duration,
+    ) -> Self {
+        self.renewal_interval = Some(renewal_interval);
         self
     }
 
     /// Sets the `OAuth2` client ID and client secret
     #[cfg(not(tarpaulin_include))]
-    pub fn oauth2_info<S1: Into<String>, S2: Into<String>>(
+    pub fn with_oauth2_info<S1: Into<String>, S2: Into<String>>(
         mut self,
         client_id: S1,
         client_secret: S2,
@@ -204,13 +214,6 @@ impl RestApiBuilder {
         })
     }
 
-    /// Sets the interval for bearer token renewal. By default, the interval is `DEFAULT_RENEWAL_INTERVAL_SEC`.
-    #[cfg(not(tarpaulin_include))]
-    pub const fn access_token_renewal(mut self, renewal_interval: std::time::Duration) -> Self {
-        self.renewal_interval = Some(renewal_interval);
-        self
-    }
-
     /// Returns the default user agent, a versioned string based on `DEFAULT_USER_AGENT`.
     fn default_user_agent() -> String {
         format!(
@@ -239,7 +242,7 @@ mod tests {
             .mount(&mock_server)
             .await;
         let api = RestApi::builder()
-            .api(&(mock_server.uri() + "/w/rest.php"))
+            .with_api(&(mock_server.uri() + "/w/rest.php"))
             .build()
             .unwrap();
 
@@ -264,14 +267,14 @@ mod tests {
 
     #[test]
     fn test_validate_api_url_api() {
-        let builder = RestApiBuilder::default().api("https://www.wikidata.org/w/api.php");
+        let builder = RestApiBuilder::default().with_api("https://www.wikidata.org/w/api.php");
         let api_url = builder.validate_api_url();
         assert!(api_url.is_err());
     }
 
     #[test]
     fn test_validate_api_url_rest_api() {
-        let builder = RestApiBuilder::default().api("https://www.wikidata.org/w/rest.php");
+        let builder = RestApiBuilder::default().with_api("https://www.wikidata.org/w/rest.php");
         let api_url = builder.validate_api_url();
         assert!(api_url.is_ok());
     }
@@ -279,14 +282,14 @@ mod tests {
     #[test]
     fn test_user_agent() {
         let api = RestApi::builder()
-            .api("https://test.wikidata.org/w/rest.php")
+            .with_api("https://test.wikidata.org/w/rest.php")
             .build()
             .unwrap();
         assert_eq!(api.user_agent, RestApiBuilder::default_user_agent());
 
         let builder = RestApi::builder()
-            .user_agent("Test User Agent")
-            .api("https://test.wikidata.org/w/rest.php")
+            .with_user_agent("Test User Agent")
+            .with_api("https://test.wikidata.org/w/rest.php")
             .build()
             .unwrap();
         assert_eq!(builder.user_agent, "Test User Agent");
@@ -296,8 +299,8 @@ mod tests {
     fn test_client() {
         let client = reqwest::Client::new();
         let api = RestApi::builder()
-            .client(client.clone())
-            .api("https://test.wikidata.org/w/rest.php")
+            .with_client(client.clone())
+            .with_api("https://test.wikidata.org/w/rest.php")
             .build()
             .unwrap();
         assert_eq!(format!("{:?}", api.client), format!("{:?}", client));

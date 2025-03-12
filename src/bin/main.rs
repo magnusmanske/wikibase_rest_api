@@ -5,7 +5,7 @@ use wikibase_rest_api::prelude::*;
 async fn q42_demo() -> Result<(), RestApiError> {
     // #lizard forgives the complexity
     let api = RestApi::builder()
-        .api("https://www.wikidata.org/w/rest.php")
+        .with_api("https://www.wikidata.org/w/rest.php")
         .build()?;
 
     // Use Q42 as an example item
@@ -35,7 +35,7 @@ async fn q42_demo() -> Result<(), RestApiError> {
 async fn container_demo() -> Result<(), RestApiError> {
     // #lizard forgives the complexity
     let api = RestApi::builder()
-        .api("https://www.wikidata.org/w/rest.php")
+        .with_api("https://www.wikidata.org/w/rest.php")
         .build()?;
     let api = Arc::new(api);
 
@@ -94,8 +94,8 @@ async fn create_item_demo() -> Result<(), RestApiError> {
     // #lizard forgives the complexity
     let token = "MY_ACCESS_TOKEN";
     let api = RestApi::builder()
-        .api("https://test.wikidata.org/w/rest.php")
-        .set_access_token(token)
+        .with_api("https://test.wikidata.org/w/rest.php")
+        .with_access_token(token)
         .build()?;
     let mut item = Item::default();
     item.labels_mut()
