@@ -7,6 +7,7 @@ readme = "README.md"
 license = "MIT OR Apache-2.0"
 keywords = ["wikibase", "REST", "API", "client"]
 categories = ["api-bindings"]
+description = "A Rust client for the Wikibase REST API."
 
 [lints.rust]
 unsafe_code = "forbid"
