@@ -1,4 +1,4 @@
-![crates.io](https://img.shields.io/crates/v/wikibase_rest_api.svg)
+[![crates.io](https://img.shields.io/crates/v/wikibase_rest_api.svg)](https://crates.io/crates/wikibase_rest_api)
 
 This Rust crate provides a REST API for Wikibase.
 It is based on the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
