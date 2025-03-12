@@ -1,10 +1,6 @@
-use crate::{
-    descriptions::Descriptions, labels::Labels, patch_entry::PatchEntry, EditMetadata, EntityId,
-    FromJson, HttpMisc, Patch, PatchApply, RestApi, RestApiError,
-};
-use async_trait::async_trait;
+use crate::{patch_entry::PatchEntry, EntityId, HttpMisc, Patch, RestApiError};
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Default)]
 pub struct LabelsPatch {
@@ -48,42 +44,6 @@ impl Patch for LabelsPatch {
     }
 }
 
-#[async_trait]
-impl PatchApply<Labels> for LabelsPatch {
-    async fn apply_match(
-        &self,
-        id: &EntityId,
-        api: &mut RestApi,
-        em: EditMetadata,
-    ) -> Result<Labels, RestApiError> {
-        let j0 = json!({"patch": self.patch});
-        let request = self
-            .generate_json_request(id, reqwest::Method::PATCH, j0, api, &em)
-            .await?;
-        let response = api.execute(request).await?;
-        let (j, header_info) = self.filter_response_error(response).await?;
-        Ok(Labels::from_json_header_info(&j, header_info)?)
-    }
-}
-
-#[async_trait]
-impl PatchApply<Descriptions> for LabelsPatch {
-    async fn apply_match(
-        &self,
-        id: &EntityId,
-        api: &mut RestApi,
-        em: EditMetadata,
-    ) -> Result<Descriptions, RestApiError> {
-        let j0 = json!({"patch": self.patch});
-        let request = self
-            .generate_json_request(id, reqwest::Method::PATCH, j0, api, &em)
-            .await?;
-        let response = api.execute(request).await?;
-        let (j, header_info) = self.filter_response_error(response).await?;
-        Ok(Descriptions::from_json_header_info(&j, header_info)?)
-    }
-}
-
 impl HttpMisc for LabelsPatch {
     fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
@@ -96,7 +56,7 @@ impl HttpMisc for LabelsPatch {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::Value;
+    use serde_json::{json, Value};
 
     #[test]
     fn test_remove() {
