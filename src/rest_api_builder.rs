@@ -10,7 +10,7 @@ const WIKIBASE_REST_API_VERSION: u8 = 1;
 
 #[derive(Debug)]
 pub struct RestApiBuilder {
-    client: reqwest::Client,
+    client: Option<reqwest::Client>,
     token: BearerToken,
     user_agent: Option<String>,
     api_url: String,
@@ -25,7 +25,7 @@ impl RestApiBuilder {
     pub fn new<S: Into<String>>(api_url: S) -> Result<Self, RestApiError> {
         let api_url = Self::validate_api_url(&api_url.into())?;
         Ok(Self {
-            client: reqwest::Client::default(),
+            client: None,
             token: BearerToken::default(),
             user_agent: None,
             api_url,
@@ -54,7 +54,7 @@ impl RestApiBuilder {
 
     /// Sets the `reqwest::Client`. By default, a new `reqwest::Client` is created.
     pub fn with_client(mut self, client: reqwest::Client) -> Self {
-        self.client = client;
+        self.client = Some(client);
         self
     }
 
@@ -90,9 +90,12 @@ impl RestApiBuilder {
         let token = Arc::new(RwLock::new(token));
         let user_agent = self.user_agent.unwrap_or(Self::default_user_agent());
         let api_version = self.api_version.unwrap_or(WIKIBASE_REST_API_VERSION);
-        RestApi::new(self.client, user_agent, api_url, api_version, token)
+        let client = self.client.unwrap_or_default();
+        RestApi::new(client, user_agent, api_url, api_version, token)
     }
 
+    /// Checks if the REST API URL is valid. The URL must end in "rest.php".
+    /// Removes anything beyone that.
     fn validate_api_url(api_url: &str) -> Result<String, RestApiError> {
         let (base, _rest) = api_url
             .split_once("/rest.php")
