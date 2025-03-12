@@ -260,4 +260,12 @@ mod tests {
         assert!(s.contains(r#""en":["Foo","Bar"]"#));
         assert!(s.contains(r#""de":["Baz"]"#));
     }
+
+    #[test]
+    fn test_is_empty() {
+        let mut l = Aliases::default();
+        assert!(l.is_empty());
+        l.insert(LanguageString::new("en", "Foo"));
+        assert!(!l.is_empty());
+    }
 }

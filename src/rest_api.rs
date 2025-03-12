@@ -23,6 +23,11 @@ impl RestApi {
         &self.user_agent
     }
 
+    /// Returns the API version
+    pub const fn api_version(&self) -> u8 {
+        self.api_version
+    }
+
     /// Returns a `RequestBuilder` for a Wikibase REST API request
     /// # Errors
     /// Returns an error if the headers cannot be created
@@ -55,7 +60,7 @@ impl RestApi {
         Ok(response)
     }
 
-    /// Returns the OpenAPI JSON for the Wikibase REST API
+    /// Returns the `OpenAPI` JSON for the Wikibase REST API
     pub async fn get_openapi_json(&self) -> Result<serde_json::Value, RestApiError> {
         let request = self
             .wikibase_request_builder("/openapi.json", HashMap::new(), reqwest::Method::GET)
@@ -109,6 +114,10 @@ impl RestApi {
             );
         }
         Ok(headers)
+    }
+
+    pub fn token(&self) -> Arc<RwLock<BearerToken>> {
+        self.token.clone()
     }
 
     /// Returns the root path for the Wikibase REST API, based on the version number

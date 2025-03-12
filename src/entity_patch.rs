@@ -160,3 +160,23 @@ impl HttpMisc for EntityPatch {
         ))
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use serde_json::{json, Value};
+
+//     #[test]
+//     fn test_patch_from_json() {
+//         let j = json!([
+//             {"op": "add", "path": "/enwiki/title", "value": "foo"},
+//             {"op": "replace", "path": "/enwiki/title", "value": "bar"},
+//             {"op": "remove", "path": "/enwiki/title"}
+//         ]);
+//         let patch = EntityPatch::patch_from_json(&j).unwrap();
+//         assert_eq!(patch.len(), 3);
+//         assert_eq!(patch[0], PatchEntry::add("/enwiki/title", "foo"));
+//         assert_eq!(patch[1], PatchEntry::replace("/enwiki/title", "bar"));
+//         assert_eq!(patch[2], PatchEntry::remove("/enwiki/title"));
+//     }
+// }

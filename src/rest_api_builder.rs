@@ -86,7 +86,9 @@ impl RestApiBuilder {
     pub fn build(self) -> RestApi {
         let api_url = self.api_url;
         let mut token = self.token;
-        token.set_renewal_interval(0); // Will use default value instead of 0
+        if let Some(interval) = self.renewal_interval {
+            token.set_renewal_interval(interval.as_secs());
+        }
         let token = Arc::new(RwLock::new(token));
         let user_agent = self.user_agent.unwrap_or(Self::default_user_agent());
         let api_version = self.api_version.unwrap_or(WIKIBASE_REST_API_VERSION);
@@ -117,6 +119,7 @@ impl RestApiBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[test]
     fn test_default_user_agent() {
@@ -156,5 +159,61 @@ mod tests {
             .with_user_agent("Test User Agent")
             .build();
         assert_eq!(api2.user_agent(), "Test User Agent");
+    }
+
+    #[test]
+    fn test_with_api_version() {
+        let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .build();
+        assert_eq!(api1.api_version(), WIKIBASE_REST_API_VERSION);
+
+        let api2 = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .with_api_version(2)
+            .build();
+        assert_eq!(api2.api_version(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_with_access_token_renewal() {
+        let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .build();
+        assert_eq!(
+            api1.token().read().await.access_token_renewal_interval(),
+            Duration::from_secs(0)
+        );
+
+        let api2 = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .with_access_token_renewal(std::time::Duration::from_secs(60))
+            .build();
+        assert_eq!(
+            api2.token().read().await.access_token_renewal_interval(),
+            Duration::from_secs(60)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_with_oauth2_info() {
+        let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .build();
+        assert_eq!(*api1.token().read().await.client_id(), None);
+        assert_eq!(*api1.token().read().await.client_secret(), None);
+
+        let api2 = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .with_oauth2_info("client_id", "client_secret")
+            .build();
+        assert_eq!(
+            *api2.token().read().await.client_id(),
+            Some("client_id".to_string())
+        );
+        assert_eq!(
+            *api2.token().read().await.client_secret(),
+            Some("client_secret".to_string())
+        );
     }
 }

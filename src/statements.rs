@@ -88,11 +88,11 @@ impl Statements {
     }
 
     // Returns a list of all statements with an ID, as HashMap ID => &Statement
-    fn get_id_statement_map(&self) -> HashMap<&String, &Statement> {
+    fn get_id_statement_map(&self) -> HashMap<&str, &Statement> {
         self.statements
             .values()
             .flat_map(|v| v.iter())
-            .filter_map(|statement| Some((statement.id()?, statement)))
+            .filter_map(|statement| Some((statement.id()?.as_str(), statement)))
             .collect()
     }
 
@@ -361,5 +361,61 @@ mod tests {
         assert_eq!(statements.header_info(), &HeaderInfo::default());
         statements.header_info = hi.to_owned();
         assert_eq!(statements.header_info(), &hi);
+    }
+
+    #[test]
+    fn test_get_id_statement_map() {
+        let mut statements = Statements::default();
+        let mut statement = Statement::default();
+        statement.set_id(Some("Q1".into()));
+        statement.set_property("P31".into());
+        statements.insert(statement.clone());
+        statement.set_id(Some("Q2".into()));
+        statement.set_property("P1".into());
+        statements.insert(statement.clone());
+        let id_statement_map = statements.get_id_statement_map();
+        assert_eq!(id_statement_map.len(), 2);
+        assert_eq!(id_statement_map.get("Q1").unwrap().property().id(), "P31");
+        assert_eq!(id_statement_map.get("Q2").unwrap().property().id(), "P1");
+    }
+
+    #[test]
+    fn test_get_statements_without_id() {
+        let mut statements = Statements::default();
+        let mut statement = Statement::default();
+        statement.set_id(Some("Q1".into()));
+        statement.set_property("P31".into());
+        statements.insert(statement.clone());
+        statement.set_id(None);
+        statement.set_property("P1".into());
+        statements.insert(statement.clone());
+        let statements_without_id = statements.get_statements_without_id();
+        assert_eq!(statements_without_id.len(), 1);
+        assert_eq!(statements_without_id[0].property().id(), "P1");
+    }
+
+    #[test]
+    fn test_patch() {
+        let mut statements1 = Statements::default();
+        let mut statement = Statement::default();
+        statement.set_id(Some("Q1".into()));
+        statement.set_property("P31".into());
+        statements1.insert(statement.clone());
+        statement.set_id(Some("Q2".into()));
+        statement.set_property("P1".into());
+        statements1.insert(statement.clone());
+
+        let mut statements2 = Statements::default();
+        statement.set_id(Some("Q1".into()));
+        statement.set_property("P31".into());
+        statements2.insert(statement.clone());
+        statement.set_id(Some("Q3".into()));
+        statement.set_property("P1".into());
+        statements2.insert(statement.clone());
+
+        let patch = statements1.patch(&statements2).unwrap();
+        assert_eq!(patch.patch().len(), 2);
+        assert_eq!(patch.patch()[0].op(), "remove");
+        assert_eq!(patch.patch()[1].op(), "add");
     }
 }

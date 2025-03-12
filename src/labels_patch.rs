@@ -103,4 +103,24 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn test_get_rest_api_path_items() {
+        let patch = LabelsPatch::default();
+        let id = EntityId::new("Q12345").unwrap();
+        assert_eq!(
+            patch.get_rest_api_path(&id).unwrap(),
+            "/entities/items/Q12345/labels"
+        );
+    }
+
+    #[test]
+    fn test_get_rest_api_path_properties() {
+        let patch = LabelsPatch::default();
+        let id = EntityId::new("P123").unwrap();
+        assert_eq!(
+            patch.get_rest_api_path(&id).unwrap(),
+            "/entities/properties/P123/labels"
+        );
+    }
 }

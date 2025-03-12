@@ -37,6 +37,21 @@ impl BearerToken {
         ))
     }
 
+    /// Returns the renewal interval for the `OAuth2` bearer token.
+    pub const fn access_token_renewal_interval(&self) -> std::time::Duration {
+        self.renewal_interval
+    }
+
+    /// Internal use only.
+    pub const fn client_id(&self) -> &Option<String> {
+        &self.client_id
+    }
+
+    /// Internal use only.
+    pub const fn client_secret(&self) -> &Option<String> {
+        &self.client_secret
+    }
+
     fn generate_get_access_token_parameters(
         &self,
         code: &str,

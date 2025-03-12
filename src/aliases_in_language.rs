@@ -297,4 +297,12 @@ mod tests {
         let aliases2 = AliasesInLanguage::from_json("en", &j).unwrap_err();
         assert_eq!(aliases2.to_string(), "Missing field Aliases: 12345");
     }
+
+    #[test]
+    fn test_is_empty() {
+        let aliases = AliasesInLanguage::new("en", vec!["Foo".to_string(), "Bar".to_string()]);
+        assert!(!aliases.is_empty());
+        let aliases2 = AliasesInLanguage::new("en", vec![]);
+        assert!(aliases2.is_empty());
+    }
 }
