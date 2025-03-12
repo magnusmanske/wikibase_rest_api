@@ -96,7 +96,7 @@ mod tests {
         let mut new_aliases = v["aliases"].to_owned();
         new_aliases["en"][1] = json!(new_alias);
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/aliases");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/aliases");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(body_partial_json(

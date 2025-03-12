@@ -196,7 +196,7 @@ mod tests {
     async fn test_labels_get_match_with_fallback() {
         let id = "Q42";
         let mock_path = format!(
-            "/w/rest.php/wikibase/v0/entities/items/{id}/labels_with_language_fallback/foo"
+            "/w/rest.php/wikibase/v1/entities/items/{id}/labels_with_language_fallback/foo"
         );
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
@@ -218,7 +218,7 @@ mod tests {
     #[tokio::test]
     async fn test_label_get() {
         let id = "Q42";
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/labels/en");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels/en");
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(&mock_path))
@@ -240,7 +240,7 @@ mod tests {
     async fn test_label_put() {
         let label = "Foo bar";
         let id = "Q42";
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/labels/en");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels/en");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(body_partial_json(json!({"label": label})))
@@ -266,7 +266,7 @@ mod tests {
     #[tokio::test]
     async fn test_label_delete() {
         let id = "Q42";
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/labels/en");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels/en");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(method("DELETE"))

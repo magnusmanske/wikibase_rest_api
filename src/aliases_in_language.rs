@@ -179,7 +179,7 @@ mod tests {
         let v: Value = serde_json::from_str(&v).unwrap();
         let id_q42 = v["id"].as_str().unwrap();
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id_q42}/aliases/en");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id_q42}/aliases/en");
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(&mock_path))
@@ -206,7 +206,7 @@ mod tests {
         let mut new_aliases = v["aliases"]["en"].to_owned();
         new_aliases.as_array_mut().unwrap().push(json!(new_alias));
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/aliases/en");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/aliases/en");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(method("GET"))

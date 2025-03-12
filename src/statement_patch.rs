@@ -112,7 +112,7 @@ mod tests {
         new_statement["value"]["content"] = json!("Q6");
 
         let statement_id = "Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9";
-        let mock_path = format!("/w/rest.php/wikibase/v0/statements/{statement_id}");
+        let mock_path = format!("/w/rest.php/wikibase/v1/statements/{statement_id}");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(body_partial_json(

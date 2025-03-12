@@ -228,7 +228,7 @@ mod tests {
         let v: Value = serde_json::from_str(&v).unwrap();
         let id = v["id"].as_str().unwrap();
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/sitelinks/enwiki");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/sitelinks/enwiki");
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(&mock_path))
@@ -258,7 +258,7 @@ mod tests {
         let v: Value = serde_json::from_str(&v).unwrap();
         let id = v["id"].as_str().unwrap();
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/sitelinks/enwiki");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/sitelinks/enwiki");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(body_partial_json(
@@ -292,7 +292,7 @@ mod tests {
         let v: Value = serde_json::from_str(&v).unwrap();
         let id = v["id"].as_str().unwrap();
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/sitelinks/enwiki");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/sitelinks/enwiki");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(method("DELETE"))

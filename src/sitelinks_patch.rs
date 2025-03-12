@@ -68,7 +68,7 @@ mod tests {
         let mut new_sitelinks = v["sitelinks"].clone();
         new_sitelinks["enwiki"]["title"] = json!(page_title);
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/sitelinks");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/sitelinks");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(body_partial_json(

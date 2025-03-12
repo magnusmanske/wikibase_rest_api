@@ -24,25 +24,10 @@ impl Aliases {
         api: &RestApi,
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
-        let path = format!("/entities/{group}/{id}/aliases", group = id.group()?);
-        let mut request = api
-            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
-            .await?
-            .build()?;
-        rm.modify_headers(request.headers_mut())?;
-        let response = api.execute(request).await?;
+        let response = Self::get_match_response(id, api, rm).await?;
 
         let header_info = HeaderInfo::from_header(response.headers());
-        let ls: HashMap<String, Vec<String>> = match response.error_for_status() {
-            Ok(response) => response.json().await?,
-            Err(e) => {
-                if e.status() == Some(StatusCode::NOT_FOUND) {
-                    HashMap::new()
-                } else {
-                    return Err(e.into());
-                }
-            }
-        };
+        let ls = Self::get_match_check_response(response).await?;
         Ok(Self { ls, header_info })
     }
 
@@ -97,6 +82,37 @@ impl Aliases {
             })
             .collect::<Result<Vec<String>, RestApiError>>()?;
         Ok((language.to_owned(), values))
+    }
+
+    async fn get_match_response(
+        id: &EntityId,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<reqwest::Response, RestApiError> {
+        let path = format!("/entities/{group}/{id}/aliases", group = id.group()?);
+        let mut request = api
+            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        rm.modify_headers(request.headers_mut())?;
+        let response = api.execute(request).await?;
+        Ok(response)
+    }
+
+    async fn get_match_check_response(
+        response: reqwest::Response,
+    ) -> Result<HashMap<String, Vec<String>>, RestApiError> {
+        let ls: HashMap<String, Vec<String>> = match response.error_for_status() {
+            Ok(response) => response.json().await?,
+            Err(e) => {
+                if e.status() == Some(StatusCode::NOT_FOUND) {
+                    HashMap::new()
+                } else {
+                    return Err(e.into());
+                }
+            }
+        };
+        Ok(ls)
     }
 }
 
@@ -170,7 +186,7 @@ mod tests {
         let id = v["id"].as_str().unwrap();
         let v: Value = v["aliases"].clone();
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/aliases");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/aliases");
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(&mock_path))

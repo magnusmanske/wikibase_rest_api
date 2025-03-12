@@ -155,7 +155,7 @@ mod tests {
         let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
 
-        let mock_path = "/w/rest.php/wikibase/v0/entities/items/Q42/labels";
+        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/labels";
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(mock_path))

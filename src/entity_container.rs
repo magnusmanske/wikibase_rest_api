@@ -173,17 +173,17 @@ mod tests {
 
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
-            .and(path("/w/rest.php/wikibase/v0/entities/items/Q42"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q42"))
             .respond_with(ResponseTemplate::new(200).set_body_json(&q42))
             .mount(&mock_server)
             .await;
         Mock::given(method("GET"))
-            .and(path("/w/rest.php/wikibase/v0/entities/items/Q255"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q255"))
             .respond_with(ResponseTemplate::new(200).set_body_json(&q255))
             .mount(&mock_server)
             .await;
         Mock::given(method("GET"))
-            .and(path("/w/rest.php/wikibase/v0/entities/properties/P214"))
+            .and(path("/w/rest.php/wikibase/v1/entities/properties/P214"))
             .respond_with(ResponseTemplate::new(200).set_body_json(&p214))
             .mount(&mock_server)
             .await;

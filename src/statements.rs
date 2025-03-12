@@ -235,7 +235,7 @@ mod tests {
         let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
 
-        let mock_path = "/w/rest.php/wikibase/v0/entities/items/Q42/statements";
+        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/statements";
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(mock_path))
@@ -256,7 +256,7 @@ mod tests {
         let id = EntityId::item("Q42");
         let v = std::fs::read_to_string("test_data/test_statements_post.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
-        let mock_path = "/w/rest.php/wikibase/v0/entities/items/Q42/statements";
+        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/statements";
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(method("GET"))
@@ -301,7 +301,7 @@ mod tests {
     async fn test_eq() {
         // To ensure that statement lists with and without header info are equal
         let id = EntityId::item("Q42");
-        let mock_path = "/w/rest.php/wikibase/v0/entities/items/Q42/statements";
+        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/statements";
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(method("GET"))

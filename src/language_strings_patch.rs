@@ -156,7 +156,7 @@ mod tests {
         let mut new_label = v["labels"].clone();
         new_label["en"] = json!(page_title);
 
-        let mock_path = format!("/w/rest.php/wikibase/v0/entities/items/{id}/labels");
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels");
         let mock_server = MockServer::start().await;
         let token = "FAKE_TOKEN";
         Mock::given(body_partial_json(

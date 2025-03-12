@@ -161,7 +161,7 @@ mod tests {
         let p214 = std::fs::read_to_string("test_data/P214.json").unwrap();
         let v214: Value = serde_json::from_str(&p214).unwrap();
 
-        let mock_path = "/w/rest.php/wikibase/v0/entities/properties/P214";
+        let mock_path = "/w/rest.php/wikibase/v1/entities/properties/P214";
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(mock_path))
@@ -303,7 +303,7 @@ mod tests {
 
         let mock_server = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/w/rest.php/wikibase/v0/entities/properties"))
+            .and(path("/w/rest.php/wikibase/v1/entities/properties"))
             .and(body_partial_json(
                 json!({"property": {"labels": {"en": property.labels().get_lang("en")}}}),
             ))

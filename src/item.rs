@@ -190,19 +190,19 @@ mod tests {
 
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
-            .and(path("/w/rest.php/wikibase/v0/entities/items/Q42"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q42"))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v))
             .mount(&mock_server)
             .await;
         Mock::given(method("GET"))
-            .and(path("/w/rest.php/wikibase/v0/entities/items/Q0"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q0"))
             .respond_with(ResponseTemplate::new(400).set_body_json(
                 json!({"code": "invalid-item-id","message": "Not a valid item ID: Q0"}),
             ))
             .mount(&mock_server)
             .await;
         Mock::given(method("GET"))
-            .and(path("/w/rest.php/wikibase/v0/entities/items/Q6"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q6"))
             .respond_with(ResponseTemplate::new(404).set_body_json(json!({"code": "item-not-found","message": "Could not find an item with the ID: Q6"})))
             .mount(&mock_server).await;
         let api = RestApi::builder()
@@ -236,7 +236,7 @@ mod tests {
 
         let mock_server = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/w/rest.php/wikibase/v0/entities/items"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items"))
             .and(body_partial_json(
                 json!({"item": {"labels": {"en": item.labels().get_lang("en")}}}),
             ))

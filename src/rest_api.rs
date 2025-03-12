@@ -8,7 +8,7 @@ use crate::{bearer_token::BearerToken, RestApiError};
 const DEFAULT_USER_AGENT: &str = "Rust Wikibase REST API";
 
 /// The latest supported version of the Wikibase REST API
-const WIKIBASE_REST_API_VERSION: u8 = 0;
+const WIKIBASE_REST_API_VERSION: u8 = 1;
 
 #[derive(Debug, Clone)]
 pub struct RestApi {
@@ -237,7 +237,7 @@ mod tests {
     async fn test_get_openapi_json() {
         let expected_json = std::fs::read_to_string("test_data/openapi.json").unwrap();
         let expected_json: serde_json::Value = serde_json::from_str(&expected_json).unwrap();
-        let mock_path = "/w/rest.php/wikibase/v0/openapi.json";
+        let mock_path = "/w/rest.php/wikibase/v1/openapi.json";
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(mock_path))

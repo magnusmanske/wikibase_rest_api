@@ -331,7 +331,7 @@ mod tests {
         let v = std::fs::read_to_string("test_data/test_statement_get.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
         let statement_id = v["id"].as_str().unwrap().to_string();
-        let mock_path = format!("/w/rest.php/wikibase/v0/statements/{statement_id}",);
+        let mock_path = format!("/w/rest.php/wikibase/v1/statements/{statement_id}",);
 
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
@@ -358,7 +358,7 @@ mod tests {
         let v = std::fs::read_to_string("test_data/test_statement_put.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
         let statement_id = v["before"]["id"].as_str().unwrap();
-        let mock_path = format!("/w/rest.php/wikibase/v0/statements/{statement_id}");
+        let mock_path = format!("/w/rest.php/wikibase/v1/statements/{statement_id}");
         let mock_value_before = StatementValue::Value(StatementValueContent::String(
             v["before"]["value"]["content"]
                 .as_str()
@@ -402,10 +402,10 @@ mod tests {
     async fn test_statement_delete() {
         // #lizard forgives the complexity
         let statement_id = "Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9";
-        let mock_path = format!("/w/rest.php/wikibase/v0/statements/{statement_id}");
+        let mock_path = format!("/w/rest.php/wikibase/v1/statements/{statement_id}");
 
         let statement_id2 = "no_such_statement";
-        let mock_path2 = format!("/w/rest.php/wikibase/v0/statements/{statement_id2}");
+        let mock_path2 = format!("/w/rest.php/wikibase/v1/statements/{statement_id2}");
 
         let mock_server = MockServer::start().await;
         Mock::given(method("DELETE"))
