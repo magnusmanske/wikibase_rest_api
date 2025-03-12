@@ -1,3 +1,5 @@
+![crates.io](https://img.shields.io/crates/v/wikibase_rest_api.svg)
+
 This Rust crate provides a REST API for Wikibase.
 It is based on the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
 It works on any MediaWiki installation with the Wikibase extension and an enabled Wikibase REST API.
@@ -6,7 +8,7 @@ It works on any MediaWiki installation with the Wikibase extension and an enable
 See also the [examples](src/bin/main.rs).
 ```rust
 // Create an API (use the Wikidata API shortcut)
-let wikidata_api = RestApi::wikidata().unwrap();
+let api = RestApi::wikidata()?;
 
 // Use Q42 (Douglas Adams) as an example item
 let id = EntityId::new("Q42")?;
@@ -16,9 +18,7 @@ let q42_label_en = Label::get(&id, "en", &api).await?.value().to_owned();
 let q42_sitelink = Sitelink::get(&id, "enwiki", &api).await?.title().to_owned();
 println!("Q42 '{q42_label_en}' => [[enwiki:{q42_sitelink}]]");
 
-
 // Create a new item
-let token = "MY_ACCESS_TOKEN";
 let mut item = Item::default();
 item.labels_mut()
     .insert(LanguageString::new("en", "My label"));
@@ -26,7 +26,6 @@ item.statements_mut()
     .insert(Statement::new_string("P31", "Q42"));
 let item: Item = item.post(&api).await.unwrap();
 println!("Created new item {}", item.id());
-
 
 // Load multiple entities concurrently
 let entity_ids = [
@@ -37,6 +36,7 @@ let entity_ids = [
 .collect::<Result<Vec<_>, RestApiError>>()?;
 
 // A container will manage the concurrent loading of entities.
+let api = Arc::new(api);
 let entity_container = EntityContainer::builder()
     .api(api)
     .max_concurrent(50)
@@ -50,7 +50,7 @@ let q42 = entity_container
     .unwrap()
     .to_owned();
 let q42_label_en = q42.labels().get_lang("en").unwrap();
-
+println!("Q42 label[en]: {q42_label_en}");
 ```
 
 # Implemented REST API actions
@@ -139,5 +139,5 @@ cargo tarpaulin -o html
 Lizard is a simple code analyzer, giving cyclomatic complexity etc.
 https://github.com/terryyin/lizard
 ```bash
-lizard src -C 7 -V -L 35
+lizard src -C 8 -V -L 40
 ```

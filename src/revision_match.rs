@@ -84,6 +84,7 @@ mod tests {
 
     #[test]
     fn test_revision_match() {
+        // #lizard forgives the complexity
         let mut revision_match = RevisionMatch::default();
         assert!(revision_match.modified_since_revisions().is_empty());
         assert_eq!(revision_match.modified_since_date(), None);

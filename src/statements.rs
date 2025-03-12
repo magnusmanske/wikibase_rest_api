@@ -252,6 +252,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_statements_post() {
+        // #lizard forgives the complexity
         let id = EntityId::item("Q42");
         let v = std::fs::read_to_string("test_data/test_statements_post.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();

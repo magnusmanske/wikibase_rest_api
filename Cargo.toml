@@ -1,6 +1,6 @@
 [package]
 name = "wikibase_rest_api"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Magnus Manske <magnusmanske@googlemail.com>"]
 edition = "2021"
 readme = "README.md"
@@ -8,6 +8,7 @@ license = "MIT OR Apache-2.0"
 keywords = ["wikibase", "REST", "API", "client"]
 categories = ["api-bindings"]
 description = "A Rust client for the Wikibase REST API."
+repository = "https://github.com/magnusmanske/wikibase_rest_api"
 
 [lints.rust]
 unsafe_code = "forbid"
