@@ -1,9 +1,10 @@
+/// NOTE: THIS IS INCOMPLETE AND UNTESTED!
 use crate::{
     entity::Entity, patch_entry::PatchEntry, EditMetadata, EntityId, HttpMisc, Item, Property,
     RestApi, RestApiError,
 };
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::json;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 enum Mode {
@@ -14,7 +15,6 @@ enum Mode {
 impl Mode {
     const fn as_str(&self) -> &str {
         match self {
-            // TODO CHECMKE
             Mode::Item => "item",
             Mode::Property => "property",
         }
@@ -41,34 +41,34 @@ impl EntityPatch {
             mode: Mode::Property,
         }
     }
+    /* DO WE NEED THIS?
+       /// Generates a patch from JSON, presumably from `json_patch`
+       pub fn item_from_json(j: &Value) -> Result<Self, RestApiError> {
+           Ok(Self {
+               patch: Self::patch_from_json(j)?,
+               mode: Mode::Item,
+           })
+       }
 
-    /// Generates a patch from JSON, presumably from `json_patch`
-    pub fn item_from_json(j: &Value) -> Result<Self, RestApiError> {
-        Ok(Self {
-            patch: Self::patch_from_json(j)?,
-            mode: Mode::Item,
-        })
-    }
+       /// Generates a patch from JSON, presumably from `json_patch`
+       pub fn property_from_json(j: &Value) -> Result<Self, RestApiError> {
+           Ok(Self {
+               patch: Self::patch_from_json(j)?,
+               mode: Mode::Property,
+           })
+       }
 
-    /// Generates a patch from JSON, presumably from `json_patch`
-    pub fn property_from_json(j: &Value) -> Result<Self, RestApiError> {
-        Ok(Self {
-            patch: Self::patch_from_json(j)?,
-            mode: Mode::Property,
-        })
-    }
-
-    fn patch_from_json(j: &Value) -> Result<Vec<PatchEntry>, RestApiError> {
-        j.as_array()
-            .ok_or_else(|| RestApiError::MissingOrInvalidField {
-                field: "EntityPatch".into(),
-                j: j.to_owned(),
-            })?
-            .iter()
-            .map(|x| serde_json::from_value(x.clone()).map_err(|e| e.into()))
-            .collect::<Result<Vec<PatchEntry>, RestApiError>>()
-    }
-
+       fn patch_from_json(j: &Value) -> Result<Vec<PatchEntry>, RestApiError> {
+           j.as_array()
+               .ok_or_else(|| RestApiError::MissingOrInvalidField {
+                   field: "EntityPatch".into(),
+                   j: j.to_owned(),
+               })?
+               .iter()
+               .map(|x| serde_json::from_value(x.clone()).map_err(|e| e.into()))
+               .collect::<Result<Vec<PatchEntry>, RestApiError>>()
+       }
+    */
     /// Returns the patch entries
     pub const fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
@@ -161,22 +161,58 @@ impl HttpMisc for EntityPatch {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use serde_json::{json, Value};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
 
-//     #[test]
-//     fn test_patch_from_json() {
-//         let j = json!([
-//             {"op": "add", "path": "/enwiki/title", "value": "foo"},
-//             {"op": "replace", "path": "/enwiki/title", "value": "bar"},
-//             {"op": "remove", "path": "/enwiki/title"}
-//         ]);
-//         let patch = EntityPatch::patch_from_json(&j).unwrap();
-//         assert_eq!(patch.len(), 3);
-//         assert_eq!(patch[0], PatchEntry::add("/enwiki/title", "foo"));
-//         assert_eq!(patch[1], PatchEntry::replace("/enwiki/title", "bar"));
-//         assert_eq!(patch[2], PatchEntry::remove("/enwiki/title"));
-//     }
-// }
+    #[test]
+    fn test_mode() {
+        assert_eq!(Mode::Item.as_str(), "item");
+        assert_eq!(Mode::Property.as_str(), "property");
+    }
+
+    #[test]
+    fn test_get_rest_api_path() {
+        let patch = EntityPatch::item();
+        let id = EntityId::new("Q123").unwrap();
+        assert_eq!(
+            patch.get_rest_api_path(&id).unwrap(),
+            "/entities/items/Q123/item"
+        );
+    }
+
+    #[test]
+    fn test_item() {
+        let patch = EntityPatch::item();
+        assert!(patch.is_empty());
+        assert_eq!(patch.mode, Mode::Item);
+    }
+
+    #[test]
+    fn test_property() {
+        let patch = EntityPatch::property();
+        assert!(patch.is_empty());
+        assert_eq!(patch.mode, Mode::Property);
+    }
+
+    #[test]
+    fn test_patch() {
+        let mut patch = EntityPatch::item();
+        assert!(patch.is_empty());
+        patch
+            .patch_mut()
+            .push(PatchEntry::new("add", "/enwiki/title", json!("foo")));
+        assert_eq!(patch.patch().len(), 1);
+    }
+
+    #[test]
+    fn test_is_empty() {
+        let mut patch = EntityPatch::item();
+        assert!(patch.is_empty());
+        patch
+            .patch_mut()
+            .push(PatchEntry::new("add", "/enwiki/title", json!("foo")));
+        assert!(!patch.is_empty());
+    }
+}
