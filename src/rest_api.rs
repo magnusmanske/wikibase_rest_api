@@ -1,14 +1,7 @@
+use crate::{bearer_token::BearerToken, rest_api_builder::RestApiBuilder, RestApiError};
 use reqwest::header::HeaderMap;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
-
-use crate::{bearer_token::BearerToken, RestApiError};
-
-/// The default user agent
-const DEFAULT_USER_AGENT: &str = "Rust Wikibase REST API";
-
-/// The latest supported version of the Wikibase REST API
-const WIKIBASE_REST_API_VERSION: u8 = 1;
 
 #[derive(Debug, Clone)]
 pub struct RestApi {
@@ -23,6 +16,26 @@ impl RestApi {
     /// Returns an empty `RestApiBuilder`
     pub fn builder() -> RestApiBuilder {
         RestApiBuilder::default()
+    }
+
+    pub(crate) const fn new(
+        client: reqwest::Client,
+        user_agent: String,
+        api_url: String,
+        api_version: u8,
+        token: Arc<RwLock<BearerToken>>,
+    ) -> Self {
+        Self {
+            client,
+            user_agent,
+            api_url,
+            api_version,
+            token,
+        }
+    }
+
+    pub fn user_agent(&self) -> &str {
+        &self.user_agent
     }
 
     /// Returns a `RequestBuilder` for a Wikibase REST API request
@@ -121,109 +134,6 @@ impl RestApi {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct RestApiBuilder {
-    client: reqwest::Client,
-    token: BearerToken,
-    user_agent: Option<String>,
-    api_url: Option<String>,
-    api_version: Option<u8>,
-    renewal_interval: Option<std::time::Duration>,
-}
-
-impl RestApiBuilder {
-    /// Sets the REST API URL, specifically the URL ending in "rest.php". This in mandatory.
-    pub fn with_api<S: Into<String>>(mut self, api_url: S) -> Self {
-        self.api_url = Some(api_url.into());
-        self
-    }
-
-    /// Sets the API version (u8). Default is 1.
-    pub const fn with_api_version(mut self, api_version: u8) -> Self {
-        self.api_version = Some(api_version);
-        self
-    }
-
-    /// Sets the `OAuth2` bearer token.
-    pub fn with_access_token<S: Into<String>>(mut self, access_token: S) -> Self {
-        self.token.set_access_token(access_token);
-        self
-    }
-
-    /// Sets the user agent. By default, the user agent is "Rust Wikibase REST API; {`package_name`}/{`package_version`}"
-    pub fn with_user_agent<S: Into<String>>(mut self, user_agent: S) -> Self {
-        self.user_agent = Some(user_agent.into());
-        self
-    }
-
-    /// Sets the `reqwest::Client`. By default, a new `reqwest::Client` is created.
-    pub fn with_client(mut self, client: reqwest::Client) -> Self {
-        self.client = client;
-        self
-    }
-
-    /// Sets the interval for bearer token renewal. By default, the interval is `DEFAULT_RENEWAL_INTERVAL_SEC`.
-    #[cfg(not(tarpaulin_include))]
-    pub const fn with_access_token_renewal(
-        mut self,
-        renewal_interval: std::time::Duration,
-    ) -> Self {
-        self.renewal_interval = Some(renewal_interval);
-        self
-    }
-
-    /// Sets the `OAuth2` client ID and client secret
-    #[cfg(not(tarpaulin_include))]
-    pub fn with_oauth2_info<S1: Into<String>, S2: Into<String>>(
-        mut self,
-        client_id: S1,
-        client_secret: S2,
-    ) -> Self {
-        self.token.set_oauth2_info(client_id, client_secret);
-        self
-    }
-
-    fn validate_api_url(&self) -> Result<String, RestApiError> {
-        let api_url = match &self.api_url {
-            Some(api_url) => api_url.to_owned(),
-            None => return Err(RestApiError::ApiNotSet),
-        };
-        let (base, _rest) = api_url
-            .split_once("/rest.php")
-            .ok_or_else(|| RestApiError::RestApiUrlInvalid(api_url.to_owned()))?;
-        let ret = format!("{base}/rest.php");
-        Ok(ret)
-    }
-
-    /// Builds the `RestApi`. Returns an error if no REST API URL is set.
-    /// # Errors
-    /// Returns an error if no REST API URL is set.
-    pub fn build(&self) -> Result<RestApi, RestApiError> {
-        let api_url = self.validate_api_url()?;
-        let mut token = self.token.to_owned();
-        token.set_renewal_interval(0); // Will use default value instead of 0
-        Ok(RestApi {
-            client: self.client.clone(),
-            user_agent: self
-                .user_agent
-                .clone()
-                .unwrap_or(Self::default_user_agent()),
-            api_url,
-            api_version: self.api_version.unwrap_or(WIKIBASE_REST_API_VERSION),
-            token: Arc::new(RwLock::new(token)),
-        })
-    }
-
-    /// Returns the default user agent, a versioned string based on `DEFAULT_USER_AGENT`.
-    fn default_user_agent() -> String {
-        format!(
-            "{DEFAULT_USER_AGENT}; {}/{}",
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION")
-        )
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -248,51 +158,6 @@ mod tests {
 
         let json = api.get_openapi_json().await.unwrap();
         assert_eq!(json, expected_json);
-    }
-
-    #[test]
-    fn test_default_user_agent() {
-        let user_agent = RestApiBuilder::default_user_agent();
-        assert!(user_agent.starts_with(DEFAULT_USER_AGENT));
-        assert!(user_agent.contains(env!("CARGO_PKG_NAME")));
-        assert!(user_agent.contains(env!("CARGO_PKG_VERSION")));
-    }
-
-    #[test]
-    fn test_validate_api_url_default() {
-        let builder = RestApiBuilder::default();
-        let api_url = builder.validate_api_url();
-        assert!(api_url.is_err());
-    }
-
-    #[test]
-    fn test_validate_api_url_api() {
-        let builder = RestApiBuilder::default().with_api("https://www.wikidata.org/w/api.php");
-        let api_url = builder.validate_api_url();
-        assert!(api_url.is_err());
-    }
-
-    #[test]
-    fn test_validate_api_url_rest_api() {
-        let builder = RestApiBuilder::default().with_api("https://www.wikidata.org/w/rest.php");
-        let api_url = builder.validate_api_url();
-        assert!(api_url.is_ok());
-    }
-
-    #[test]
-    fn test_user_agent() {
-        let api = RestApi::builder()
-            .with_api("https://test.wikidata.org/w/rest.php")
-            .build()
-            .unwrap();
-        assert_eq!(api.user_agent, RestApiBuilder::default_user_agent());
-
-        let builder = RestApi::builder()
-            .with_user_agent("Test User Agent")
-            .with_api("https://test.wikidata.org/w/rest.php")
-            .build()
-            .unwrap();
-        assert_eq!(builder.user_agent, "Test User Agent");
     }
 
     #[test]

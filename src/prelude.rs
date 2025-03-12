@@ -15,6 +15,7 @@ pub use crate::language_string::LanguageString;
 pub use crate::property::Property;
 pub use crate::property_value::PropertyType;
 pub use crate::rest_api::RestApi;
+pub use crate::rest_api_builder::RestApiBuilder;
 pub use crate::sitelink::Sitelink;
 pub use crate::sitelinks::Sitelinks;
 pub use crate::statement::Statement;
