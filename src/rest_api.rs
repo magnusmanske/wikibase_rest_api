@@ -13,26 +13,9 @@ pub struct RestApi {
 }
 
 impl RestApi {
-    /// Returns a `RestApiBuilder`
+    /// Returns a `RestApiBuilder`. Wrapper around `RestApiBuilder::new()`.
     pub fn builder<S: Into<String>>(api_url: S) -> Result<RestApiBuilder, RestApiError> {
         RestApiBuilder::new(api_url)
-    }
-
-    /// Creates a new `RestApi` instance. Only available internally, use `RestApi::builder()` instead.
-    pub(crate) const fn new(
-        client: reqwest::Client,
-        user_agent: String,
-        api_url: String,
-        api_version: u8,
-        token: Arc<RwLock<BearerToken>>,
-    ) -> Self {
-        Self {
-            client,
-            user_agent,
-            api_url,
-            api_version,
-            token,
-        }
     }
 
     /// Returns the user agent
@@ -55,14 +38,85 @@ impl RestApi {
         self.request_builder(&wikibase_path, headers, params, method)
     }
 
+    /// Returns a `RestApi` instance for Wikidata
     pub fn wikidata() -> Result<RestApi, RestApiError> {
         Ok(RestApi::builder("https://www.wikidata.org/w/rest.php")?.build())
     }
 
+    /// Executes a `reqwest::Request`, and returns a `reqwest::Response`.
+    /// # Errors
+    /// Returns an error if the request cannot be executed
+    pub async fn execute(
+        &self,
+        request: reqwest::Request,
+    ) -> Result<reqwest::Response, RestApiError> {
+        self.token.write().await.check(self, &request).await?;
+        let response = self.client.execute(request).await?;
+        Ok(response)
+    }
+
+    /// Returns the OpenAPI JSON for the Wikibase REST API
+    pub async fn get_openapi_json(&self) -> Result<serde_json::Value, RestApiError> {
+        let request = self
+            .wikibase_request_builder("/openapi.json", HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        let response = self.execute(request).await?;
+        let json = response.json().await?;
+        Ok(json)
+    }
+
+    /// Returns the API URL
+    pub fn api_url(&self) -> &str {
+        &self.api_url
+    }
+
+    /// Returns the `reqwest::Client`
+    pub const fn client(&self) -> &reqwest::Client {
+        &self.client
+    }
+
+    /// Creates a new `RestApi` instance.
+    /// Only available internally, use `RestApi::builder()` instead.
+    pub(crate) const fn new(
+        client: reqwest::Client,
+        user_agent: String,
+        api_url: String,
+        api_version: u8,
+        token: Arc<RwLock<BearerToken>>,
+    ) -> Self {
+        Self {
+            client,
+            user_agent,
+            api_url,
+            api_version,
+            token,
+        }
+    }
+
+    /// Returns a `HeaderMap` with the user agent and `OAuth2` bearer token (if present).
+    /// Only available internally.
+    pub(crate) async fn headers_from_token(
+        &self,
+        token: &BearerToken,
+    ) -> Result<HeaderMap, RestApiError> {
+        let mut headers = HeaderMap::new();
+        headers.insert(reqwest::header::USER_AGENT, self.user_agent.parse()?);
+        if let Some(access_token) = &token.get() {
+            headers.insert(
+                reqwest::header::AUTHORIZATION,
+                format!("Bearer {}", access_token).parse()?,
+            );
+        }
+        Ok(headers)
+    }
+
+    /// Returns the root path for the Wikibase REST API, based on the version number
     fn wikibase_root(&self) -> String {
         format!("/wikibase/v{}", self.api_version)
     }
 
+    /// Builds a `reqwest::RequestBuilder` from the method, client, path, and parameters
     fn request_builder<S: Into<String>>(
         &self,
         path: S,
@@ -85,52 +139,6 @@ impl RestApi {
     async fn headers(&self) -> Result<HeaderMap, RestApiError> {
         let token = self.token.read().await;
         self.headers_from_token(&token).await
-    }
-
-    /// Returns a `HeaderMap` with the user agent and `OAuth2` bearer token (if present)
-    pub(crate) async fn headers_from_token(
-        &self,
-        token: &BearerToken,
-    ) -> Result<HeaderMap, RestApiError> {
-        let mut headers = HeaderMap::new();
-        headers.insert(reqwest::header::USER_AGENT, self.user_agent.parse()?);
-        if let Some(access_token) = &token.get() {
-            headers.insert(
-                reqwest::header::AUTHORIZATION,
-                format!("Bearer {}", access_token).parse()?,
-            );
-        }
-        Ok(headers)
-    }
-
-    /// Executes a `reqwest::Request`, and returns a `reqwest::Response`.
-    /// # Errors
-    /// Returns an error if the request cannot be executed
-    pub async fn execute(
-        &self,
-        request: reqwest::Request,
-    ) -> Result<reqwest::Response, RestApiError> {
-        self.token.write().await.check(self, &request).await?;
-        let response = self.client.execute(request).await?;
-        Ok(response)
-    }
-
-    pub async fn get_openapi_json(&self) -> Result<serde_json::Value, RestApiError> {
-        let request = self
-            .wikibase_request_builder("/openapi.json", HashMap::new(), reqwest::Method::GET)
-            .await?
-            .build()?;
-        let response = self.execute(request).await?;
-        let json = response.json().await?;
-        Ok(json)
-    }
-
-    pub fn api_url(&self) -> &str {
-        &self.api_url
-    }
-
-    pub const fn client(&self) -> &reqwest::Client {
-        &self.client
     }
 }
 
