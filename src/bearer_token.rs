@@ -39,7 +39,6 @@ impl BearerToken {
 
     fn generate_get_access_token_parameters(
         &self,
-        api: &RestApi,
         code: &str,
     ) -> Result<HashMap<String, String>, RestApiError> {
         let client_id = self
@@ -57,7 +56,7 @@ impl BearerToken {
             ("client_secret", client_secret.as_str()),
             ("code", code),
         ];
-        Ok(api.array2hashmap(&params))
+        Ok(Self::array2hashmap(&params))
     }
 
     async fn generate_get_access_token_request(
@@ -65,7 +64,7 @@ impl BearerToken {
         api: &RestApi,
         code: &str,
     ) -> Result<Request, RestApiError> {
-        let params = self.generate_get_access_token_parameters(api, code)?;
+        let params = self.generate_get_access_token_parameters(code)?;
         let headers = api.headers_from_token(self).await?;
         let url = format!("{api_url}/oauth2/access_token", api_url = api.api_url());
         let mut request = api
@@ -182,10 +181,7 @@ impl BearerToken {
         true
     }
 
-    fn get_renew_access_token_parameters(
-        &self,
-        api: &RestApi,
-    ) -> Result<HashMap<String, String>, RestApiError> {
+    fn get_renew_access_token_parameters(&self) -> Result<HashMap<String, String>, RestApiError> {
         let client_id = self
             .client_id
             .as_ref()
@@ -204,11 +200,11 @@ impl BearerToken {
             ("grant_type", "refresh_token"),
             ("refresh_token", refresh_token.as_str()),
         ];
-        Ok(api.array2hashmap(&params))
+        Ok(Self::array2hashmap(&params))
     }
 
     async fn get_renew_access_token_request(&self, api: &RestApi) -> Result<Request, RestApiError> {
-        let params = self.get_renew_access_token_parameters(api)?;
+        let params = self.get_renew_access_token_parameters()?;
         let headers = api.headers_from_token(self).await?;
         let url = format!("{}{}", api.api_url(), "/oauth2/access_token");
         let mut request = api
@@ -234,6 +230,13 @@ impl BearerToken {
         let response = api.client().execute(request).await?;
         let j: Value = response.json().await?;
         self.set_tokens_from_json(j)
+    }
+
+    fn array2hashmap(array: &[(&str, &str)]) -> HashMap<String, String> {
+        array
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
 }
 
@@ -449,5 +452,13 @@ mod tests {
         bt.renewal_interval = std::time::Duration::from_secs(3600);
         // This will fail if not for "no update needed", since client ID and secret are not set
         assert!(bt.renew_access_token(&api).await.is_ok());
+    }
+
+    #[test]
+    fn test_array2hashmap() {
+        let array = [("a", "1"), ("b", "2")];
+        let hashmap = BearerToken::array2hashmap(&array);
+        assert_eq!(hashmap.get("a"), Some(&"1".to_string()));
+        assert_eq!(hashmap.get("b"), Some(&"2".to_string()));
     }
 }

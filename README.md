@@ -123,6 +123,7 @@ let q42_label_en = q42.labels().get_lang("en").unwrap();
 ## misc
 - [x] `/openapi.json`
 - [x] `/property-data-types`
+- [ ] `seach items` (not implemented in wikibase yet/v0?)
 
 # Developer notes
 ## TODO

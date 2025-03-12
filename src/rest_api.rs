@@ -90,13 +90,6 @@ impl RestApi {
         Ok(headers)
     }
 
-    pub fn array2hashmap(&self, array: &[(&str, &str)]) -> HashMap<String, String> {
-        array
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect()
-    }
-
     /// Executes a `reqwest::Request`, and returns a `reqwest::Response`.
     /// # Errors
     /// Returns an error if the request cannot be executed
@@ -145,6 +138,7 @@ impl RestApiBuilder {
         self
     }
 
+    /// Sets the API version (u8). Default is 1.
     pub const fn api_version(mut self, api_version: u8) -> Self {
         self.api_version = Some(api_version);
         self
@@ -251,18 +245,6 @@ mod tests {
 
         let json = api.get_openapi_json().await.unwrap();
         assert_eq!(json, expected_json);
-    }
-
-    #[test]
-    fn test_array2hashmap() {
-        let api = RestApi::builder()
-            .api("https://test.wikidata.org/w/rest.php")
-            .build()
-            .unwrap();
-        let array = [("a", "1"), ("b", "2")];
-        let hashmap = api.array2hashmap(&array);
-        assert_eq!(hashmap.get("a"), Some(&"1".to_string()));
-        assert_eq!(hashmap.get("b"), Some(&"2".to_string()));
     }
 
     #[test]
