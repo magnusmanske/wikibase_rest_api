@@ -95,7 +95,6 @@ pub use get_put_delete::*;
 pub use header_info::HeaderInfo;
 pub use item::Item;
 pub use language_string::LanguageString;
-pub use language_strings::LanguageStringsSingle;
 pub use patch::*;
 pub use property::Property;
 pub use reference::Reference;

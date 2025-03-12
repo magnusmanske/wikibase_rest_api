@@ -148,13 +148,12 @@ impl Property {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::language_strings::LanguageStrings;
     use crate::{LanguageString, RestApi, Statement};
     use serde_json::json;
     use wiremock::matchers::{body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
-
-    use super::*;
 
     #[tokio::test]
     async fn test_property_get_and_json_serialize() {

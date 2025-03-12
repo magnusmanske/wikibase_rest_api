@@ -12,7 +12,6 @@ pub use crate::error::RestApiError;
 pub use crate::item::Item;
 pub use crate::label::Label;
 pub use crate::language_string::LanguageString;
-pub use crate::language_strings::LanguageStringsSingle;
 pub use crate::property::Property;
 pub use crate::property_value::PropertyType;
 pub use crate::rest_api::RestApi;
