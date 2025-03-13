@@ -141,3 +141,7 @@ https://github.com/terryyin/lizard
 ```bash
 lizard src -C 8 -V -L 40
 ```
+
+## Analysis
+Run `analysis.py` (requires `rust-code-analysis-cli` to be installed) to generate `analysis.tab`.
+This contains many metrics on code complexity and quality.
