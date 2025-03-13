@@ -1,0 +1,22 @@
+on: push
+
+jobs:
+
+  rust-code-analysis-check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install rust-code-analysis-cli
+        env:
+          RCA_CLI_PATH: https://github.com/mozilla/rust-code-analysis.git
+        run: |
+          cargo install --git $RCA_CLI_PATH --branch master rust-code-analysis-cli
+
+      - name: Run rust-code-analysis-check
+        uses: Luni-4/rust-code-analysis-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          directory: path/to/directory
