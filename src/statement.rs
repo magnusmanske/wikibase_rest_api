@@ -263,7 +263,8 @@ impl Statement {
             j: j.to_owned(),
         })?;
         for reference in array {
-            ret.push(Reference::from_json(reference)?);
+            let ref_from_json = Reference::from_json(reference)?;
+            ret.push(ref_from_json);
         }
         Ok(ret)
     }

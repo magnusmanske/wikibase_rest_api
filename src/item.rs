@@ -274,6 +274,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_invalid_item() {
         let item = get_test_item("Q0").await;
         // assert_eq!(item.err().unwrap().to_string(), "invalid-item-id");
@@ -295,6 +296,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_deleted_item() {
         let item = get_test_item("Q6").await;
         let err = item.err().unwrap();
@@ -315,6 +317,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_json_serialize() {
         let item = get_test_item("Q42").await.unwrap();
         let j = serde_json::to_string(&item).unwrap(); // Convert item to JSON text

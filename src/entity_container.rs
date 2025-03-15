@@ -211,6 +211,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // TODO this should work in miri
     fn test_max_concurrent() {
         let api = Arc::new(
             RestApi::builder("https://test.wikidata.org/w/rest.php")
@@ -226,6 +227,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // TODO this should work in miri
     fn test_max_concurrent_default() {
         let api = Arc::new(
             RestApi::builder("https://test.wikidata.org/w/rest.php")

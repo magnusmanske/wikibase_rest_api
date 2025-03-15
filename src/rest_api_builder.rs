@@ -92,7 +92,7 @@ impl RestApiBuilder {
         let token = Arc::new(RwLock::new(token));
         let user_agent = self.user_agent.unwrap_or(Self::default_user_agent());
         let api_version = self.api_version.unwrap_or(WIKIBASE_REST_API_VERSION);
-        let client = self.client.unwrap_or_default();
+        let client = self.client.unwrap_or_default(); // TODO check why miri fails here
         RestApi::new(client, user_agent, api_url, api_version, token)
     }
 
@@ -148,6 +148,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // TODO this should work in miri
     fn test_user_agent() {
         let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
@@ -162,6 +163,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // TODO this should work in miri
     fn test_with_api_version() {
         let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()

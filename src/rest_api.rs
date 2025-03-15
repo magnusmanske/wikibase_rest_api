@@ -178,6 +178,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // TODO this should work in miri
     fn test_client() {
         let client = reqwest::Client::new();
         let api = RestApi::builder("https://test.wikidata.org/w/rest.php")

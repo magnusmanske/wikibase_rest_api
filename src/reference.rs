@@ -3,7 +3,6 @@ use crate::{
     statement_value::StatementValue,
     RestApiError,
 };
-use rayon::prelude::*;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_json::Value;
 
@@ -32,7 +31,7 @@ impl Reference {
                 field: "parts".into(),
                 j: j.to_owned(),
             })?
-            .par_iter()
+            .iter() // TODO was par_iter but miri doesn't like rayon...
             .map(|part| {
                 let property = PropertyType::from_json(&part["property"])?;
                 let value = StatementValue::from_json(&part["value"])?;

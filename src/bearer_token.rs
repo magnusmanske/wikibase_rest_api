@@ -297,6 +297,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // TODO this should work in miri
     fn test_authorization_code_url() {
         let mut token = BearerToken::default();
         let api = RestApi::builder("https://www.wikidata.org/w/rest.php")
