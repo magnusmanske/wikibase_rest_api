@@ -162,6 +162,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_entity_container() {
         // #lizard forgives the complexity
         let q42_str = std::fs::read_to_string("test_data/Q42.json").unwrap();

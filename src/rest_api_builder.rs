@@ -176,6 +176,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_with_access_token_renewal() {
         let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
@@ -196,6 +197,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_with_oauth2_info() {
         let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()

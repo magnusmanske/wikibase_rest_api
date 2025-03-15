@@ -163,6 +163,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_filter_response_error() {
         let sl = Sitelinks::default();
         let response = reqwest::Response::from(http::Response::new("body text"));
@@ -171,6 +172,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_filter_response_error2() {
         let sl = Sitelinks::default();
         let response = reqwest::Response::from(

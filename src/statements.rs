@@ -231,6 +231,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_statements_get() {
         let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
@@ -251,6 +252,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_statements_post() {
         // #lizard forgives the complexity
         let id = EntityId::item("Q42");
@@ -297,6 +299,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_eq() {
         // To ensure that statement lists with and without header info are equal
         let id = EntityId::item("Q42");

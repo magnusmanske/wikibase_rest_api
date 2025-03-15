@@ -190,6 +190,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_descriptions_get_match_with_fallback() {
         let id = "Q42";
         let mock_path = format!(
@@ -214,6 +215,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_description_get() {
         let id = "Q42";
         let mock_description = "Foo bar baz";
@@ -235,6 +237,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_description_put() {
         let description = "Foo bar baz";
         let id = "Q42";
@@ -261,6 +264,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_description_delete() {
         let id = "Q42";
         let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/descriptions/en");

@@ -156,6 +156,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_property_get_and_json_serialize() {
         let p214 = std::fs::read_to_string("test_data/P214.json").unwrap();
         let v214: Value = serde_json::from_str(&p214).unwrap();
@@ -293,6 +294,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_item_post() {
         let j214 = std::fs::read_to_string("test_data/P214.json").unwrap();
         let v214: Value = serde_json::from_str(&j214).unwrap();

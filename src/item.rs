@@ -213,6 +213,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_item_get() {
         let item = get_test_item("Q42").await.unwrap();
         assert_eq!(item.id(), EntityId::item("Q42"));
@@ -229,6 +230,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_item_post() {
         let mut item = get_test_item("Q42").await.unwrap();
         let v = item.to_owned();
@@ -257,6 +259,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_item_post_404() {
         let item = Item::default();
         let mock_server = MockServer::start().await;

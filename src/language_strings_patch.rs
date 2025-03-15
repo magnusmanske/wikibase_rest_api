@@ -148,6 +148,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_language_strings_single_patch() {
         let id = "Q42";
         let page_title = "Foo Bar";

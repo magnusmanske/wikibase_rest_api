@@ -254,6 +254,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_somevalue() {
         let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
@@ -277,6 +278,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_novalue() {
         let v = std::fs::read_to_string("test_data/Q255.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();

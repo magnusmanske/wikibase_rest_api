@@ -89,6 +89,7 @@ mod tests {
     use std::collections::HashMap;
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_data_type_from_str() {
         // Useful to have this query the live API, and fast enough.
         let api = RestApi::builder("https://www.wikidata.org/w/rest.php")

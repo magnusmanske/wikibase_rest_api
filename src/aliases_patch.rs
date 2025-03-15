@@ -88,6 +88,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_aliases_patch() {
         let id = "Q42";
         let new_alias = "Foo bar baz";

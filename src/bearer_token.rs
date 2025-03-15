@@ -324,6 +324,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_get_access_token() {
         // #lizard forgives the complexity
         let client_id = "client_id_foobar";
@@ -386,6 +387,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_renew_access_token() {
         // #lizard forgives the complexity
         let client_id = "client_id_foobar";
@@ -454,6 +456,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_renew_access_token_no_need() {
         let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()

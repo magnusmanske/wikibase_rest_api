@@ -193,6 +193,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_labels_get_match_with_fallback() {
         let id = "Q42";
         let mock_path = format!(
@@ -215,6 +216,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_label_get() {
         let id = "Q42";
         let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels/en");
@@ -235,6 +237,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_label_put() {
         let label = "Foo bar";
         let id = "Q42";
@@ -261,6 +264,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_label_delete() {
         let id = "Q42";
         let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels/en");

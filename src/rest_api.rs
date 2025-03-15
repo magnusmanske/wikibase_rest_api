@@ -158,6 +158,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_get_openapi_json() {
         let expected_json = std::fs::read_to_string("test_data/openapi.json").unwrap();
         let expected_json: serde_json::Value = serde_json::from_str(&expected_json).unwrap();

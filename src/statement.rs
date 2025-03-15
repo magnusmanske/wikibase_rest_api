@@ -326,6 +326,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_statement_get() {
         // #lizard forgives the complexity
         let v = std::fs::read_to_string("test_data/test_statement_get.json").unwrap();
@@ -352,6 +353,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_statement_put() {
         // #lizard forgives the complexity
         let v = std::fs::read_to_string("test_data/test_statement_put.json").unwrap();
@@ -397,6 +399,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_statement_delete() {
         // #lizard forgives the complexity
         let statement_id = "Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9";

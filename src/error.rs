@@ -175,6 +175,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_error_reqwest() {
         let error = reqwest::get("not a url").await.unwrap_err();
         let rest_api_error: RestApiError = error.into();

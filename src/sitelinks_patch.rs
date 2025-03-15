@@ -60,6 +60,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_sitelinks_patch() {
         let id = "Q42";
         let page_title = "Foo Bar";
