@@ -148,3 +148,9 @@ lizard src -C 8 -V -L 40
 ## Analysis
 Run `analysis.py` (requires `rust-code-analysis-cli` to be installed) to generate `analysis.tab`.
 This contains many metrics on code complexity and quality.
+
+## Miri
+Installation and usage: https://github.com/rust-lang/miri
+```
+cargo +nightly miri test
+```

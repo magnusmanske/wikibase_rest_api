@@ -4,7 +4,6 @@ use crate::{
 };
 use async_trait::async_trait;
 use derivative::Derivative;
-use rayon::prelude::*;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -41,7 +40,7 @@ impl Statements {
                         j: json!(statements),
                     })?;
             let statements = statements
-                .par_iter()
+                .iter()
                 .map(Statement::from_json)
                 .collect::<Result<Vec<Statement>, RestApiError>>()?;
             ret.statements.insert(property.to_owned(), statements);
