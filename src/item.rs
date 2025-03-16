@@ -385,4 +385,26 @@ mod tests {
         let item = Item::default();
         assert_eq!(item.header_info(), &hi);
     }
+
+    #[test]
+    fn test_get_rest_api_path() {
+        let item = Item::default();
+        let id = EntityId::item("Q42");
+        let path = item.get_rest_api_path(&id).unwrap();
+        assert_eq!(path, "/entities/items/Q42");
+    }
+
+    #[test]
+    fn test_patch() {
+        let mut item1 = Item::default();
+        let mut item2 = Item::default();
+        item1
+            .labels_mut()
+            .insert(LanguageString::new("en", "label"));
+        item2
+            .labels_mut()
+            .insert(LanguageString::new("en", "label2"));
+        let patch = item1.patch(&item2).unwrap();
+        assert_eq!(patch.patch().len(), 1);
+    }
 }

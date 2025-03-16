@@ -213,4 +213,12 @@ mod tests {
         assert!(s.contains(r#""en":"Foo""#));
         assert!(s.contains(r#""de":"Bar""#));
     }
+
+    #[test]
+    fn test_is_empty() {
+        let mut l = Descriptions::default();
+        assert!(l.is_empty());
+        l.insert(LanguageString::new("en", "Foo"));
+        assert!(!l.is_empty());
+    }
 }
