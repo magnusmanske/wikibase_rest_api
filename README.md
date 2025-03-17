@@ -148,9 +148,23 @@ lizard src -C 8 -V -L 40
 ## Analysis
 Run `analysis.py` (requires `rust-code-analysis-cli` to be installed) to generate `analysis.tab`.
 This contains many metrics on code complexity and quality.
+```bash
+./analysis.py
+```
+
+## grcov
+```bash
+mkdir profraw
+export RUSTFLAGS="-Cinstrument-coverage"
+export LLVM_PROFILE_FILE="profraw/your_name-%p-%m.profraw"
+
+rm profraw/*.profraw ; cargo clean ; cargo build ; cargo test
+
+grcov . -s profraw --binary-path ./target/debug/ -t html --branch --ignore-not-existing -o ./target/debug/coverage/
+```
 
 ## Miri
 Installation and usage: https://github.com/rust-lang/miri
-```
+```bash
 cargo +nightly miri test
 ```
