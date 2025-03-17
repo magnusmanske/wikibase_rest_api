@@ -71,17 +71,15 @@ impl Statement {
 
     /// Generates a new statement ID
     pub fn new_id_for_entity(&mut self, entity_id: &EntityId) {
-        let uuid = Uuid::new_v4();
-        let uuid = uuid.to_string().to_ascii_uppercase();
+        let uuid = Uuid::new_v4().to_string().to_ascii_uppercase();
         self.set_id(Some(format!("{entity_id}${uuid}")));
     }
 
     /// Fetches a statement from the API
     ///
     /// Usage Example:
-    /// ```text
-    /// use wikibase::statement::Statement;
-    /// use wikibase::RestApi;
+    /// ```
+    /// use wikibase_rest_api::prelude::*;
     /// #[tokio::main]
     /// async fn main() {
     ///     let api = RestApi::wikidata().unwrap();
@@ -98,14 +96,13 @@ impl Statement {
     /// Returns a `Statement`, which is **not** the same as the input `Statement`, but should be identical.
     ///
     /// Usage Example:
-    /// ```text
-    /// use wikibase::statement::Statement;
-    /// use wikibase::RestApi;
+    /// ```no_run
+    /// use wikibase_rest_api::prelude::*;
     /// #[tokio::main]
     /// async fn main() {
-    ///     let api = RestApi::wikidata().unwrap(); // Use Wikidata API
+    ///     let mut api = RestApi::wikidata().unwrap(); // Use Wikidata API
     ///     let mut statement = Statement::new_string("P31", "Q42"); // New statement
-    ///     statement.new_id_for_entity(EntityId::new("Q13406268")); // New statement ID for entity
+    ///     statement.new_id_for_entity(&EntityId::new("Q13406268").unwrap()); // New statement ID for entity
     ///     statement = statement.put(&mut api).await.unwrap(); // Add statement to entity
     /// }
     pub async fn put(&self, api: &mut RestApi) -> Result<Self, RestApiError> {
@@ -140,14 +137,13 @@ impl Statement {
     /// Returns a `Statement`, which is **not** the same as the input `Statement`, but should be identical.
     ///
     /// Usage Example:
-    /// ```text
-    /// use wikibase::statement::Statement;
-    /// use wikibase::RestApi;
+    /// ```no_run
+    /// use wikibase_rest_api::prelude::*;
     /// #[tokio::main]
     /// async fn main() {
-    ///     let api = RestApi::wikidata().unwrap(); // Use Wikidata API
+    ///     let mut api = RestApi::wikidata().unwrap(); // Use Wikidata API
     ///     let mut statement = Statement::new_string("P31", "Q42"); // New statement
-    ///     statement.new_id_for_entity(EntityId::new("Q13406268")); // New statement ID for entity
+    ///     statement.new_id_for_entity(&EntityId::new("Q13406268").unwrap()); // New statement ID for entity
     ///     statement = statement.put_match(&mut api, EditMetadata::default()).await.unwrap();
     /// }
     pub async fn put_match(

@@ -6,6 +6,7 @@ pub use crate::language_strings::LanguageStrings;
 // Structs and enums
 pub use crate::aliases_in_language::AliasesInLanguage;
 pub use crate::description::Description;
+pub use crate::edit_metadata::EditMetadata;
 pub use crate::entity_container::*;
 pub use crate::entity_id::EntityId;
 pub use crate::error::RestApiError;

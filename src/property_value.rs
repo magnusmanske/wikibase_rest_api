@@ -23,10 +23,10 @@ impl PropertyType {
     /// Returns an error if the JSON object does not contain the required fields.
     pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
         let datatype_text =
-            j["data-type"]
+            j["data_type"]
                 .as_str()
                 .ok_or_else(|| RestApiError::MissingOrInvalidField {
-                    field: "data-type".into(),
+                    field: "data_type".into(),
                     j: j.to_owned(),
                 })?;
         let datatype = DataType::new(datatype_text).ok();
@@ -70,7 +70,7 @@ impl Serialize for PropertyType {
         let mut s = serializer.serialize_struct("PropertyType", num)?;
         s.serialize_field("id", &self.id)?;
         if let Some(datatype) = &self.datatype {
-            s.serialize_field("data-type", datatype.as_str())?;
+            s.serialize_field("data_type", datatype.as_str())?;
         }
         s.end()
     }
@@ -125,7 +125,7 @@ mod tests {
     fn test_property_type() {
         let j = serde_json::json!({
             "id": "P123",
-            "data-type": "string",
+            "data_type": "string",
         });
         let p = PropertyType::from_json(&j).unwrap();
         assert_eq!(p.id(), "P123");
@@ -136,7 +136,7 @@ mod tests {
     fn test_property_value() {
         let j = serde_json::json!({
             "id": "P123",
-            "data-type": "string",
+            "data_type": "string",
         });
         let p = PropertyType::from_json(&j).unwrap();
         let v = StatementValueContent::String("Hello".to_string());
@@ -153,18 +153,18 @@ mod tests {
     fn test_property_type_serialize() {
         let j = serde_json::json!({
             "id": "P123",
-            "data-type": "string",
+            "data_type": "string",
         });
         let p = PropertyType::from_json(&j).unwrap();
         let json = serde_json::to_string(&p).unwrap();
-        assert_eq!(json, r#"{"id":"P123","data-type":"string"}"#);
+        assert_eq!(json, r#"{"id":"P123","data_type":"string"}"#);
     }
 
     #[test]
     fn test_property_type_serialize_faulty_data_type() {
         let j = serde_json::json!({
             "id": "P123",
-            "data-type": 567,
+            "data_type": 567,
         });
         let pt = PropertyType::from_json(&j);
         assert!(pt.is_err());
@@ -174,7 +174,7 @@ mod tests {
     fn test_property_type_serialize_faulty_id() {
         let j = serde_json::json!({
             "id": 123,
-            "data-type": "string",
+            "data_type": "string",
         });
         let pt = PropertyType::from_json(&j);
         assert!(pt.is_err());
