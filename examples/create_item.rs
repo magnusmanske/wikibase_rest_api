@@ -5,7 +5,7 @@ use wikibase_rest_api::prelude::*;
 async fn main() -> Result<(), RestApiError> {
     // #lizard forgives the complexity
     // let token = "MY_ACCESS_TOKEN";
-    let api = RestApi::builder("https://www.wikidata.org/w/rest.php")?
+    let api = RestApi::builder("https://test.wikidata.org/w/rest.php")?
         // .with_access_token(token)
         .build();
     let mut item = Item::default();
@@ -17,7 +17,7 @@ async fn main() -> Result<(), RestApiError> {
         .insert(Statement::new_string("P31", "Q13406268"));
     let item = item.post(&api).await?;
     println!(
-        "Created new item https://www.wikidata.org/wiki/{}",
+        "Created new item https://test.wikidata.org/wiki/{}",
         item.id()
     );
 
