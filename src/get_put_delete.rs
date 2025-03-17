@@ -1,5 +1,6 @@
 use crate::{prelude::RestApiError, EditMetadata, EntityId, HeaderInfo, RestApi, RevisionMatch};
 use async_trait::async_trait;
+use reqwest::Request;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
@@ -38,6 +39,13 @@ pub trait HttpMisc {
             .await?
             .build()?;
         rm.modify_headers(request.headers_mut())?;
+        Self::api_execute(api, request).await
+    }
+
+    async fn api_execute(
+        api: &RestApi,
+        request: Request,
+    ) -> Result<(Value, HeaderInfo), RestApiError> {
         let response = api.execute(request).await?;
         let header_info = HeaderInfo::from_header(response.headers());
         let j = response.error_for_status()?.json().await?;

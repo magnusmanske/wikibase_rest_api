@@ -87,7 +87,6 @@ impl Statement {
     ///     println!("{:?}", statement);
     /// }
     /// ```
-    #[cfg_attr(miri, ignore)]
     pub async fn get(statement_id: &str, api: &RestApi) -> Result<Self, RestApiError> {
         Self::get_match(statement_id, api, RevisionMatch::default()).await
     }
@@ -117,7 +116,6 @@ impl Statement {
     }
 
     /// Fetches a statement from the API with revision matching
-    #[cfg_attr(miri, ignore)]
     pub async fn get_match(
         statement_id: &str,
         api: &RestApi,

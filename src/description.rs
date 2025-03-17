@@ -6,7 +6,7 @@ use crate::{
 use async_trait::async_trait;
 use derivative::Derivative;
 use reqwest::Request;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::collections::HashMap;
 use std::ops::Deref;
 
@@ -96,12 +96,7 @@ impl HttpGetEntityWithFallback for Description {
             "descriptions_with_language_fallback",
         )
         .await?;
-        let j: Value = api
-            .execute(request)
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
+        let (j, header_info) = Self::api_execute(api, request).await?;
         let s = j
             .as_str()
             .ok_or_else(|| RestApiError::MissingOrInvalidField {
@@ -110,7 +105,7 @@ impl HttpGetEntityWithFallback for Description {
             })?;
         Ok(Self {
             ls: LanguageString::new(language, s),
-            header_info: HeaderInfo::default(),
+            header_info,
         })
     }
 }
@@ -125,12 +120,7 @@ impl HttpGet for Description {
     ) -> Result<Self, RestApiError> {
         let request =
             Self::generate_get_match_request(id, language, api, rm, "descriptions").await?;
-        let j: Value = api
-            .execute(request)
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
+        let (j, header_info) = Self::api_execute(api, request).await?;
         let s = j
             .as_str()
             .ok_or_else(|| RestApiError::MissingOrInvalidField {
@@ -139,7 +129,7 @@ impl HttpGet for Description {
             })?;
         Ok(Self {
             ls: LanguageString::new(language, s),
-            header_info: HeaderInfo::default(),
+            header_info,
         })
     }
 }
