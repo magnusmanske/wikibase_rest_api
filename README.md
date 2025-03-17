@@ -142,7 +142,7 @@ cargo tarpaulin -o html
 Lizard is a simple code analyzer, giving cyclomatic complexity etc.
 https://github.com/terryyin/lizard
 ```bash
-lizard src -C 8 -V -L 40
+lizard src -C 7 -V -L 40
 ```
 
 ## Analysis
