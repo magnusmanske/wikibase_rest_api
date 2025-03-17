@@ -14,7 +14,7 @@ use uuid::Uuid;
 #[derive(Derivative, Debug, Clone, Default)]
 #[derivative(PartialEq)]
 pub struct Statement {
-    id: Option<String>,
+    statement_id: Option<String>,
     property: PropertyType,
     value: StatementValue,
     rank: StatementRank,
@@ -31,11 +31,11 @@ impl Serialize for Statement {
     {
         // #lizard forgives the complexity
         let mut fields = 5;
-        if self.id.is_some() {
+        if self.statement_id.is_some() {
             fields += 1;
         }
         let mut s = serializer.serialize_struct("Statement", fields)?;
-        if let Some(id) = &self.id {
+        if let Some(id) = &self.statement_id {
             s.serialize_field("id", &id)?;
         }
         s.serialize_field("property", &self.property)?;
@@ -49,18 +49,17 @@ impl Serialize for Statement {
 
 impl HttpMisc for Statement {
     fn get_my_rest_api_path(&self, _id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!(
-            "/statements/{id}",
-            id = self.id().ok_or(RestApiError::MissingId)?
-        ))
+        let id = self.id().ok_or(RestApiError::MissingId)?;
+        Self::get_rest_api_path_from_id(id)
     }
 }
 
 // GET/PUT/POST/DELETE
 impl Statement {
+    /// Convenience function to create a new string statement
     pub fn new_string(property: &str, s: &str) -> Self {
         Self {
-            id: None,
+            statement_id: None,
             property: PropertyType::property(property),
             value: StatementValue::new_string(s),
             rank: StatementRank::Normal,
@@ -71,10 +70,10 @@ impl Statement {
     }
 
     /// Generates a new statement ID
-    pub fn new_id_for_entity(entity_id: &EntityId) -> String {
+    pub fn new_id_for_entity(&mut self, entity_id: &EntityId) {
         let uuid = Uuid::new_v4();
         let uuid = uuid.to_string().to_ascii_uppercase();
-        format!("{entity_id}${uuid}")
+        self.set_id(Some(format!("{entity_id}${uuid}")));
     }
 
     /// Fetches a statement from the API
@@ -85,7 +84,7 @@ impl Statement {
     /// use wikibase::RestApi;
     /// #[tokio::main]
     /// async fn main() {
-    ///     let api = RestApi::builder().api("https://www.wikidata.org/w/rest.php").build().unwrap();
+    ///     let api = RestApi::wikidata().unwrap();
     ///     let statement = Statement::get("Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9", &api).await.unwrap();
     ///     println!("{:?}", statement);
     /// }
@@ -104,9 +103,10 @@ impl Statement {
     /// use wikibase::RestApi;
     /// #[tokio::main]
     /// async fn main() {
-    ///     let api = RestApi::builder().api("https://www.wikidata.org/w/rest.php").build().unwrap();
-    ///     let mut statement = Statement::new_string("P31", "Q42");
-    ///     statement = statement.put_match(&mut api, EditMetadata::default()).await.unwrap();
+    ///     let api = RestApi::wikidata().unwrap(); // Use Wikidata API
+    ///     let mut statement = Statement::new_string("P31", "Q42"); // New statement
+    ///     statement.new_id_for_entity(EntityId::new("Q13406268")); // New statement ID for entity
+    ///     statement = statement.put(&mut api).await.unwrap(); // Add statement to entity
     /// }
     pub async fn put(&self, api: &mut RestApi) -> Result<Self, RestApiError> {
         self.put_match(api, EditMetadata::default()).await
@@ -123,7 +123,7 @@ impl Statement {
         api: &RestApi,
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
-        let path = format!("/statements/{statement_id}");
+        let path = Self::get_rest_api_path_from_id(statement_id)?;
         let mut request = api
             .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
             .await?
@@ -135,7 +135,21 @@ impl Statement {
         Self::from_json_header_info(&j, header_info)
     }
 
-    /// Creates a new statement via the API with revision matching.
+    /// Creates a new statement via the API. And `id` needs to be set.
+    ///
+    /// Returns a `Statement`, which is **not** the same as the input `Statement`, but should be identical.
+    ///
+    /// Usage Example:
+    /// ```text
+    /// use wikibase::statement::Statement;
+    /// use wikibase::RestApi;
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let api = RestApi::wikidata().unwrap(); // Use Wikidata API
+    ///     let mut statement = Statement::new_string("P31", "Q42"); // New statement
+    ///     statement.new_id_for_entity(EntityId::new("Q13406268")); // New statement ID for entity
+    ///     statement = statement.put_match(&mut api, EditMetadata::default()).await.unwrap();
+    /// }
     pub async fn put_match(
         &self,
         api: &mut RestApi,
@@ -197,6 +211,10 @@ impl Statement {
     pub fn qualifiers_mut(&mut self) -> &mut Vec<PropertyValue> {
         &mut self.qualifiers
     }
+
+    fn get_rest_api_path_from_id(id: &str) -> Result<String, RestApiError> {
+        Ok(format!("/statements/{id}"))
+    }
 }
 
 // FromJson helper function
@@ -232,7 +250,7 @@ impl FromJson for Statement {
         let property = PropertyType::from_json(&j["property"])?;
         let value = StatementValue::from_json(&j["value"])?;
         Ok(Statement {
-            id: Some(id.to_string()),
+            statement_id: Some(id.to_string()),
             property,
             rank,
             value,
@@ -247,7 +265,7 @@ impl FromJson for Statement {
 impl Statement {
     /// Generates a patch to transform `other` into `self`
     pub fn patch(&self, other: &Self) -> Result<StatementPatch, RestApiError> {
-        let statement_id = match self.id {
+        let statement_id = match self.statement_id {
             Some(ref id) => id,
             None => return Err(RestApiError::MissingId),
         };
@@ -285,12 +303,12 @@ impl Statement {
 
     /// Returns the statement ID
     pub const fn id(&self) -> Option<&String> {
-        self.id.as_ref()
+        self.statement_id.as_ref()
     }
 
     /// Sets the statement ID
     pub fn set_id(&mut self, id: Option<String>) {
-        self.id = id;
+        self.statement_id = id;
     }
 
     /// Returns the statement property
@@ -532,7 +550,8 @@ mod tests {
     #[test]
     fn test_new_id_for_entity() {
         let entity_id = EntityId::new("Q42").unwrap();
-        let id = Statement::new_id_for_entity(&entity_id);
-        assert_eq!(&id[0..4], "Q42$");
+        let mut statement = Statement::default();
+        statement.new_id_for_entity(&entity_id);
+        assert_eq!(&statement.id().unwrap()[0..4], "Q42$");
     }
 }

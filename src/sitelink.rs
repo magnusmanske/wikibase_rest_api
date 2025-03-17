@@ -104,6 +104,13 @@ impl Sitelink {
     pub fn url(&self) -> Option<&str> {
         self.url.as_deref()
     }
+
+    fn get_rest_api_path_from_wiki(id: &EntityId, wiki: &str) -> Result<String, RestApiError> {
+        Ok(format!(
+            "/entities/{group}/{id}/sitelinks/{wiki}",
+            group = id.group()?
+        ))
+    }
 }
 
 impl Serialize for Sitelink {
@@ -128,11 +135,7 @@ impl Serialize for Sitelink {
 
 impl HttpMisc for Sitelink {
     fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!(
-            "/entities/{group}/{id}/sitelinks/{wiki}",
-            group = id.group()?,
-            wiki = self.wiki()
-        ))
+        Self::get_rest_api_path_from_wiki(id, self.wiki())
     }
 }
 
@@ -144,7 +147,7 @@ impl HttpGet for Sitelink {
         api: &RestApi,
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
-        let path = format!("/entities/{}/{id}/sitelinks/{site_id}", id.group()?);
+        let path = Self::get_rest_api_path_from_wiki(id, site_id)?;
         let mut request = api
             .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
             .await?
