@@ -28,6 +28,22 @@ pub trait HttpMisc {
         }
     }
 
+    async fn get_match_internal(
+        api: &RestApi,
+        path: &str,
+        rm: RevisionMatch,
+    ) -> Result<(Value, HeaderInfo), RestApiError> {
+        let mut request = api
+            .wikibase_request_builder(path, HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        rm.modify_headers(request.headers_mut())?;
+        let response = api.execute(request).await?;
+        let header_info = HeaderInfo::from_header(response.headers());
+        let j = response.error_for_status()?.json().await?;
+        Ok((j, header_info))
+    }
+
     async fn run_json_query(
         &self,
         id: &EntityId,
@@ -141,22 +157,6 @@ pub trait HttpGetEntity: Sized + HttpMisc {
         Self: Sized,
     {
         Self::get_match(id, api, RevisionMatch::default()).await
-    }
-
-    async fn get_match_internal(
-        api: &RestApi,
-        path: &str,
-        rm: RevisionMatch,
-    ) -> Result<(Value, HeaderInfo), RestApiError> {
-        let mut request = api
-            .wikibase_request_builder(path, HashMap::new(), reqwest::Method::GET)
-            .await?
-            .build()?;
-        rm.modify_headers(request.headers_mut())?;
-        let response = api.execute(request).await?;
-        let header_info = HeaderInfo::from_header(response.headers());
-        let j = response.error_for_status()?.json().await?;
-        Ok((j, header_info))
     }
 }
 
