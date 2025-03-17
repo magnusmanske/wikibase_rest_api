@@ -77,7 +77,8 @@ impl Statement {
 
     /// Fetches a statement from the API
     ///
-    /// Usage Example:
+    /// # Examples
+    ///
     /// ```no_run
     /// use wikibase_rest_api::prelude::*;
     /// #[tokio::main]
@@ -96,7 +97,8 @@ impl Statement {
     ///
     /// Returns a `Statement`, which is **not** the same as the input `Statement`, but should be identical.
     ///
-    /// Usage Example:
+    /// # Examples
+    ///
     /// ```no_run
     /// use wikibase_rest_api::prelude::*;
     /// #[tokio::main]
@@ -138,7 +140,8 @@ impl Statement {
     ///
     /// Returns a `Statement`, which is **not** the same as the input `Statement`, but should be identical.
     ///
-    /// Usage Example:
+    /// # Examples
+    ///
     /// ```no_run
     /// use wikibase_rest_api::prelude::*;
     /// #[tokio::main]
