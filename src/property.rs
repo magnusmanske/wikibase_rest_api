@@ -26,7 +26,7 @@ pub struct Property {
 }
 
 impl HttpMisc for Property {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!("/entities/{}/{id}", id.group()?))
     }
 }

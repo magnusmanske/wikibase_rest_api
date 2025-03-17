@@ -6,7 +6,6 @@ use async_trait::async_trait;
 use derivative::Derivative;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
-use std::collections::HashMap;
 
 #[derive(Derivative, Debug, Clone, Default)]
 #[derivative(PartialEq)]
@@ -17,7 +16,7 @@ pub struct Sitelinks {
 }
 
 impl HttpMisc for Sitelinks {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_rest_api_path(id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/sitelinks",
             group = id.group()?
@@ -54,15 +53,8 @@ impl HttpGetEntity for Sitelinks {
         api: &RestApi,
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
-        let path = format!("/entities/{group}/{id}/sitelinks", group = id.group()?);
-        let mut request = api
-            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
-            .await?
-            .build()?;
-        rm.modify_headers(request.headers_mut())?;
-        let response = api.execute(request).await?;
-        let header_info = HeaderInfo::from_header(response.headers());
-        let j: Value = response.error_for_status()?.json().await?;
+        let path = Self::get_rest_api_path(id)?;
+        let (j, header_info) = Self::get_match_internal(api, &path, rm).await?;
         Self::from_json_header_info(&j, header_info)
     }
 }
@@ -264,7 +256,9 @@ mod tests {
     fn test_get_rest_api_path() {
         let sitelinks = Sitelinks::default();
         assert_eq!(
-            sitelinks.get_rest_api_path(&EntityId::item("Q42")).unwrap(),
+            sitelinks
+                .get_my_rest_api_path(&EntityId::item("Q42"))
+                .unwrap(),
             "/entities/items/Q42/sitelinks"
         );
     }

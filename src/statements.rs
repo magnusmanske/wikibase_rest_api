@@ -152,15 +152,8 @@ impl HttpGetEntity for Statements {
         api: &RestApi,
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
-        let path = format!("/entities/{group}/{id}/statements", group = id.group()?);
-        let mut request = api
-            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
-            .await?
-            .build()?;
-        rm.modify_headers(request.headers_mut())?;
-        let response = api.execute(request).await?;
-        let header_info = HeaderInfo::from_header(response.headers());
-        let j: Value = response.error_for_status()?.json().await?;
+        let path = Self::get_rest_api_path(id)?;
+        let (j, header_info) = Self::get_match_internal(api, &path, rm).await?;
         Self::from_json_header_info(&j, header_info)
     }
 }
@@ -199,7 +192,7 @@ impl Statements {
 }
 
 impl HttpMisc for Statements {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_rest_api_path(id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/statements",
             group = id.group()?

@@ -28,7 +28,7 @@ pub struct Item {
 }
 
 impl HttpMisc for Item {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!("/entities/{}/{id}", id.group()?))
     }
 }
@@ -390,7 +390,7 @@ mod tests {
     fn test_get_rest_api_path() {
         let item = Item::default();
         let id = EntityId::item("Q42");
-        let path = item.get_rest_api_path(&id).unwrap();
+        let path = item.get_my_rest_api_path(&id).unwrap();
         assert_eq!(path, "/entities/items/Q42");
     }
 

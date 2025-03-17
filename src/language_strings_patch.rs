@@ -131,7 +131,7 @@ impl PatchApply<Descriptions> for LanguageStringsPatch {
 }
 
 impl HttpMisc for LanguageStringsPatch {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/{mode}",
             group = id.group()?,

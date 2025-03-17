@@ -70,7 +70,7 @@ impl From<Label> for LanguageString {
 }
 
 impl HttpMisc for Label {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/labels/{language}",
             group = id.group()?,

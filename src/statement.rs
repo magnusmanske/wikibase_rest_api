@@ -48,7 +48,7 @@ impl Serialize for Statement {
 }
 
 impl HttpMisc for Statement {
-    fn get_rest_api_path(&self, _id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, _id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/statements/{id}",
             id = self.id().ok_or(RestApiError::MissingId)?

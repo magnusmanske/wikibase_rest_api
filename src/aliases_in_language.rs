@@ -136,7 +136,7 @@ impl AliasesInLanguage {
 }
 
 impl HttpMisc for AliasesInLanguage {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/aliases/{language}",
             group = id.group()?,

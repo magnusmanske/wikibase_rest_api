@@ -5,7 +5,16 @@ use std::collections::HashMap;
 
 #[async_trait]
 pub trait HttpMisc {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError>;
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+        Self::get_rest_api_path(id)
+    }
+
+    fn get_rest_api_path(id: &EntityId) -> Result<String, RestApiError> {
+        panic!(
+            "{}::get_rest_api_path is not implemented but was used for {id}",
+            std::any::type_name::<Self>()
+        );
+    }
 
     fn add_metadata_to_json(j: &mut Value, em: &EditMetadata) {
         if j.get("tags").is_none() {
@@ -41,7 +50,7 @@ pub trait HttpMisc {
         em: &EditMetadata,
     ) -> Result<reqwest::Request, RestApiError> {
         Self::add_metadata_to_json(&mut j, em);
-        let path = self.get_rest_api_path(id)?;
+        let path = self.get_my_rest_api_path(id)?;
         let content_type = match method {
             reqwest::Method::PATCH => "application/json-patch+json",
             _ => "application/json",
@@ -132,6 +141,22 @@ pub trait HttpGetEntity: Sized + HttpMisc {
         Self: Sized,
     {
         Self::get_match(id, api, RevisionMatch::default()).await
+    }
+
+    async fn get_match_internal(
+        api: &RestApi,
+        path: &str,
+        rm: RevisionMatch,
+    ) -> Result<(Value, HeaderInfo), RestApiError> {
+        let mut request = api
+            .wikibase_request_builder(path, HashMap::new(), reqwest::Method::GET)
+            .await?
+            .build()?;
+        rm.modify_headers(request.headers_mut())?;
+        let response = api.execute(request).await?;
+        let header_info = HeaderInfo::from_header(response.headers());
+        let j = response.error_for_status()?.json().await?;
+        Ok((j, header_info))
     }
 }
 

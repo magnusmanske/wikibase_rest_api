@@ -41,7 +41,7 @@ impl Labels {
 }
 
 impl HttpMisc for Labels {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/labels",
             group = id.group()?
@@ -57,14 +57,7 @@ impl HttpGetEntity for Labels {
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
         let path = format!("/entities/{group}/{id}/labels", group = id.group()?);
-        let mut request = api
-            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
-            .await?
-            .build()?;
-        rm.modify_headers(request.headers_mut())?;
-        let response = api.execute(request).await?;
-        let header_info = HeaderInfo::from_header(response.headers());
-        let j: Value = response.error_for_status()?.json().await?;
+        let (j, header_info) = Self::get_match_internal(api, &path, rm).await?;
         Self::from_json_header_info(&j, header_info)
     }
 }
@@ -193,7 +186,7 @@ mod tests {
         let l = Labels::default();
         let id = EntityId::new("Q42").unwrap();
         assert_eq!(
-            l.get_rest_api_path(&id).unwrap(),
+            l.get_my_rest_api_path(&id).unwrap(),
             "/entities/items/Q42/labels"
         );
     }

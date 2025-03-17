@@ -71,7 +71,7 @@ impl From<Description> for LanguageString {
 }
 
 impl HttpMisc for Description {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/descriptions/{language}",
             group = id.group()?,

@@ -45,7 +45,7 @@ impl Patch for SitelinksPatch {
 impl PatchApply<Sitelinks> for SitelinksPatch {}
 
 impl HttpMisc for SitelinksPatch {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!("/entities/{}/{id}/sitelinks", id.group()?))
     }
 }

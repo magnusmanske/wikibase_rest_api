@@ -45,7 +45,7 @@ impl Patch for LabelsPatch {
 }
 
 impl HttpMisc for LabelsPatch {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/labels",
             group = id.group()?
@@ -109,7 +109,7 @@ mod tests {
         let patch = LabelsPatch::default();
         let id = EntityId::new("Q12345").unwrap();
         assert_eq!(
-            patch.get_rest_api_path(&id).unwrap(),
+            patch.get_my_rest_api_path(&id).unwrap(),
             "/entities/items/Q12345/labels"
         );
     }
@@ -119,7 +119,7 @@ mod tests {
         let patch = LabelsPatch::default();
         let id = EntityId::new("P123").unwrap();
         assert_eq!(
-            patch.get_rest_api_path(&id).unwrap(),
+            patch.get_my_rest_api_path(&id).unwrap(),
             "/entities/properties/P123/labels"
         );
     }

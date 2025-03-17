@@ -45,7 +45,7 @@ impl Patch for DescriptionsPatch {
 }
 
 impl HttpMisc for DescriptionsPatch {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/descriptions",
             group = id.group()?
@@ -119,7 +119,7 @@ mod tests {
         let patch = DescriptionsPatch::default();
         let id = EntityId::new("Q123").unwrap();
         assert_eq!(
-            patch.get_rest_api_path(&id).unwrap(),
+            patch.get_my_rest_api_path(&id).unwrap(),
             "/entities/items/Q123/descriptions"
         );
     }

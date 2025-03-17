@@ -127,7 +127,7 @@ impl Serialize for Sitelink {
 }
 
 impl HttpMisc for Sitelink {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
             "/entities/{group}/{id}/sitelinks/{wiki}",
             group = id.group()?,

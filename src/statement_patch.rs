@@ -13,7 +13,7 @@ pub struct StatementPatch {
 }
 
 impl HttpMisc for StatementPatch {
-    fn get_rest_api_path(&self, _id: &EntityId) -> Result<String, RestApiError> {
+    fn get_my_rest_api_path(&self, _id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!("/statements/{id}", id = self.statement_id))
     }
 }
@@ -158,7 +158,7 @@ mod tests {
         let patch = StatementPatch::new("Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9");
         assert_eq!(
             patch
-                .get_rest_api_path(&EntityId::new("Q42").unwrap())
+                .get_my_rest_api_path(&EntityId::new("Q42").unwrap())
                 .unwrap(),
             "/statements/Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9"
         );

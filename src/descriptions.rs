@@ -41,9 +41,9 @@ impl Descriptions {
 }
 
 impl HttpMisc for Descriptions {
-    fn get_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+    fn get_rest_api_path(id: &EntityId) -> Result<String, RestApiError> {
         Ok(format!(
-            "/entities/{group}/{id}/labels",
+            "/entities/{group}/{id}/descriptions",
             group = id.group()?
         ))
     }
@@ -56,15 +56,8 @@ impl HttpGetEntity for Descriptions {
         api: &RestApi,
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
-        let path = format!("/entities/{group}/{id}/labels", group = id.group()?);
-        let mut request = api
-            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
-            .await?
-            .build()?;
-        rm.modify_headers(request.headers_mut())?;
-        let response = api.execute(request).await?;
-        let header_info = HeaderInfo::from_header(response.headers());
-        let j: Value = response.error_for_status()?.json().await?;
+        let path = Self::get_rest_api_path(id)?;
+        let (j, header_info) = Self::get_match_internal(api, &path, rm).await?;
         Self::from_json_header_info(&j, header_info)
     }
 }
@@ -156,11 +149,11 @@ mod tests {
         let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
 
-        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/labels";
+        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/descriptions";
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(mock_path))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&v["labels"]))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&v["descriptions"]))
             .mount(&mock_server)
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
@@ -169,7 +162,7 @@ mod tests {
 
         let id = EntityId::new("Q42").unwrap();
         let ls = Descriptions::get(&id, &api).await.unwrap();
-        assert_eq!(ls.get_lang("en"), Some("Douglas Adams"));
+        assert_eq!(ls.get_lang("en-gb"), Some("English writer and humourist"));
     }
 
     #[test]
@@ -193,8 +186,8 @@ mod tests {
         let l = Descriptions::default();
         let id = EntityId::new("Q42").unwrap();
         assert_eq!(
-            l.get_rest_api_path(&id).unwrap(),
-            "/entities/items/Q42/labels"
+            l.get_my_rest_api_path(&id).unwrap(),
+            "/entities/items/Q42/descriptions"
         );
     }
 
