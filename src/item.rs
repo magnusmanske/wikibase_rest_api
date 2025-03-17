@@ -73,16 +73,41 @@ impl Serialize for Item {
         if self.id.is_some() {
             fields += 1;
         }
+        if self.labels.is_empty() {
+            fields -= 1;
+        }
+        if self.descriptions.is_empty() {
+            fields -= 1;
+        }
+        if self.aliases.is_empty() {
+            fields -= 1;
+        }
+        if self.sitelinks.is_empty() {
+            fields -= 1;
+        }
+        if self.statements.is_empty() {
+            fields -= 1;
+        }
         let mut s = serializer.serialize_struct("Item", fields)?;
         if self.id.is_some() {
             let id: String = self.id.to_owned().into();
             s.serialize_field("id", &id)?;
         }
-        s.serialize_field("labels", &self.labels)?;
-        s.serialize_field("descriptions", &self.descriptions)?;
-        s.serialize_field("aliases", &self.aliases)?;
-        s.serialize_field("sitelinks", &self.sitelinks)?;
-        s.serialize_field("statements", &self.statements)?;
+        if !self.labels.is_empty() {
+            s.serialize_field("labels", &self.labels)?;
+        }
+        if !self.descriptions.is_empty() {
+            s.serialize_field("descriptions", &self.descriptions)?;
+        }
+        if !self.aliases.is_empty() {
+            s.serialize_field("aliases", &self.aliases)?;
+        }
+        if !self.sitelinks.is_empty() {
+            s.serialize_field("sitelinks", &self.sitelinks)?;
+        }
+        if !self.statements.is_empty() {
+            s.serialize_field("statements", &self.statements)?;
+        }
         s.end()
     }
 }

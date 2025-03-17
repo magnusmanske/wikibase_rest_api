@@ -39,6 +39,15 @@ impl RestApi {
     ) -> Result<reqwest::RequestBuilder, RestApiError> {
         let mut headers = self.headers().await?;
         headers.insert(reqwest::header::ACCEPT, "application/json".parse()?);
+        match method {
+            reqwest::Method::GET => {}
+            _ => {
+                headers.insert(
+                    reqwest::header::CONTENT_TYPE,
+                    reqwest::header::HeaderValue::from_static("application/json"),
+                );
+            }
+        }
         let wikibase_path = format!("{}{}", self.wikibase_root(), path.into());
         self.request_builder(&wikibase_path, headers, params, method)
     }

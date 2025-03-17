@@ -27,19 +27,6 @@ impl EntityType {
     }
 }
 
-// impl Serialize for EntityType {
-//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//     where
-//         S: serde::Serializer,
-//     {
-//         let mut s = serializer.serialize_map(Some(self.ls.len()))?;
-//         for (language, ls) in &self.ls {
-//             s.serialize_entry(language, ls)?;
-//         }
-//         s.end()
-//     }
-// }
-
 #[async_trait]
 pub trait Entity: Default + Sized + Serialize + HttpMisc {
     fn id(&self) -> EntityId;
@@ -138,6 +125,9 @@ pub trait Entity: Default + Sized + Serialize + HttpMisc {
             return Err(RestApiError::HasId);
         }
         let path = format!("/entities/{group}", group = entity_type.group_name());
+        println!("{path}");
+        println!("{entity_type:?}");
+        println!("{em:?}");
         let request = self
             .build_post_with_type_and_metadata_request(entity_type, &path, api, em)
             .await?;
