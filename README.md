@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE-MIT)
 [![License](https://img.shields.io/badge/license-APACHE2-blue?style=flat-square)](LICENSE-APACHE2)
 AvgCCN 2.1
+Codecov 89.89%
 
 This Rust crate provides a REST API for Wikibase.
 It is based on the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
@@ -147,13 +148,20 @@ lizard src -C 7 -V -L 40
 ```
 
 ## Analysis
-Run `analysis.py` (requires `rust-code-analysis-cli` to be installed) to generate `analysis.tab`.
+Run `rust-code-analysis.py` (requires `rust-code-analysis-cli` to be installed) to generate `analysis.tab`.
 This contains many metrics on code complexity and quality.
 ```bash
-./analysis.py
+./rust-code-analysis.py
+```
+
+## Tarpaulin
+```bash
+cargo tarpaulin -o html
 ```
 
 ## grcov
+[grcov](https://github.com/mozilla/grcov)
+*This might not work at the moment.*
 ```bash
 mkdir profraw
 export RUSTFLAGS="-Cinstrument-coverage"
