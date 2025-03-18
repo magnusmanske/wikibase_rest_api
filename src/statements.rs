@@ -114,8 +114,18 @@ impl Statements {
         let from_statements_with_id = self.get_id_statement_map();
         let to_statements_with_id = other.get_id_statement_map();
 
-        // Modify/remove
-        for (statement_id, from_statement) in &from_statements_with_id {
+        Self::patch_modify_remove(&mut patch, &from_statements_with_id, &to_statements_with_id)?;
+        Self::patch_add_new(&mut patch, from_statements_with_id, to_statements_with_id);
+
+        Ok(patch)
+    }
+
+    fn patch_modify_remove(
+        patch: &mut StatementsPatch,
+        from_statements_with_id: &HashMap<&str, &Statement>,
+        to_statements_with_id: &HashMap<&str, &Statement>,
+    ) -> Result<(), RestApiError> {
+        for (statement_id, from_statement) in from_statements_with_id {
             match to_statements_with_id.get(statement_id) {
                 Some(to_statement) => {
                     // Modify statement
@@ -129,7 +139,14 @@ impl Statements {
                 }
             }
         }
+        Ok(())
+    }
 
+    fn patch_add_new(
+        patch: &mut StatementsPatch,
+        from_statements_with_id: HashMap<&str, &Statement>,
+        to_statements_with_id: HashMap<&str, &Statement>,
+    ) {
         // Add new statements
         for (statement_id, to_statement) in &to_statements_with_id {
             if !from_statements_with_id.contains_key(statement_id) {
@@ -139,8 +156,6 @@ impl Statements {
                 patch.add(add_path, value);
             }
         }
-
-        Ok(patch)
     }
 }
 

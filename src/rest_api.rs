@@ -41,6 +41,12 @@ impl RestApi {
         headers.insert(reqwest::header::ACCEPT, "application/json".parse()?);
         match method {
             reqwest::Method::GET => {}
+            reqwest::Method::PATCH => {
+                headers.insert(
+                    reqwest::header::CONTENT_TYPE,
+                    reqwest::header::HeaderValue::from_static("json-patch+json"),
+                );
+            }
             _ => {
                 headers.insert(
                     reqwest::header::CONTENT_TYPE,

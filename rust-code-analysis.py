@@ -50,7 +50,7 @@ def analyze_files(filenames):
 	for filename in filenames:
 		data = analyze_file(filename)
 		append_metrics(ret,data)
-	with open('analysis.tab', 'w') as output:
+	with open('rust-code-analysis.tab', 'w') as output:
 		print("#group         \tmethod                   \tminimum\tmedian\tmean\tstd_dev\tmaximum\tcount",file=output)
 		for (k1,v1) in ret.items():
 			for(k2,v2) in v1.items():
@@ -72,10 +72,10 @@ def create_json_files(root_path):
 	shutil.rmtree(root_path)
 
 	# Generate data
-	subprocess.call(['rust-code-analysis-cli','-p','src/','-m','-O','json','--pr','-o','analysis'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	subprocess.call(['rust-code-analysis-cli','-p','src/','-m','-O','json','--pr','-o','rust-code-analysis'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 if __name__ == '__main__':
-	root_path = 'analysis/src'
+	root_path = 'rust-code-analysis/src'
 	create_json_files(root_path)
 	files = find_files(root_path,'*.json')
 	analyze_files(files)
