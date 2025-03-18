@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE-MIT)
 [![License](https://img.shields.io/badge/license-APACHE2-blue?style=flat-square)](LICENSE-APACHE2)
 AvgCCN 2.1
-Codecov 89.89%
+Codecov 96.01%
 
 This Rust crate provides a REST API for Wikibase.
 It is based on the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
@@ -134,6 +134,8 @@ println!("Q42 label[en]: {q42_label_en}");
 ## TODO
 - Maxlag/rate limits?
 
+Code analysis is run via `analysis.sh`.
+
 ## Code coverage
 ```bash
 cargo install cargo-tarpaulin # Once
@@ -161,16 +163,6 @@ cargo tarpaulin -o html
 
 ## grcov
 [grcov](https://github.com/mozilla/grcov)
-*This might not work at the moment.*
-```bash
-mkdir profraw
-export RUSTFLAGS="-Cinstrument-coverage"
-export LLVM_PROFILE_FILE="profraw/your_name-%p-%m.profraw"
-
-rm profraw/*.profraw ; cargo clean ; cargo build ; cargo test
-
-grcov . -s profraw --binary-path ./target/debug/ -t html --branch --ignore-not-existing -o ./target/debug/coverage/
-```
 
 ## Miri
 Installation and usage: https://github.com/rust-lang/miri
