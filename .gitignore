@@ -1,3 +1,5 @@
 *.profraw
-profraw/*
-rust-code-analysis/*
+profraw/
+rust-code-analysis/
+target/
+.DS_Store
