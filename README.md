@@ -2,6 +2,7 @@
 [![Crates.io](https://img.shields.io/crates/d/wikibase_rest_api?style=flat-square)](https://crates.io/crates/wikibase_rest_api)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE-MIT)
 [![License](https://img.shields.io/badge/license-APACHE2-blue?style=flat-square)](LICENSE-APACHE2)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/acffb6bb26d8407b8e82704843a4aa7e)](https://app.codacy.com/gh/magnusmanske/wikibase_rest_api/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 AvgCCN 2.1
 Codecov 96.01%
 
