@@ -22,13 +22,11 @@ impl DescriptionsPatch {
     // TODO add?
 
     /// Adds a command to replace the value of a language string.
-    /// TODO Labels?
     pub fn replace<S1: Into<String>, S2: Into<String>>(&mut self, language: S1, value: S2) {
         <Self as Patch>::replace(self, format!("/{}", language.into()), value.into().into());
     }
 
     /// Adds a command to remove the value for the language.
-    /// TODO Labels?
     pub fn remove<S: Into<String>>(&mut self, language: S) {
         <Self as Patch>::remove(self, format!("/{}", language.into()));
     }
