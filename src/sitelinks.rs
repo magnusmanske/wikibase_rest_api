@@ -60,6 +60,11 @@ impl HttpGetEntity for Sitelinks {
 }
 
 impl Sitelinks {
+    /// Returns the sitelinks
+    pub const fn sitelinks(&self) -> &Vec<Sitelink> {
+        &self.sitelinks
+    }
+
     /// Returns the sitelink for a given wiki
     pub fn get_wiki<S: Into<String>>(&self, wiki: S) -> Option<&Sitelink> {
         let wiki = wiki.into();
@@ -70,6 +75,12 @@ impl Sitelinks {
     pub fn set_wiki(&mut self, sitelink: Sitelink) {
         self.sitelinks.retain(|s| s.wiki() != sitelink.wiki());
         self.sitelinks.push(sitelink);
+    }
+
+    /// Deletes the sitelink for a given wiki
+    pub fn remove_wiki<S: Into<String>>(&mut self, wiki: S) {
+        let wiki = wiki.into();
+        self.sitelinks.retain(|s| s.wiki() != wiki);
     }
 
     /// Returns the number of sitelinks
@@ -291,5 +302,33 @@ mod tests {
         let j = serde_json::to_value(&sitelinks).unwrap();
         assert_eq!(j["enwiki"]["title"].as_str().unwrap(), "Douglas Adams");
         assert_eq!(j["dewiki"]["title"].as_str().unwrap(), "Douglas Adams");
+    }
+
+    #[test]
+    fn test_sitelinks() {
+        let mut s = Sitelinks::default();
+        s.set_wiki(Sitelink::new("enwiki", "foo"));
+        s.set_wiki(Sitelink::new("dewiki", "bar"));
+        let mut pages = s
+            .sitelinks()
+            .iter()
+            .map(|s| s.title().to_string())
+            .collect::<Vec<String>>();
+        pages.sort();
+        assert_eq!(pages, vec!["bar", "foo"]);
+    }
+
+    #[test]
+    fn test_remove_wiki() {
+        let mut s = Sitelinks::default();
+        s.set_wiki(Sitelink::new("enwiki", "foo"));
+        s.set_wiki(Sitelink::new("dewiki", "bar"));
+        s.remove_wiki("enwiki");
+        let pages = s
+            .sitelinks()
+            .iter()
+            .map(|s| s.title().to_string())
+            .collect::<Vec<String>>();
+        assert_eq!(pages, vec!["bar"]);
     }
 }
