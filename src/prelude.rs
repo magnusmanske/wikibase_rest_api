@@ -25,3 +25,4 @@ pub use crate::statement_value_content::{
     StatementValueContent, TimePrecision, GREGORIAN_CALENDAR, JULIAN_CALENDAR,
 };
 pub use crate::statements::Statements;
+pub use crate::Patch;
