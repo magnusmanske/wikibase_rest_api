@@ -51,7 +51,7 @@ impl Reference {
         &self.hash
     }
 
-    pub fn parts_mut(&mut self) -> &mut Vec<PropertyValue> {
+    pub const fn parts_mut(&mut self) -> &mut Vec<PropertyValue> {
         &mut self.parts
     }
 }

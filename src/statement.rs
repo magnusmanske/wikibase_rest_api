@@ -189,17 +189,17 @@ impl Statement {
     }
 
     /// Sets the statement rank
-    pub fn set_rank(&mut self, rank: StatementRank) {
+    pub const fn set_rank(&mut self, rank: StatementRank) {
         self.rank = rank;
     }
 
     /// Returns the references of the statement, mutable
-    pub fn references_mut(&mut self) -> &mut Vec<Reference> {
+    pub const fn references_mut(&mut self) -> &mut Vec<Reference> {
         &mut self.references
     }
 
     /// Returns the qualifiers of the statement, mutable
-    pub fn qualifiers_mut(&mut self) -> &mut Vec<PropertyValue> {
+    pub const fn qualifiers_mut(&mut self) -> &mut Vec<PropertyValue> {
         &mut self.qualifiers
     }
 

@@ -41,7 +41,7 @@ impl RevisionMatch {
         self.modified_since_date
     }
 
-    pub fn set_modified_since_date(&mut self, modified_since_date: Option<NaiveDateTime>) {
+    pub const fn set_modified_since_date(&mut self, modified_since_date: Option<NaiveDateTime>) {
         self.modified_since_date = modified_since_date;
     }
 
@@ -57,7 +57,10 @@ impl RevisionMatch {
         self.unmodified_since_date
     }
 
-    pub fn set_unmodified_since_date(&mut self, unmodified_since_date: Option<NaiveDateTime>) {
+    pub const fn set_unmodified_since_date(
+        &mut self,
+        unmodified_since_date: Option<NaiveDateTime>,
+    ) {
         self.unmodified_since_date = unmodified_since_date;
     }
 

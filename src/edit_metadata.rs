@@ -34,11 +34,11 @@ impl EditMetadata {
         self.comment = comment;
     }
 
-    pub fn set_bot(&mut self, bot: bool) {
+    pub const fn set_bot(&mut self, bot: bool) {
         self.bot = bot;
     }
 
-    pub fn set_minor(&mut self, minor: bool) {
+    pub const fn set_minor(&mut self, minor: bool) {
         self.minor = minor;
     }
 

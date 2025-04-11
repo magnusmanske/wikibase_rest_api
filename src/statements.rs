@@ -78,7 +78,7 @@ impl Statements {
         &self.statements
     }
 
-    pub fn statements_mut(&mut self) -> &mut HashMap<String, Vec<Statement>> {
+    pub const fn statements_mut(&mut self) -> &mut HashMap<String, Vec<Statement>> {
         &mut self.statements
     }
 
