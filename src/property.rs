@@ -109,7 +109,7 @@ impl Property {
     }
 
     /// Returns the statements of the property, mutable
-    pub fn statements_mut(&mut self) -> &mut Statements {
+    pub const fn statements_mut(&mut self) -> &mut Statements {
         &mut self.statements
     }
 
@@ -129,7 +129,7 @@ impl Property {
     }
 
     /// Returns the descriptions of the property, mutable
-    pub fn descriptions_mut(&mut self) -> &mut Descriptions {
+    pub const fn descriptions_mut(&mut self) -> &mut Descriptions {
         &mut self.descriptions
     }
 

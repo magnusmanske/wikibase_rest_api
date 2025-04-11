@@ -119,7 +119,7 @@ impl Item {
     }
 
     /// Returns the statements of the item (mutable).
-    pub fn statements_mut(&mut self) -> &mut Statements {
+    pub const fn statements_mut(&mut self) -> &mut Statements {
         &mut self.statements
     }
 
@@ -129,7 +129,7 @@ impl Item {
     }
 
     /// Returns the labels of the item (mutable).
-    pub fn labels_mut(&mut self) -> &mut Labels {
+    pub const fn labels_mut(&mut self) -> &mut Labels {
         &mut self.labels
     }
 
@@ -139,7 +139,7 @@ impl Item {
     }
 
     /// Returns the descriptions of the item (mutable).
-    pub fn descriptions_mut(&mut self) -> &mut Descriptions {
+    pub const fn descriptions_mut(&mut self) -> &mut Descriptions {
         &mut self.descriptions
     }
 
@@ -149,7 +149,7 @@ impl Item {
     }
 
     /// Returns the aliases of the item (mutable).
-    pub fn aliases_mut(&mut self) -> &mut Aliases {
+    pub const fn aliases_mut(&mut self) -> &mut Aliases {
         &mut self.aliases
     }
 
@@ -171,7 +171,7 @@ impl Item {
     }
 
     /// Returns the sitelinks of the item (mutable).
-    pub fn sitelinks_mut(&mut self) -> &mut Sitelinks {
+    pub const fn sitelinks_mut(&mut self) -> &mut Sitelinks {
         &mut self.sitelinks
     }
 

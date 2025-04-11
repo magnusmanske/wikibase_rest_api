@@ -134,7 +134,7 @@ impl BearerToken {
     }
 
     /// Sets the renewal interval for the `OAuth2` bearer token
-    pub fn set_renewal_interval(&mut self, renewal_interval: u64) {
+    pub const fn set_renewal_interval(&mut self, renewal_interval: u64) {
         let renewal_interval = match renewal_interval {
             0 => DEFAULT_RENEWAL_INTERVAL_SEC,
             renewal_interval => renewal_interval,

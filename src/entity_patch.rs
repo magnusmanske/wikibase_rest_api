@@ -75,7 +75,7 @@ impl EntityPatch {
     }
 
     /// Returns the mutable patch entries
-    pub fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
+    pub const fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
         &mut self.patch
     }
 
