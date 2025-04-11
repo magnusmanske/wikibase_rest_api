@@ -125,9 +125,6 @@ pub trait Entity: Default + Sized + Serialize + HttpMisc {
             return Err(RestApiError::HasId);
         }
         let path = format!("/entities/{group}", group = entity_type.group_name());
-        println!("{path}");
-        println!("{entity_type:?}");
-        println!("{em:?}");
         let request = self
             .build_post_with_type_and_metadata_request(entity_type, &path, api, em)
             .await?;
