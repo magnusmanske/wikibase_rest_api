@@ -1,6 +1,6 @@
 [package]
 name = "wikibase_rest_api"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Magnus Manske <magnusmanske@googlemail.com>"]
 edition = "2021"
 readme = "README.md"
