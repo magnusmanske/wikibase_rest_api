@@ -20,5 +20,8 @@ pub use crate::rest_api_builder::RestApiBuilder;
 pub use crate::sitelink::Sitelink;
 pub use crate::sitelinks::Sitelinks;
 pub use crate::statement::Statement;
-pub use crate::statement_value::{StatementValue, StatementValueContent};
+pub use crate::statement_value::StatementValue;
+pub use crate::statement_value_content::{
+    StatementValueContent, TimePrecision, GREGORIAN_CALENDAR, JULIAN_CALENDAR,
+};
 pub use crate::statements::Statements;

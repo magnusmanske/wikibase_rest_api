@@ -331,7 +331,7 @@ impl Statement {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::statement_value::StatementValueContent;
+    use crate::statement_value_content::StatementValueContent;
     use wiremock::matchers::{body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 

@@ -1,179 +1,7 @@
-use serde::ser::{Serialize, SerializeStruct, Serializer};
-use serde_json::{json, Value};
-
+use crate::statement_value_content::StatementValueContent;
 use crate::RestApiError;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum StatementValueContent {
-    String(String),
-    Time {
-        time: String,
-        precision: u8,
-        calendarmodel: String,
-    },
-    Location {
-        latitude: f64,
-        longitude: f64,
-        precision: f64,
-        globe: String,
-    },
-    Quantity {
-        amount: String,
-        unit: String,
-    },
-    MonolingualText {
-        language: String,
-        text: String,
-    },
-}
-
-impl StatementValueContent {
-    /// Creates a new `StatementValueContent` object from a JSON object.
-    pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
-        // #lizard forgives the complexity
-        if let Some(s) = j.as_str() {
-            return Ok(StatementValueContent::String(s.to_string()));
-        }
-        if let (Some(time), Some(precision), Some(calendarmodel)) = (
-            j["time"].as_str(),
-            j["precision"].as_u64(),
-            j["calendarmodel"].as_str(),
-        ) {
-            return Ok(StatementValueContent::Time {
-                time: time.to_string(),
-                precision: precision as u8,
-                calendarmodel: calendarmodel.to_string(),
-            });
-        }
-        if let (Some(latitude), Some(longitude), Some(precision), Some(globe)) = (
-            j["latitude"].as_f64(),
-            j["longitude"].as_f64(),
-            j["precision"].as_f64(),
-            j["globe"].as_str(),
-        ) {
-            return Ok(StatementValueContent::Location {
-                latitude,
-                longitude,
-                precision,
-                globe: globe.to_string(),
-            });
-        }
-        if let (Some(amount), Some(unit)) = (j["amount"].as_str(), j["unit"].as_str()) {
-            return Ok(StatementValueContent::Quantity {
-                amount: amount.to_string(),
-                unit: unit.to_string(),
-            });
-        }
-        if let (Some(language), Some(text)) = (j["language"].as_str(), j["text"].as_str()) {
-            return Ok(StatementValueContent::MonolingualText {
-                language: language.to_string(),
-                text: text.to_string(),
-            });
-        }
-        Err(RestApiError::UnknownValue(format!("{j:?}")))
-    }
-}
-
-#[cfg(not(tarpaulin_include))] // tarpaulin can't handle the Serialize trait
-impl Serialize for StatementValueContent {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match &self {
-            StatementValueContent::String(text) => serialize_text(text, serializer),
-            StatementValueContent::Time {
-                time,
-                precision,
-                calendarmodel,
-            } => serailize_time(serializer, time, precision, calendarmodel),
-            StatementValueContent::Location {
-                latitude,
-                longitude,
-                precision,
-                globe,
-            } => serialize_location(serializer, latitude, longitude, precision, globe),
-            StatementValueContent::Quantity { amount, unit } => {
-                serialize_quantity(serializer, amount, unit)
-            }
-            StatementValueContent::MonolingualText { language, text } => {
-                serialize_monolingual_text(serializer, language, text)
-            }
-        }
-    }
-}
-
-fn serialize_text<S>(
-    text: &String,
-    serializer: S,
-) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-where
-    S: Serializer,
-{
-    json!(text).serialize(serializer)
-}
-
-fn serialize_monolingual_text<S>(
-    serializer: S,
-    language: &String,
-    text: &String,
-) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-where
-    S: Serializer,
-{
-    let mut s = serializer.serialize_struct("StatementValueContent", 2)?;
-    s.serialize_field("language", language)?;
-    s.serialize_field("text", text)?;
-    s.end()
-}
-
-fn serialize_quantity<S>(
-    serializer: S,
-    amount: &String,
-    unit: &String,
-) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-where
-    S: Serializer,
-{
-    let mut s = serializer.serialize_struct("StatementValueContent", 2)?;
-    s.serialize_field("amount", amount)?;
-    s.serialize_field("unit", unit)?;
-    s.end()
-}
-
-fn serialize_location<S>(
-    serializer: S,
-    latitude: &f64,
-    longitude: &f64,
-    precision: &f64,
-    globe: &String,
-) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-where
-    S: Serializer,
-{
-    let mut s = serializer.serialize_struct("StatementValueContent", 4)?;
-    s.serialize_field("latitude", latitude)?;
-    s.serialize_field("longitude", longitude)?;
-    s.serialize_field("precision", precision)?;
-    s.serialize_field("globe", globe)?;
-    s.end()
-}
-
-fn serailize_time<S>(
-    serializer: S,
-    time: &String,
-    precision: &u8,
-    calendarmodel: &String,
-) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-where
-    S: Serializer,
-{
-    let mut s = serializer.serialize_struct("StatementValueContent", 3)?;
-    s.serialize_field("time", time)?;
-    s.serialize_field("precision", precision)?;
-    s.serialize_field("calendarmodel", calendarmodel)?;
-    s.end()
-}
+use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum StatementValue {
@@ -248,8 +76,9 @@ impl From<StatementValueContent> for StatementValue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::RestApi;
+    use crate::prelude::*;
     use crate::{entity::Entity, EntityId, Item};
+    use serde_json::json;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -311,7 +140,7 @@ mod tests {
     fn test_serialize_time() {
         let s = StatementValue::Value(StatementValueContent::Time {
             time: "+2021-01-01T00:00:00Z".to_string(),
-            precision: 11,
+            precision: TimePrecision::Day,
             calendarmodel: "http://www.wikidata.org/entity/Q1985727".to_string(),
         });
         let j: Value = json!(s);
@@ -389,14 +218,14 @@ mod tests {
     fn test_from_time() {
         let s = StatementValue::Value(StatementValueContent::Time {
             time: "+2021-01-01T00:00:00Z".to_string(),
-            precision: 11,
+            precision: TimePrecision::Day,
             calendarmodel: "http://www.wikidata.org/entity/Q1985727".to_string(),
         });
         assert_eq!(
             s,
             StatementValue::Value(StatementValueContent::Time {
                 time: "+2021-01-01T00:00:00Z".to_string(),
-                precision: 11,
+                precision: TimePrecision::Day,
                 calendarmodel: "http://www.wikidata.org/entity/Q1985727".to_string()
             })
         );
@@ -478,7 +307,7 @@ mod tests {
             s,
             StatementValueContent::Time {
                 time: "+2021-01-01T00:00:00Z".to_string(),
-                precision: 11,
+                precision: TimePrecision::Day,
                 calendarmodel: "http://www.wikidata.org/entity/Q1985727".to_string()
             }
         );
@@ -544,7 +373,7 @@ mod tests {
     fn test_statement_value_contents_serialize_time() {
         let svc = StatementValueContent::Time {
             time: "+2021-01-01T00:00:00Z".to_string(),
-            precision: 11,
+            precision: TimePrecision::Day,
             calendarmodel: "http://www.wikidata.org/entity/Q1985727".to_string(),
         };
         let j: Value = serde_json::to_value(&svc).unwrap();

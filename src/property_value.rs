@@ -117,7 +117,7 @@ impl Serialize for PropertyValue {
 
 #[cfg(test)]
 mod tests {
-    use crate::statement_value::StatementValueContent;
+    use crate::statement_value_content::StatementValueContent;
 
     use super::*;
 

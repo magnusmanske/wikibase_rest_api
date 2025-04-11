@@ -96,6 +96,8 @@ pub enum RestApiError {
     UnsupportedMethod(reqwest::Method),
     #[error("REST API URL is invalid: {0}")]
     RestApiUrlInvalid(String),
+    #[error("Invalid precision")]
+    InvalidPrecision,
 }
 
 impl From<reqwest::Error> for RestApiError {

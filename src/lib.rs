@@ -84,6 +84,7 @@ pub mod statement;
 pub mod statement_patch;
 pub mod statement_rank;
 pub mod statement_value;
+pub mod statement_value_content;
 pub mod statements;
 pub mod statements_patch;
 
