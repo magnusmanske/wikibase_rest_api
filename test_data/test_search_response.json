@@ -1,0 +1,36 @@
+{
+	"results": [
+		{
+			"id": "Q123",
+			"display-label": {
+				"language": "en",
+				"value": "potato"
+			},
+			"description": {
+				"language": "en",
+				"value": "staple food"
+			},
+			"match": {
+				"type": "label",
+				"language": "en",
+				"text": "potato"
+			}
+		},
+		{
+			"id": "Q234",
+			"display-label": {
+				"language": "en",
+				"value": "potato"
+			},
+			"description": {
+				"language": "en",
+				"value": "species of plant"
+			},
+			"match": {
+				"type": "label",
+				"language": "en",
+				"text": "potato"
+			}
+		}
+	]
+}
