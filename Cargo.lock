@@ -1749,7 +1749,7 @@ dependencies = [
 
 [[package]]
 name = "wikibase_rest_api"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "async-trait",
  "chrono",
