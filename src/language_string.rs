@@ -1,4 +1,12 @@
+use nutype::nutype;
 use serde::{Deserialize, Serialize};
+
+#[nutype(
+    sanitize(trim, lowercase),
+    validate(regex = "^[a-z]{2}[a-z0-9-]*$"),
+    derive(Debug, Display, Clone, PartialEq)
+)]
+pub struct Language(String);
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LanguageString {

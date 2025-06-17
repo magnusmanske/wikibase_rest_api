@@ -98,6 +98,8 @@ pub enum RestApiError {
     RestApiUrlInvalid(String),
     #[error("Invalid precision")]
     InvalidPrecision,
+    #[error("Missing results field in response")]
+    MissingResults,
 }
 
 impl From<reqwest::Error> for RestApiError {

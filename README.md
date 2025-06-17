@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-APACHE2-blue?style=flat-square)](LICENSE-APACHE2)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/acffb6bb26d8407b8e82704843a4aa7e)](https://app.codacy.com/gh/magnusmanske/wikibase_rest_api/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 AvgCCN 2.1
-Codecov 96.01%
+Codecov 100.00%
 
 This Rust crate provides a REST API for Wikibase.
 It is based on the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
@@ -57,6 +57,16 @@ let q42 = entity_container
     .to_owned();
 let q42_label_en = q42.labels().get_lang("en").unwrap();
 println!("Q42 label[en]: {q42_label_en}");
+
+// Search for "Tim Berners-Lee" (in English) on Wikidata.
+let query = "Tim Berners-Lee";
+let language = Language::try_new("en").unwrap();
+let api = RestApi::builder("https://www.wikidata.org/w/rest.php")
+    .unwrap()
+    .with_api_version(0) // Currently only works with v0 not v1
+    .build();
+let results = Search::items(query, language).get(&api).await.unwrap();
+println!("{}",results[0].id());
 ```
 
 # Implemented REST API actions
@@ -129,7 +139,7 @@ println!("Q42 label[en]: {q42_label_en}");
 ## misc
 - [x] `/openapi.json`
 - [x] `/property-data-types`
-- [ ] `seach items` (not implemented in wikibase yet/v0?)
+- [x] `seach items` (for Wikidata currently only in v0)
 
 # Developer notes
 ## TODO

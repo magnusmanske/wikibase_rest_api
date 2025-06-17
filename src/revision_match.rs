@@ -1,7 +1,6 @@
+use crate::RestApiError;
 use chrono::prelude::*;
 use reqwest::header::{HeaderMap, HeaderValue};
-
-use crate::RestApiError;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct RevisionMatch {

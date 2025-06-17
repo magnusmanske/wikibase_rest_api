@@ -31,6 +31,32 @@
 				"language": "en",
 				"text": "potato"
 			}
+		},
+		{
+			"id": "Q345",
+			"display-label": {
+				"language": "en",
+				"value": "potato"
+			},
+			"description": null,
+			"match": {
+				"type": "label",
+				"language": "en",
+				"text": "potato"
+			}
+		},
+		{
+			"id": "Q456",
+			"display-label": null,
+			"description": {
+				"language": "en",
+				"value": "species of plant"
+			},
+			"match": {
+				"type": "description",
+				"language": "en",
+				"text": "species of plant"
+			}
 		}
 	]
 }
