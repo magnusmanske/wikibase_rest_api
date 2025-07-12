@@ -3,16 +3,16 @@ use crate::{
     HeaderInfo, HttpGetEntity, HttpMisc, LanguageString, RestApi, RestApiError, RevisionMatch,
 };
 use async_trait::async_trait;
-use derivative::Derivative;
+use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-#[derive(Derivative, Debug, Clone, Default)]
-#[derivative(PartialEq)]
+#[derive(DeriveWhere, Debug, Clone, Default)]
+#[derive_where(PartialEq)]
 pub struct Labels {
     ls: HashMap<String, String>,
-    #[derivative(PartialEq = "ignore")]
+    #[derive_where(skip)]
     header_info: HeaderInfo,
 }
 

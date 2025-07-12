@@ -10,12 +10,12 @@ use crate::{
     EntityId, FromJson, HeaderInfo, HttpMisc, Patch, RestApi, RestApiError,
 };
 use async_trait::async_trait;
-use derivative::Derivative;
+use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_json::Value;
 
-#[derive(Derivative, Debug, Clone, Default)]
-#[derivative(PartialEq)]
+#[derive(DeriveWhere, Debug, Clone, Default)]
+#[derive_where(PartialEq)]
 pub struct Item {
     id: EntityId,
     labels: Labels,
@@ -23,7 +23,7 @@ pub struct Item {
     aliases: Aliases,
     sitelinks: Sitelinks,
     statements: Statements,
-    #[derivative(PartialEq = "ignore")]
+    #[derive_where(skip)]
     header_info: HeaderInfo,
 }
 

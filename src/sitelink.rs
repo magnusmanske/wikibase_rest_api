@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use derivative::Derivative;
+use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeStruct};
 use serde_json::{json, Value};
 
@@ -8,14 +8,14 @@ use crate::{
     RestApiError, RevisionMatch,
 };
 
-#[derive(Derivative, Debug, Clone)]
-#[derivative(PartialEq)]
+#[derive(DeriveWhere, Debug, Clone)]
+#[derive_where(PartialEq)]
 pub struct Sitelink {
     wiki: String,
     title: String,
     badges: Vec<String>,
     url: Option<String>,
-    #[derivative(PartialEq = "ignore")]
+    #[derive_where(skip)]
     header_info: HeaderInfo,
 }
 

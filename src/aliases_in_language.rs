@@ -2,18 +2,18 @@ use crate::{
     EditMetadata, EntityId, HeaderInfo, HttpGet, HttpMisc, RestApi, RestApiError, RevisionMatch,
 };
 use async_trait::async_trait;
-use derivative::Derivative;
+use derive_where::DeriveWhere;
 use reqwest::{Response, StatusCode};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
 /// A group of aliases in a specific language.
-#[derive(Derivative, Debug, Clone)]
-#[derivative(PartialEq)]
+#[derive(DeriveWhere, Debug, Clone)]
+#[derive_where(PartialEq)]
 pub struct AliasesInLanguage {
     language: String,
     values: Vec<String>,
-    #[derivative(PartialEq = "ignore")]
+    #[derive_where(skip)]
     header_info: HeaderInfo,
 }
 

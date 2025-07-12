@@ -3,17 +3,17 @@ use crate::{
     HttpPut, LanguageString, RestApi, RestApiError, RevisionMatch,
 };
 use async_trait::async_trait;
-use derivative::Derivative;
+use derive_where::DeriveWhere;
 use reqwest::Request;
 use serde_json::json;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-#[derive(Derivative, Debug, Clone)]
-#[derivative(PartialEq)]
+#[derive(DeriveWhere, Debug, Clone)]
+#[derive_where(PartialEq)]
 pub struct Label {
     ls: LanguageString,
-    #[derivative(PartialEq = "ignore")]
+    #[derive_where(skip)]
     header_info: HeaderInfo,
 }
 

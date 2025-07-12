@@ -5,13 +5,13 @@ use crate::{
     EditMetadata, EntityId, FromJson, HeaderInfo, HttpMisc, Reference, RestApi, RestApiError,
     RevisionMatch, StatementRank,
 };
-use derivative::Derivative;
+use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_json::{json, Value};
 use uuid::Uuid;
 
-#[derive(Derivative, Debug, Clone, Default)]
-#[derivative(PartialEq)]
+#[derive(DeriveWhere, Debug, Clone, Default)]
+#[derive_where(PartialEq)]
 pub struct Statement {
     statement_id: Option<String>,
     property: PropertyType,
@@ -19,7 +19,7 @@ pub struct Statement {
     rank: StatementRank,
     references: Vec<Reference>,
     qualifiers: Vec<PropertyValue>,
-    #[derivative(PartialEq = "ignore")]
+    #[derive_where(skip)]
     header_info: HeaderInfo,
 }
 

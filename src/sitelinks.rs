@@ -3,15 +3,15 @@ use crate::{
     RestApi, RestApiError, RevisionMatch, Sitelink,
 };
 use async_trait::async_trait;
-use derivative::Derivative;
+use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
 
-#[derive(Derivative, Debug, Clone, Default)]
-#[derivative(PartialEq)]
+#[derive(DeriveWhere, Debug, Clone, Default)]
+#[derive_where(PartialEq)]
 pub struct Sitelinks {
     sitelinks: Vec<Sitelink>,
-    #[derivative(PartialEq = "ignore")]
+    #[derive_where(skip)]
     header_info: HeaderInfo,
 }
 

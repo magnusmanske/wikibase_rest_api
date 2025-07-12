@@ -20,7 +20,8 @@ unwrap_used = "deny"
 [dependencies]
 async-trait = "0.1"
 chrono = "0.4"
-derive_more = "1"
+# derive_more = { version = "1", features = ["full"] }
+derive-where = "1.5"
 futures = "0.3"
 json-patch = "4"
 reqwest = { version = "0.12", features = ["json"] }
