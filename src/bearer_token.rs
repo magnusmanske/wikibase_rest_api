@@ -96,6 +96,9 @@ impl BearerToken {
     }
 
     /// Exchanges a code for an access token
+    ///
+    /// # Errors
+    /// Returns an `RestApiError` if the request fails.
     pub async fn get_access_token(
         &mut self,
         api: &RestApi,

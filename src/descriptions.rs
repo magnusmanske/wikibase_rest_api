@@ -33,6 +33,9 @@ impl Descriptions {
     }
 
     /// Generates a patch to transform `other` into `self`
+    ///
+    /// # Errors
+    /// Returns an `RestApiError` if the request fails.
     pub fn patch(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
         let patch = json_patch::diff(&json!(&other), &json!(&self));
         let patch = LanguageStringsPatch::descriptions_from_json(&json!(patch))?;

@@ -20,6 +20,9 @@ impl EntityContainer {
     }
 
     /// Loads the entities with the given `EntityId`s into the container.
+    ///
+    /// # Errors
+    /// Returns an `RestApiError` if the request fails.
     pub async fn load(&self, entity_ids: &[EntityId]) -> Result<(), RestApiError> {
         let mut items = self.items.write().await;
         let item_ids = Self::get_items_to_load(&items, entity_ids);
@@ -138,6 +141,9 @@ impl EntityContainerBuilder {
     }
 
     /// Builds a new `EntityContainer` with the configured options.
+    ///
+    /// # Errors
+    /// Returns an `RestApiError` if the API could not be built.
     pub fn build(self) -> Result<EntityContainer, RestApiError> {
         let api = self.api.ok_or_else(|| RestApiError::ApiNotSet)?;
         let mut max_concurrent_load = self.max_concurrent_load;

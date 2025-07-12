@@ -93,11 +93,17 @@ impl AliasesInLanguage {
     }
 
     /// Adds one or more aliases to the list of aliases.
+    ///
+    /// # Errors
+    /// Returns an `RestApiError` if the request fails.
     pub async fn post(&self, id: &EntityId, api: &mut RestApi) -> Result<Self, RestApiError> {
         self.post_meta(id, api, EditMetadata::default()).await
     }
 
     /// Adds one or more aliases to the list of aliases, using conditions and edit metadata.
+    ///
+    /// # Errors
+    /// Returns an `RestApiError` if the request fails.
     pub async fn post_meta(
         &self,
         id: &EntityId,

@@ -19,6 +19,9 @@ pub struct Aliases {
 impl Aliases {
     /// Creates a new `Aliases` struct for the given entity ID.
     /// If the API cannot find anything, the `Aliases` struct will be empty.
+    ///
+    /// # Errors
+    /// Returns a `RestApiError` if the API request fails.
     pub async fn get_match(
         id: &EntityId,
         api: &RestApi,
@@ -33,6 +36,9 @@ impl Aliases {
 
     /// Creates a new `Aliases` struct for the given entity ID.
     /// If the API cannot find anything, the `Aliases` struct will be empty.
+    ///
+    /// # Errors
+    /// Returns a `RestApiError` if the API request fails.
     pub async fn get(id: &EntityId, api: &RestApi) -> Result<Self, RestApiError> {
         Self::get_match(id, api, RevisionMatch::default()).await
     }
@@ -50,6 +56,9 @@ impl Aliases {
     }
 
     /// Generates a patch to transform `other` into `self`
+    ///
+    /// # Errors
+    /// Returns a `RestApiError` if the API request fails.
     pub fn patch(&self, other: &Self) -> Result<AliasesPatch, RestApiError> {
         let patch = json_patch::diff(&json!(&other), &json!(&self));
         let patch = AliasesPatch::from_json(&json!(patch))?;
