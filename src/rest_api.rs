@@ -125,7 +125,7 @@ impl RestApi {
         if let Some(access_token) = &token.get() {
             headers.insert(
                 reqwest::header::AUTHORIZATION,
-                format!("Bearer {}", access_token).parse()?,
+                format!("Bearer {access_token}").parse()?,
             );
         }
         Ok(headers)

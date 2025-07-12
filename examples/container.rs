@@ -3,6 +3,7 @@ use wikibase_rest_api::prelude::*;
 
 #[cfg(not(tarpaulin_include))]
 #[tokio::main]
+#[allow(clippy::result_large_err)]
 async fn main() -> Result<(), RestApiError> {
     // #lizard forgives the complexity
     let api = RestApi::builder("https://www.wikidata.org/w/rest.php")?.build();

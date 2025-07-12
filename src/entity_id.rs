@@ -97,8 +97,8 @@ impl From<EntityId> for String {
 impl fmt::Display for EntityId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EntityId::Item(id) => write!(f, "{}", id),
-            EntityId::Property(id) => write!(f, "{}", id),
+            EntityId::Item(id) => write!(f, "{id}"),
+            EntityId::Property(id) => write!(f, "{id}"),
             EntityId::None => Err(fmt::Error),
         }
     }
