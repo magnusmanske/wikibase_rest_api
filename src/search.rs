@@ -63,15 +63,15 @@ impl SearchResult {
         &self.id
     }
 
-    pub fn display_label(&self) -> Option<&SearchResultText> {
+    pub const fn display_label(&self) -> Option<&SearchResultText> {
         self.display_label.as_ref()
     }
 
-    pub fn description(&self) -> Option<&SearchResultText> {
+    pub const fn description(&self) -> Option<&SearchResultText> {
         self.description.as_ref()
     }
 
-    pub fn search_match(&self) -> &SearchResultMatch {
+    pub const fn search_match(&self) -> &SearchResultMatch {
         &self.search_match
     }
 }
@@ -106,12 +106,12 @@ impl Search {
         }
     }
 
-    pub fn with_limit(mut self, limit: SearchLimit) -> Self {
+    pub const fn with_limit(mut self, limit: SearchLimit) -> Self {
         self.limit = Some(limit);
         self
     }
 
-    pub fn with_offset(mut self, offset: usize) -> Self {
+    pub const fn with_offset(mut self, offset: usize) -> Self {
         self.offset = Some(offset);
         self
     }

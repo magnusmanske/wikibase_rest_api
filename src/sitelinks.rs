@@ -84,12 +84,12 @@ impl Sitelinks {
     }
 
     /// Returns the number of sitelinks
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.sitelinks.len()
     }
 
     /// Returns true if there are no sitelinks
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.sitelinks.is_empty()
     }
 

@@ -98,7 +98,7 @@ impl EntityPatch {
     // }
 
     /// checks if the patch list is empty
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.patch().is_empty()
     }
 

@@ -119,7 +119,7 @@ impl Property {
     }
 
     /// Returns the labels of the property, mutable
-    pub fn labels_mut(&mut self) -> &mut Labels {
+    pub const fn labels_mut(&mut self) -> &mut Labels {
         &mut self.labels
     }
 
@@ -139,7 +139,7 @@ impl Property {
     }
 
     /// Returns the aliases of the property, mutable
-    pub fn aliases_mut(&mut self) -> &mut Aliases {
+    pub const fn aliases_mut(&mut self) -> &mut Aliases {
         &mut self.aliases
     }
 

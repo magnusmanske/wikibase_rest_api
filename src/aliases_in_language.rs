@@ -78,12 +78,12 @@ impl AliasesInLanguage {
     }
 
     /// Returns the number of aliases.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.values.len()
     }
 
     /// Returns true if the list of aliases is empty.
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.values.is_empty()
     }
 
