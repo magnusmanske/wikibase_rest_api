@@ -32,6 +32,16 @@ impl Descriptions {
         self.ls.is_empty()
     }
 
+    /// Returns a reference to the descriptions/languages
+    pub const fn list(&self) -> &HashMap<String, String> {
+        &self.ls
+    }
+
+    /// Returns a mutable reference to the descriptions/languages
+    pub const fn list_mut(&mut self) -> &mut HashMap<String, String> {
+        &mut self.ls
+    }
+
     /// Generates a patch to transform `other` into `self`
     ///
     /// # Errors

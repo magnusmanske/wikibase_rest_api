@@ -32,6 +32,16 @@ impl Labels {
         self.ls.is_empty()
     }
 
+    /// Returns a reference to the labels/languages
+    pub const fn list(&self) -> &HashMap<String, String> {
+        &self.ls
+    }
+
+    /// Returns a mutable reference to the labels/languages
+    pub const fn list_mut(&mut self) -> &mut HashMap<String, String> {
+        &mut self.ls
+    }
+
     /// Generates a patch to transform `other` into `self`
     pub fn patch(&self, other: &Self) -> Result<LanguageStringsPatch, RestApiError> {
         let patch = json_patch::diff(&json!(&other), &json!(&self));
