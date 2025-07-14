@@ -2,6 +2,7 @@ use crate::{
     property_value::{PropertyType, PropertyValue},
     statement_patch::StatementPatch,
     statement_value::StatementValue,
+    statement_value_content::{StatementValueContent, TimePrecision},
     DataType, EditMetadata, EntityId, FromJson, HeaderInfo, HttpMisc, Reference, RestApi,
     RestApiError, RevisionMatch, StatementRank,
 };
@@ -79,6 +80,24 @@ impl Statement {
         Self {
             property: PropertyType::new(property, Some(DataType::Item)),
             value: StatementValue::new_string(item_id),
+            ..Default::default()
+        }
+    }
+
+    /// Convenience function to create a new time statement
+    pub fn new_time(
+        property: &str,
+        time: &str,
+        precision: TimePrecision,
+        calendarmodel: &str,
+    ) -> Self {
+        Self {
+            property: PropertyType::new(property, Some(DataType::Time)),
+            value: StatementValue::Value(StatementValueContent::Time {
+                time: time.to_string(),
+                precision,
+                calendarmodel: calendarmodel.to_string(),
+            }),
             ..Default::default()
         }
     }
