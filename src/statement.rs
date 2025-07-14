@@ -126,6 +126,15 @@ impl Statement {
         }
     }
 
+    /// Convenience function to create a new file statement
+    pub fn new_file<S1: Into<String>, S2: Into<String>>(property: S1, filename: S2) -> Self {
+        Self {
+            property: PropertyType::new(property, Some(DataType::CommonsMedia)),
+            value: StatementValue::new_string(filename.into()),
+            ..Default::default()
+        }
+    }
+
     // TODO more convenience functions
 
     /// Adds a single reference to the statement, returning the statement.
