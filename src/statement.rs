@@ -66,7 +66,7 @@ impl Statement {
     }
 
     /// Convenience function to create a new external ID statement
-    pub fn new_external_id(property: &str, s: &str) -> Self {
+    pub fn new_external_id<S1: Into<String>, S2: Into<String>>(property: S1, s: S2) -> Self {
         Self {
             property: PropertyType::new(property, Some(DataType::ExternalId)),
             value: StatementValue::new_string(s),
@@ -75,7 +75,7 @@ impl Statement {
     }
 
     /// Convenience function to create a new URL statement
-    pub fn new_url(property: &str, s: &str) -> Self {
+    pub fn new_url<S1: Into<String>, S2: Into<String>>(property: S1, s: S2) -> Self {
         Self {
             property: PropertyType::new(property, Some(DataType::Url)),
             value: StatementValue::new_string(s),
