@@ -84,41 +84,43 @@ impl Statement {
     }
 
     /// Convenience function to create a new URL statement
-    pub fn new_monolingual_text(property: &str, language: &str, s: &str) -> Self {
+    pub fn new_monolingual_text<S1: Into<String>, S2: Into<String>, S3: Into<String>>(
+        property: S1,
+        language: S2,
+        text: S3,
+    ) -> Self {
         Self {
             property: PropertyType::new(property, Some(DataType::MonolingualText)),
-            value: StatementValue::Value(StatementValueContent::MonolingualText {
-                language: language.to_string(),
-                text: s.to_string(),
-            }),
-
+            value: StatementValue::Value(StatementValueContent::new_monolingual_text(
+                language, text,
+            )),
             ..Default::default()
         }
     }
 
     /// Convenience function to create a new item statement
     /// (note that this does not check if the item ID is valid)
-    pub fn new_item(property: &str, item_id: &str) -> Self {
+    pub fn new_item<S1: Into<String>, S2: Into<String>>(property: S1, item_id: S2) -> Self {
         Self {
             property: PropertyType::new(property, Some(DataType::Item)),
-            value: StatementValue::new_string(item_id),
+            value: StatementValue::new_string(item_id.into()),
             ..Default::default()
         }
     }
 
     /// Convenience function to create a new time statement
-    pub fn new_time(
-        property: &str,
-        time: &str,
+    pub fn new_time<S1: Into<String>, S2: Into<String>, S3: Into<String>>(
+        property: S1,
+        time: S2,
         precision: TimePrecision,
-        calendarmodel: &str,
+        calendarmodel: S3,
     ) -> Self {
         Self {
             property: PropertyType::new(property, Some(DataType::Time)),
             value: StatementValue::Value(StatementValueContent::Time {
-                time: time.to_string(),
+                time: time.into(),
                 precision,
-                calendarmodel: calendarmodel.to_string(),
+                calendarmodel: calendarmodel.into(),
             }),
             ..Default::default()
         }

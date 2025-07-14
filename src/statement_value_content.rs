@@ -147,6 +147,16 @@ impl StatementValueContent {
         }
         Err(RestApiError::UnknownValue(format!("{j:?}")))
     }
+
+    pub fn new_monolingual_text<S1: Into<String>, S2: Into<String>>(
+        language: S1,
+        text: S2,
+    ) -> Self {
+        Self::MonolingualText {
+            language: language.into(),
+            text: text.into(),
+        }
+    }
 }
 
 #[cfg(not(tarpaulin_include))] // tarpaulin can't handle the Serialize trait
