@@ -39,6 +39,10 @@ impl Entity for Item {
         self.id.to_owned()
     }
 
+    fn set_id(&mut self, id: EntityId) {
+        self.id = id;
+    }
+
     fn from_json_header_info(j: Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
         let id = j["id"]
             .as_str()
