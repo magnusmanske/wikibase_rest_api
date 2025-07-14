@@ -126,18 +126,37 @@ impl Statement {
 
     // TODO more convenience functions
 
+    /// Adds a single reference to the statement, returning the statement.
+    /// Useful for constructing statements.
     pub fn with_reference(mut self, reference: Reference) -> Self {
         self.references.push(reference);
         self
     }
 
+    /// Adds multiple references to the statement, returning the statement.
+    /// Useful for constructing statements.
     pub fn with_references(mut self, references: Vec<Reference>) -> Self {
         self.references.extend(references);
         self
     }
 
+    /// Adds a single qualifier to the statement, returning the statement.
+    /// Useful for constructing statements.
+    pub fn with_qualifier(mut self, qualifier: PropertyValue) -> Self {
+        self.qualifiers.push(qualifier);
+        self
+    }
+
+    /// Adds a single qualifier to the statement, returning the statement.
+    /// Useful for constructing statements.
+    pub fn with_qualifiers(mut self, qualifiers: Vec<PropertyValue>) -> Self {
+        self.qualifiers.extend(qualifiers);
+        self
+    }
+
     /// Converts the statement into a `PropertyValue`.
     /// Destroys the `Statement`.
+    /// Useful for creating `PropertyValue` using the new_* functions.
     pub fn as_property_value(self) -> PropertyValue {
         PropertyValue::new(self.property, self.value)
     }
