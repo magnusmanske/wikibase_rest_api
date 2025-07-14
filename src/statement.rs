@@ -74,6 +74,28 @@ impl Statement {
         }
     }
 
+    /// Convenience function to create a new URL statement
+    pub fn new_url(property: &str, s: &str) -> Self {
+        Self {
+            property: PropertyType::new(property, Some(DataType::Url)),
+            value: StatementValue::new_string(s),
+            ..Default::default()
+        }
+    }
+
+    /// Convenience function to create a new URL statement
+    pub fn new_monolingual_text(property: &str, language: &str, s: &str) -> Self {
+        Self {
+            property: PropertyType::new(property, Some(DataType::MonolingualText)),
+            value: StatementValue::Value(StatementValueContent::MonolingualText {
+                language: language.to_string(),
+                text: s.to_string(),
+            }),
+
+            ..Default::default()
+        }
+    }
+
     /// Convenience function to create a new item statement
     /// (note that this does not check if the item ID is valid)
     pub fn new_item(property: &str, item_id: &str) -> Self {
@@ -103,6 +125,16 @@ impl Statement {
     }
 
     // TODO more convenience functions
+
+    pub fn with_reference(mut self, reference: Reference) -> Self {
+        self.references.push(reference);
+        self
+    }
+
+    pub fn with_references(mut self, references: Vec<Reference>) -> Self {
+        self.references.extend(references);
+        self
+    }
 
     /// Converts the statement into a `PropertyValue`.
     /// Destroys the `Statement`.

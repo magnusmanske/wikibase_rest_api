@@ -10,7 +10,7 @@ pub enum DataType {
     Time,
     GlobeCoordinate,
     Quantity,
-    Monolingualtext,
+    MonolingualText,
     CommonsMedia,
     GeoShape,
     TabularData,
@@ -35,7 +35,7 @@ impl DataType {
             "external-id" => Ok(DataType::ExternalId),
             "url" => Ok(DataType::Url),
             "commonsMedia" => Ok(DataType::CommonsMedia),
-            "monolingualtext" => Ok(DataType::Monolingualtext),
+            "monolingualtext" => Ok(DataType::MonolingualText),
             "quantity" => Ok(DataType::Quantity),
             "string" => Ok(DataType::String),
             "time" => Ok(DataType::Time),
@@ -62,7 +62,7 @@ impl DataType {
             DataType::ExternalId => "external-id",
             DataType::Url => "url",
             DataType::CommonsMedia => "commonsMedia",
-            DataType::Monolingualtext => "monolingualtext",
+            DataType::MonolingualText => "monolingualtext",
             DataType::Quantity => "quantity",
             DataType::String => "string",
             DataType::Time => "time",
@@ -123,7 +123,7 @@ mod tests {
         assert_eq!(DataType::ExternalId.as_str(), "external-id");
         assert_eq!(DataType::Url.as_str(), "url");
         assert_eq!(DataType::CommonsMedia.as_str(), "commonsMedia");
-        assert_eq!(DataType::Monolingualtext.as_str(), "monolingualtext");
+        assert_eq!(DataType::MonolingualText.as_str(), "monolingualtext");
         assert_eq!(DataType::Quantity.as_str(), "quantity");
         assert_eq!(DataType::String.as_str(), "string");
         assert_eq!(DataType::Time.as_str(), "time");
