@@ -15,6 +15,7 @@ pub use crate::label::Label;
 pub use crate::language_string::{Language, LanguageString};
 pub use crate::property::Property;
 pub use crate::property_value::PropertyType;
+pub use crate::reference::Reference;
 pub use crate::rest_api::RestApi;
 pub use crate::rest_api_builder::RestApiBuilder;
 pub use crate::search::{Search, SearchLimit, SearchResult};
