@@ -85,6 +85,12 @@ impl Statement {
 
     // TODO more convenience functions
 
+    /// Converts the statement into a `PropertyValue`.
+    /// Destroys the `Statement`.
+    pub fn as_property_value(self) -> PropertyValue {
+        PropertyValue::new(self.property, self.value)
+    }
+
     /// Generates a new statement ID
     pub fn new_id_for_entity(&mut self, entity_id: &EntityId) {
         let uuid = Uuid::new_v4().to_string().to_ascii_uppercase();
