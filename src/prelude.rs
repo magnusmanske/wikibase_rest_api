@@ -5,7 +5,6 @@ pub use crate::language_strings::LanguageStrings;
 
 // Structs and enums
 pub use crate::aliases_in_language::AliasesInLanguage;
-pub use crate::data_type::DataType;
 pub use crate::description::Description;
 pub use crate::edit_metadata::EditMetadata;
 pub use crate::entity_container::*;
@@ -27,4 +26,5 @@ pub use crate::statement_value_content::{
     StatementValueContent, TimePrecision, GREGORIAN_CALENDAR, JULIAN_CALENDAR,
 };
 pub use crate::statements::Statements;
+pub use crate::DataType;
 pub use crate::Patch;
