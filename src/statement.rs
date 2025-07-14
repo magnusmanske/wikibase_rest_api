@@ -2,8 +2,8 @@ use crate::{
     property_value::{PropertyType, PropertyValue},
     statement_patch::StatementPatch,
     statement_value::StatementValue,
-    EditMetadata, EntityId, FromJson, HeaderInfo, HttpMisc, Reference, RestApi, RestApiError,
-    RevisionMatch, StatementRank,
+    DataType, EditMetadata, EntityId, FromJson, HeaderInfo, HttpMisc, Reference, RestApi,
+    RestApiError, RevisionMatch, StatementRank,
 };
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
@@ -58,15 +58,32 @@ impl Statement {
     /// Convenience function to create a new string statement
     pub fn new_string(property: &str, s: &str) -> Self {
         Self {
-            statement_id: None,
-            property: PropertyType::property(property),
+            property: PropertyType::new(property, Some(DataType::String)),
             value: StatementValue::new_string(s),
-            rank: StatementRank::Normal,
-            references: vec![],
-            qualifiers: vec![],
-            header_info: HeaderInfo::default(),
+            ..Default::default()
         }
     }
+
+    /// Convenience function to create a new external ID statement
+    pub fn new_external_id(property: &str, s: &str) -> Self {
+        Self {
+            property: PropertyType::new(property, Some(DataType::ExternalId)),
+            value: StatementValue::new_string(s),
+            ..Default::default()
+        }
+    }
+
+    /// Convenience function to create a new item statement
+    /// (note that this does not check if the item ID is valid)
+    pub fn new_item(property: &str, item_id: &str) -> Self {
+        Self {
+            property: PropertyType::new(property, Some(DataType::Item)),
+            value: StatementValue::new_string(item_id),
+            ..Default::default()
+        }
+    }
+
+    // TODO more convenience functions
 
     /// Generates a new statement ID
     pub fn new_id_for_entity(&mut self, entity_id: &EntityId) {
