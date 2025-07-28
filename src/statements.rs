@@ -66,6 +66,13 @@ impl Statements {
             .map_or_else(Vec::new, |v| v.iter().collect())
     }
 
+    /// Returns the mutable Statements for a specific property
+    pub fn property_mut<S: Into<String>>(&mut self, property: S) -> Vec<&mut Statement> {
+        self.statements
+            .get_mut(&property.into())
+            .map_or_else(Vec::new, |v| v.iter_mut().collect())
+    }
+
     pub fn insert(&mut self, statement: Statement) {
         let property = statement.property().to_owned();
         self.statements
