@@ -187,6 +187,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn test_response_to_results() {
         let v = std::fs::read_to_string("test_data/test_search_response.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
