@@ -179,4 +179,24 @@ mod tests {
         let pt = PropertyType::from_json(&j);
         assert!(pt.is_err());
     }
+
+    #[test]
+    fn test_property_type_eq() {
+        let j = serde_json::json!({
+            "id": "P123",
+            "data_type": "string",
+        });
+        let pt1 = PropertyType::from_json(&j).unwrap();
+        let pt2 = PropertyType::new("P123", Some(DataType::String));
+        assert_eq!(pt1, pt2);
+    }
+
+    #[test]
+    fn test_property_type_ord() {
+        let pt1 = PropertyType::new("P122", Some(DataType::String));
+        let pt2 = PropertyType::new("P123", Some(DataType::String));
+        let pt3 = PropertyType::new("P123", Some(DataType::ExternalId));
+        assert!(pt1 < pt2); // Same data type, value differs
+        assert!(pt2 < pt3); // Same value, data type differs
+    }
 }
