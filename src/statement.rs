@@ -430,6 +430,13 @@ impl Statement {
     pub fn qualifiers(&self) -> &[PropertyValue] {
         &self.qualifiers
     }
+
+    /// Checks if the qualifiers in this statement are the same as in another statement
+    pub fn same_qualifiers_as(&self, other: &Statement) -> bool {
+        self.qualifiers()
+            .iter()
+            .all(|q| other.qualifiers().contains(q))
+    }
 }
 
 #[cfg(test)]
