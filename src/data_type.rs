@@ -1,6 +1,6 @@
 use crate::RestApiError;
 
-#[derive(Debug, Clone, PartialEq, Default, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Copy)]
 pub enum DataType {
     #[default]
     String,
