@@ -23,6 +23,7 @@ pub use crate::search::{Search, SearchLimit, SearchResult};
 pub use crate::sitelink::Sitelink;
 pub use crate::sitelinks::Sitelinks;
 pub use crate::statement::Statement;
+pub use crate::statement_rank::StatementRank;
 pub use crate::statement_value::StatementValue;
 pub use crate::statement_value_content::{
     StatementValueContent, TimePrecision, GREGORIAN_CALENDAR, JULIAN_CALENDAR,
