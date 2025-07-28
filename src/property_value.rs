@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use crate::{statement_value::StatementValue, DataType, RestApiError};
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Default)]
 pub struct PropertyType {
     id: String,
     datatype: Option<DataType>,
