@@ -1,44 +1,30 @@
 /// NOTE: THIS IS INCOMPLETE AND UNTESTED!
 use crate::{
-    entity::Entity, patch_entry::PatchEntry, EditMetadata, EntityId, HttpMisc, Item, Property,
-    RestApi, RestApiError,
+    entity::{Entity, EntityType},
+    patch_entry::PatchEntry,
+    EditMetadata, EntityId, HttpMisc, Item, Property, RestApi, RestApiError,
 };
 use serde::Serialize;
 use serde_json::json;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
-enum Mode {
-    Item,
-    Property,
-}
-
-impl Mode {
-    const fn as_str(&self) -> &str {
-        match self {
-            Mode::Item => "item",
-            Mode::Property => "property",
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct EntityPatch {
     patch: Vec<PatchEntry>,
-    mode: Mode,
+    mode: EntityType,
 }
 
 impl EntityPatch {
     pub const fn item() -> Self {
         Self {
             patch: vec![],
-            mode: Mode::Item,
+            mode: EntityType::Item,
         }
     }
 
     pub const fn property() -> Self {
         Self {
             patch: vec![],
-            mode: Mode::Property,
+            mode: EntityType::Property,
         }
     }
     /* DO WE NEED THIS?
@@ -168,8 +154,8 @@ mod tests {
 
     #[test]
     fn test_mode() {
-        assert_eq!(Mode::Item.as_str(), "item");
-        assert_eq!(Mode::Property.as_str(), "property");
+        assert_eq!(EntityType::Item.as_str(), "item");
+        assert_eq!(EntityType::Property.as_str(), "property");
     }
 
     #[test]
@@ -186,14 +172,14 @@ mod tests {
     fn test_item() {
         let patch = EntityPatch::item();
         assert!(patch.is_empty());
-        assert_eq!(patch.mode, Mode::Item);
+        assert_eq!(patch.mode, EntityType::Item);
     }
 
     #[test]
     fn test_property() {
         let patch = EntityPatch::property();
         assert!(patch.is_empty());
-        assert_eq!(patch.mode, Mode::Property);
+        assert_eq!(patch.mode, EntityType::Property);
     }
 
     #[test]

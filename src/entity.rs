@@ -1,11 +1,11 @@
 use crate::{EditMetadata, EntityId, HeaderInfo, HttpMisc, RestApi, RestApiError, RevisionMatch};
 use async_trait::async_trait;
 use reqwest::{Request, Response};
-use serde::ser::Serialize;
+use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum EntityType {
     Item,
     Property,
@@ -17,6 +17,10 @@ impl EntityType {
             EntityType::Item => "item",
             EntityType::Property => "property",
         }
+    }
+
+    pub const fn as_str(&self) -> &str {
+        self.type_name()
     }
 
     pub const fn group_name(&self) -> &str {
