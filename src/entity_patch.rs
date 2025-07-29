@@ -27,34 +27,7 @@ impl EntityPatch {
             mode: EntityType::Property,
         }
     }
-    /* DO WE NEED THIS?
-       /// Generates a patch from JSON, presumably from `json_patch`
-       pub fn item_from_json(j: &Value) -> Result<Self, RestApiError> {
-           Ok(Self {
-               patch: Self::patch_from_json(j)?,
-               mode: Mode::Item,
-           })
-       }
 
-       /// Generates a patch from JSON, presumably from `json_patch`
-       pub fn property_from_json(j: &Value) -> Result<Self, RestApiError> {
-           Ok(Self {
-               patch: Self::patch_from_json(j)?,
-               mode: Mode::Property,
-           })
-       }
-
-       fn patch_from_json(j: &Value) -> Result<Vec<PatchEntry>, RestApiError> {
-           j.as_array()
-               .ok_or_else(|| RestApiError::MissingOrInvalidField {
-                   field: "EntityPatch".into(),
-                   j: j.to_owned(),
-               })?
-               .iter()
-               .map(|x| serde_json::from_value(x.clone()).map_err(|e| e.into()))
-               .collect::<Result<Vec<PatchEntry>, RestApiError>>()
-       }
-    */
     /// Returns the patch entries
     pub const fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
@@ -64,24 +37,6 @@ impl EntityPatch {
     pub const fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
         &mut self.patch
     }
-
-    // /// `path` is a JSON patch path, eg "/enwiki/title"
-    // pub fn add<S: Into<String>>(&mut self, path: S, value: Value) {
-    //     self.patch_mut()
-    //         .push(PatchEntry::new("add", path.into(), value));
-    // }
-
-    // /// `path` is a JSON patch path, eg "/enwiki/title"
-    // pub fn replace<S: Into<String>>(&mut self, path: S, value: Value) {
-    //     self.patch_mut()
-    //         .push(PatchEntry::new("replace", path.into(), value));
-    // }
-
-    // /// `path` is a JSON patch path, eg "/enwiki/title"
-    // pub fn remove<S: Into<String>>(&mut self, path: S) {
-    //     self.patch_mut()
-    //         .push(PatchEntry::new("remove", path.into(), Value::Null));
-    // }
 
     /// checks if the patch list is empty
     pub const fn is_empty(&self) -> bool {
