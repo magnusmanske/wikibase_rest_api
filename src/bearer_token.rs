@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
+use crate::{RestApi, RestApiError};
 use reqwest::Request;
 use serde_json::Value;
-
-use crate::{RestApi, RestApiError};
+use std::collections::HashMap;
 
 /// The default time to wait until bearer token is renewed. API says 4h so setting it to 3h50min
 const DEFAULT_RENEWAL_INTERVAL_SEC: u64 = (3 * 60 + 50) * 60;
@@ -30,10 +28,11 @@ impl BearerToken {
         let client_id = self
             .client_id
             .as_ref()
-            .ok_or_else(|| RestApiError::ClientIdRequired)?;
-        let api_url = api.api_url();
+            .ok_or(RestApiError::ClientIdRequired)?;
         Ok(format!(
-            "{api_url}/oauth2/authorize?client_id={client_id}&response_type=code"
+            "{}/oauth2/authorize?client_id={}&response_type=code",
+            api.api_url(),
+            client_id
         ))
     }
 
@@ -65,13 +64,12 @@ impl BearerToken {
             .as_ref()
             .ok_or(RestApiError::ClientSecretRequired)?;
 
-        let params = [
-            ("grant_type", "authorization_code"),
-            ("client_id", client_id.as_str()),
-            ("client_secret", client_secret.as_str()),
-            ("code", code),
-        ];
-        Ok(Self::array2hashmap(&params))
+        Ok(HashMap::from([
+            ("grant_type".to_string(), "authorization_code".to_string()),
+            ("client_id".to_string(), client_id.clone()),
+            ("client_secret".to_string(), client_secret.clone()),
+            ("code".to_string(), code.to_string()),
+        ]))
     }
 
     async fn generate_get_access_token_request(
@@ -81,7 +79,7 @@ impl BearerToken {
     ) -> Result<Request, RestApiError> {
         let params = self.generate_get_access_token_parameters(code)?;
         let headers = api.headers_from_token(self).await?;
-        let url = format!("{api_url}/oauth2/access_token", api_url = api.api_url());
+        let url = format!("{}/oauth2/access_token", api.api_url());
         let mut request = api
             .client()
             .post(url)
@@ -211,20 +209,19 @@ impl BearerToken {
         let refresh_token = self
             .refresh_token
             .as_ref()
-            .ok_or_else(|| RestApiError::RefreshTokenRequired)?;
-        let params = [
-            ("client_id", client_id.as_str()),
-            ("client_secret", client_secret.as_str()),
-            ("grant_type", "refresh_token"),
-            ("refresh_token", refresh_token.as_str()),
-        ];
-        Ok(Self::array2hashmap(&params))
+            .ok_or(RestApiError::RefreshTokenRequired)?;
+        Ok(HashMap::from([
+            ("client_id".to_string(), client_id.clone()),
+            ("client_secret".to_string(), client_secret.clone()),
+            ("grant_type".to_string(), "refresh_token".to_string()),
+            ("refresh_token".to_string(), refresh_token.clone()),
+        ]))
     }
 
     async fn get_renew_access_token_request(&self, api: &RestApi) -> Result<Request, RestApiError> {
         let params = self.get_renew_access_token_parameters()?;
         let headers = api.headers_from_token(self).await?;
-        let url = format!("{}{}", api.api_url(), "/oauth2/access_token");
+        let url = format!("{}/oauth2/access_token", api.api_url());
         let mut request = api
             .client()
             .post(url)
@@ -248,13 +245,6 @@ impl BearerToken {
         let response = api.client().execute(request).await?;
         let j: Value = response.json().await?;
         self.set_tokens_from_json(j)
-    }
-
-    fn array2hashmap(array: &[(&str, &str)]) -> HashMap<String, String> {
-        array
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect()
     }
 }
 
@@ -473,10 +463,27 @@ mod tests {
     }
 
     #[test]
-    fn test_array2hashmap() {
-        let array = [("a", "1"), ("b", "2")];
-        let hashmap = BearerToken::array2hashmap(&array);
-        assert_eq!(hashmap.get("a"), Some(&"1".to_string()));
-        assert_eq!(hashmap.get("b"), Some(&"2".to_string()));
+    fn test_generate_get_access_token_parameters() {
+        let mut token = BearerToken::default();
+        token.set_oauth2_info("test_client", "test_secret");
+        let params = token
+            .generate_get_access_token_parameters("test_code")
+            .unwrap();
+        assert_eq!(params.get("grant_type").unwrap(), "authorization_code");
+        assert_eq!(params.get("client_id").unwrap(), "test_client");
+        assert_eq!(params.get("client_secret").unwrap(), "test_secret");
+        assert_eq!(params.get("code").unwrap(), "test_code");
+    }
+
+    #[test]
+    fn test_get_renew_access_token_parameters() {
+        let mut token = BearerToken::default();
+        token.set_oauth2_info("test_client", "test_secret");
+        token.set_tokens(None, Some("test_refresh".to_string()));
+        let params = token.get_renew_access_token_parameters().unwrap();
+        assert_eq!(params.get("grant_type").unwrap(), "refresh_token");
+        assert_eq!(params.get("client_id").unwrap(), "test_client");
+        assert_eq!(params.get("client_secret").unwrap(), "test_secret");
+        assert_eq!(params.get("refresh_token").unwrap(), "test_refresh");
     }
 }

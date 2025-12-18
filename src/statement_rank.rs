@@ -11,11 +11,12 @@ pub enum StatementRank {
 impl StatementRank {
     /// Create a new `StatementRank` from a string
     pub fn new<S: Into<String>>(s: S) -> Result<Self, RestApiError> {
-        match s.into().to_lowercase().as_str() {
+        let s = s.into();
+        match s.to_lowercase().as_str() {
             "normal" => Ok(StatementRank::Normal),
             "preferred" => Ok(StatementRank::Preferred),
             "deprecated" => Ok(StatementRank::Deprecated),
-            s => Err(RestApiError::UnknownStatementRank(s.into())),
+            _ => Err(RestApiError::UnknownStatementRank(s)),
         }
     }
 

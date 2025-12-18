@@ -97,13 +97,12 @@ impl RestApiBuilder {
     }
 
     /// Checks if the REST API URL is valid. The URL must end in "rest.php".
-    /// Removes anything beyone that.
+    /// Removes anything beyond that.
     fn validate_api_url(api_url: &str) -> Result<String, RestApiError> {
         let (base, _rest) = api_url
             .split_once("/rest.php")
-            .ok_or_else(|| RestApiError::RestApiUrlInvalid(api_url.to_owned()))?;
-        let ret = format!("{base}/rest.php");
-        Ok(ret)
+            .ok_or_else(|| RestApiError::RestApiUrlInvalid(api_url.to_string()))?;
+        Ok(format!("{base}/rest.php"))
     }
 
     /// Returns the default user agent, a versioned string based on `DEFAULT_USER_AGENT`.

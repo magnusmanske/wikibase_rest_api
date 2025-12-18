@@ -123,11 +123,8 @@ impl From<serde_json::Error> for RestApiError {
 impl RestApiError {
     pub async fn from_response(response: reqwest::Response) -> Self {
         let status = response.status();
-        let status_text = status.canonical_reason().unwrap_or_default().to_owned();
-        let payload = response
-            .json()
-            .await
-            .unwrap_or(RestApiErrorPayload::default());
+        let status_text = status.canonical_reason().unwrap_or_default().to_string();
+        let payload = response.json().await.unwrap_or_default();
         RestApiError::ApiError {
             status,
             status_text,
@@ -145,12 +142,9 @@ mod tests {
     #[test]
     fn test_rest_api_error_payload() {
         let payload = RestApiErrorPayload {
-            code: "code".to_owned(),
-            message: "message".to_owned(),
-            context: [("key".to_owned(), json!("value"))]
-                .iter()
-                .cloned()
-                .collect(),
+            code: "code".to_string(),
+            message: "message".to_string(),
+            context: HashMap::from([("key".to_string(), json!("value"))]),
         };
         assert_eq!(payload.code(), "code");
         assert_eq!(payload.message(), "message");
@@ -160,16 +154,13 @@ mod tests {
     #[test]
     fn test_rest_api_error_display() {
         let payload = RestApiErrorPayload {
-            code: "code".to_owned(),
-            message: "message".to_owned(),
-            context: [("key".to_owned(), json!("value"))]
-                .iter()
-                .cloned()
-                .collect(),
+            code: "code".to_string(),
+            message: "message".to_string(),
+            context: HashMap::from([("key".to_string(), json!("value"))]),
         };
         let error = RestApiError::ApiError {
             status: reqwest::StatusCode::BAD_REQUEST,
-            status_text: "Bad Request".to_owned(),
+            status_text: "Bad Request".to_string(),
             payload,
         };
         assert_eq!(
@@ -199,8 +190,8 @@ mod tests {
     #[test]
     fn test_payload_code() {
         let payload = RestApiErrorPayload {
-            code: "code".to_owned(),
-            message: "message".to_owned(),
+            code: "code".to_string(),
+            message: "message".to_string(),
             context: HashMap::new(),
         };
         assert_eq!(payload.code(), "code");
@@ -209,8 +200,8 @@ mod tests {
     #[test]
     fn test_payload_message() {
         let payload = RestApiErrorPayload {
-            code: "code".to_owned(),
-            message: "message".to_owned(),
+            code: "code".to_string(),
+            message: "message".to_string(),
             context: HashMap::new(),
         };
         assert_eq!(payload.message(), "message");
@@ -219,12 +210,9 @@ mod tests {
     #[test]
     fn test_payload_context() {
         let payload = RestApiErrorPayload {
-            code: "code".to_owned(),
-            message: "message".to_owned(),
-            context: [("key".to_owned(), json!("value"))]
-                .iter()
-                .cloned()
-                .collect(),
+            code: "code".to_string(),
+            message: "message".to_string(),
+            context: HashMap::from([("key".to_string(), json!("value"))]),
         };
         assert_eq!(payload.context().get("key").unwrap(), &json!("value"));
     }
@@ -232,12 +220,9 @@ mod tests {
     #[test]
     fn test_payload_fmt() {
         let payload = RestApiErrorPayload {
-            code: "code".to_owned(),
-            message: "message".to_owned(),
-            context: [("key".to_owned(), json!("value"))]
-                .iter()
-                .cloned()
-                .collect(),
+            code: "code".to_string(),
+            message: "message".to_string(),
+            context: HashMap::from([("key".to_string(), json!("value"))]),
         };
         let s = format!("{payload}");
         assert_eq!(s, "code: message / {\"key\":\"value\"}");

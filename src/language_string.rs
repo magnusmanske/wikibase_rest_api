@@ -28,7 +28,7 @@ impl LanguageString {
         &self.language
     }
 
-    /// Returns the value (test) of the language string.
+    /// Returns the value (text) of the language string.
     pub const fn value(&self) -> &String {
         &self.value
     }

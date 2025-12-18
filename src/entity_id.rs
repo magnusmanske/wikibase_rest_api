@@ -50,9 +50,9 @@ impl EntityId {
     ) -> Result<EntityId, RestApiError> {
         let id = id.into();
         if id.starts_with(config.item_letter()) {
-            Ok(EntityId::Item(id.to_string()))
+            Ok(EntityId::Item(id))
         } else if id.starts_with(config.property_letter()) {
-            Ok(EntityId::Property(id.to_string()))
+            Ok(EntityId::Property(id))
         } else {
             Err(RestApiError::UnknownEntityLetter(id))
         }
@@ -87,8 +87,7 @@ impl EntityId {
 impl From<EntityId> for String {
     fn from(val: EntityId) -> Self {
         match val {
-            EntityId::Item(id) => id.to_string(),
-            EntityId::Property(id) => id.to_string(),
+            EntityId::Item(id) | EntityId::Property(id) => id,
             EntityId::None => String::new(),
         }
     }
