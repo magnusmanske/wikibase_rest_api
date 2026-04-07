@@ -218,7 +218,6 @@ mod tests {
         let language = Language::try_new("en").unwrap();
         let api = RestApi::builder("https://www.wikidata.org/w/rest.php")
             .unwrap()
-            .with_api_version(0) // Search
             .build();
         let results = Search::items(query, language).get(&api).await.unwrap();
         // Check for "Magnus Manske"
