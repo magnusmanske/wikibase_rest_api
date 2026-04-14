@@ -127,9 +127,7 @@ impl RestApiBuilder {
         let token = Arc::new(RwLock::new(token));
         let user_agent = self.user_agent.unwrap_or_else(Self::default_user_agent);
         let api_version = self.api_version.unwrap_or(WIKIBASE_REST_API_VERSION);
-        let max_retries = self
-            .max_retries
-            .unwrap_or(RestApi::default_max_retries());
+        let max_retries = self.max_retries.unwrap_or(RestApi::default_max_retries());
         let retry_base_delay = self
             .retry_base_delay
             .unwrap_or(RestApi::default_retry_base_delay());

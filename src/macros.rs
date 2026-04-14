@@ -260,23 +260,23 @@ macro_rules! impl_language_string_collection {
                 j: &Value,
                 header_info: HeaderInfo,
             ) -> Result<Self, RestApiError> {
-                let ls = j
-                    .as_object()
-                    .ok_or_else(|| RestApiError::WrongType {
-                        field: $error_field.to_string(),
-                        j: j.to_owned(),
-                    })?
-                    .iter()
-                    .map(|(language, value)| {
-                        let value = value
-                            .as_str()
-                            .ok_or_else(|| RestApiError::MissingOrInvalidField {
-                                field: $error_field.into(),
-                                j: value.to_owned(),
+                let ls =
+                    j.as_object()
+                        .ok_or_else(|| RestApiError::WrongType {
+                            field: $error_field.to_string(),
+                            j: j.to_owned(),
+                        })?
+                        .iter()
+                        .map(|(language, value)| {
+                            let value = value.as_str().ok_or_else(|| {
+                                RestApiError::MissingOrInvalidField {
+                                    field: $error_field.into(),
+                                    j: value.to_owned(),
+                                }
                             })?;
-                        Ok((language.to_owned(), value.to_owned()))
-                    })
-                    .collect::<Result<HashMap<String, String>, RestApiError>>()?;
+                            Ok((language.to_owned(), value.to_owned()))
+                        })
+                        .collect::<Result<HashMap<String, String>, RestApiError>>()?;
                 Ok(Self { ls, header_info })
             }
         }
@@ -335,11 +335,7 @@ macro_rules! impl_language_string_patch {
                     .collect::<Result<Vec<PatchEntry>, RestApiError>>()
             }
 
-            pub fn replace<S1: Into<String>, S2: Into<String>>(
-                &mut self,
-                language: S1,
-                value: S2,
-            ) {
+            pub fn replace<S1: Into<String>, S2: Into<String>>(&mut self, language: S1, value: S2) {
                 <Self as Patch>::replace(
                     self,
                     format!("/{}", language.into()),

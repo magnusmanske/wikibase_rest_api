@@ -1,4 +1,10 @@
-impl_language_string_value!(Label, "labels", "labels_with_language_fallback", "label", "Label");
+impl_language_string_value!(
+    Label,
+    "labels",
+    "labels_with_language_fallback",
+    "label",
+    "Label"
+);
 
 #[cfg(test)]
 mod tests {

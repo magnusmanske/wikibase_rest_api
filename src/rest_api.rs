@@ -95,9 +95,7 @@ impl RestApi {
             let response = self.client.execute(req).await?;
             let status = response.status();
 
-            if status == reqwest::StatusCode::TOO_MANY_REQUESTS
-                || status.is_server_error()
-            {
+            if status == reqwest::StatusCode::TOO_MANY_REQUESTS || status.is_server_error() {
                 if attempt < self.max_retries {
                     let delay = self.retry_delay(&response, attempt);
                     tokio::time::sleep(delay).await;
@@ -112,9 +110,8 @@ impl RestApi {
         }
 
         // Unreachable in normal flow, but handle edge case
-        Err(last_error.unwrap_or_else(|| {
-            RestApiError::EmptyValue("all retry attempts exhausted".into())
-        }))
+        Err(last_error
+            .unwrap_or_else(|| RestApiError::EmptyValue("all retry attempts exhausted".into())))
     }
 
     /// Calculates the delay before retrying, respecting `Retry-After` header if present.
