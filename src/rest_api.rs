@@ -1,7 +1,10 @@
 use crate::{bearer_token::BearerToken, rest_api_builder::RestApiBuilder, RestApiError};
 use reqwest::header::HeaderMap;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::sync::RwLock;
+
+const DEFAULT_MAX_RETRIES: u32 = 3;
+const DEFAULT_RETRY_BASE_DELAY: Duration = Duration::from_secs(1);
 
 #[derive(Debug, Clone)]
 pub struct RestApi {
@@ -10,6 +13,8 @@ pub struct RestApi {
     api_url: String,
     api_version: u8,
     pub token: Arc<RwLock<BearerToken>>,
+    max_retries: u32,
+    retry_base_delay: Duration,
 }
 
 impl RestApi {
@@ -63,16 +68,68 @@ impl RestApi {
         Ok(RestApi::builder("https://www.wikidata.org/w/rest.php")?.build())
     }
 
-    /// Executes a `reqwest::Request`, and returns a `reqwest::Response`.
+    /// Executes a `reqwest::Request` with automatic retry on 429 and 5xx errors.
+    /// Respects `Retry-After` headers when present.
     /// # Errors
-    /// Returns an error if the request cannot be executed
+    /// Returns an error if all retry attempts fail
     pub async fn execute(
         &self,
         request: reqwest::Request,
     ) -> Result<reqwest::Response, RestApiError> {
         self.token.write().await.check(self, &request).await?;
-        let response = self.client.execute(request).await?;
-        Ok(response)
+
+        let mut last_error = None;
+        for attempt in 0..=self.max_retries {
+            // Clone the request for retries (first attempt uses original)
+            let req = if attempt == 0 {
+                request
+                    .try_clone()
+                    .ok_or_else(|| RestApiError::EmptyValue("request not cloneable".into()))?
+            } else {
+                match request.try_clone() {
+                    Some(r) => r,
+                    None => break, // Can't retry streaming requests
+                }
+            };
+
+            let response = self.client.execute(req).await?;
+            let status = response.status();
+
+            if status == reqwest::StatusCode::TOO_MANY_REQUESTS
+                || status.is_server_error()
+            {
+                if attempt < self.max_retries {
+                    let delay = self.retry_delay(&response, attempt);
+                    tokio::time::sleep(delay).await;
+                    last_error = Some(RestApiError::from_response(response).await);
+                    continue;
+                }
+                // Last attempt failed — return the error
+                return Err(RestApiError::from_response(response).await);
+            }
+
+            return Ok(response);
+        }
+
+        // Unreachable in normal flow, but handle edge case
+        Err(last_error.unwrap_or_else(|| {
+            RestApiError::EmptyValue("all retry attempts exhausted".into())
+        }))
+    }
+
+    /// Calculates the delay before retrying, respecting `Retry-After` header if present.
+    fn retry_delay(&self, response: &reqwest::Response, attempt: u32) -> Duration {
+        // Check for Retry-After header (seconds)
+        if let Some(retry_after) = response
+            .headers()
+            .get("Retry-After")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse::<u64>().ok())
+        {
+            return Duration::from_secs(retry_after);
+        }
+        // Exponential backoff: base_delay * 2^attempt
+        self.retry_base_delay * 2u32.pow(attempt)
     }
 
     /// Returns the `OpenAPI` JSON for the Wikibase REST API
@@ -98,12 +155,15 @@ impl RestApi {
 
     /// Creates a new `RestApi` instance.
     /// Only available internally, use `RestApi::builder()` instead.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) const fn new(
         client: reqwest::Client,
         user_agent: String,
         api_url: String,
         api_version: u8,
         token: Arc<RwLock<BearerToken>>,
+        max_retries: u32,
+        retry_base_delay: Duration,
     ) -> Self {
         Self {
             client,
@@ -111,6 +171,8 @@ impl RestApi {
             api_url,
             api_version,
             token,
+            max_retries,
+            retry_base_delay,
         }
     }
 
@@ -133,6 +195,16 @@ impl RestApi {
 
     pub fn token(&self) -> Arc<RwLock<BearerToken>> {
         self.token.clone()
+    }
+
+    /// Returns the maximum number of retries on 429/5xx errors.
+    pub const fn max_retries(&self) -> u32 {
+        self.max_retries
+    }
+
+    /// Returns the base delay for exponential backoff retries.
+    pub const fn retry_base_delay(&self) -> Duration {
+        self.retry_base_delay
     }
 
     /// Returns the root path for the Wikibase REST API, based on the version number
@@ -163,6 +235,14 @@ impl RestApi {
     async fn headers(&self) -> Result<HeaderMap, RestApiError> {
         let token = self.token.read().await;
         self.headers_from_token(&token).await
+    }
+
+    pub(crate) const fn default_max_retries() -> u32 {
+        DEFAULT_MAX_RETRIES
+    }
+
+    pub(crate) const fn default_retry_base_delay() -> Duration {
+        DEFAULT_RETRY_BASE_DELAY
     }
 }
 
@@ -201,5 +281,56 @@ mod tests {
             .with_client(client.clone())
             .build();
         assert_eq!(format!("{:?}", api.client), format!("{:?}", client));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_retry_on_429() {
+        let mock_server = MockServer::start().await;
+        let mock_path = "/w/rest.php/wikibase/v1/openapi.json";
+
+        // First two requests return 429, third succeeds
+        Mock::given(method("GET"))
+            .and(path(mock_path))
+            .respond_with(ResponseTemplate::new(429).insert_header("Retry-After", "0"))
+            .up_to_n_times(2)
+            .mount(&mock_server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path(mock_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+            .mount(&mock_server)
+            .await;
+
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .with_max_retries(3)
+            .with_retry_base_delay(Duration::from_millis(10))
+            .build();
+
+        let result = api.get_openapi_json().await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_retry_exhausted() {
+        let mock_server = MockServer::start().await;
+        let mock_path = "/w/rest.php/wikibase/v1/openapi.json";
+
+        Mock::given(method("GET"))
+            .and(path(mock_path))
+            .respond_with(ResponseTemplate::new(500))
+            .mount(&mock_server)
+            .await;
+
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .with_max_retries(1)
+            .with_retry_base_delay(Duration::from_millis(10))
+            .build();
+
+        let result = api.get_openapi_json().await;
+        assert!(result.is_err());
     }
 }
