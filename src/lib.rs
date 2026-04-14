@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![allow(async_fn_in_trait)]
 #![warn(
     clippy::cognitive_complexity,
     clippy::dbg_macro,

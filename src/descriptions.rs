@@ -2,7 +2,6 @@ use crate::{
     language_strings_patch::LanguageStringsPatch, prelude::LanguageStrings, EntityId, FromJson,
     HeaderInfo, HttpGetEntity, HttpMisc, LanguageString, RestApi, RestApiError, RevisionMatch,
 };
-use async_trait::async_trait;
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
@@ -62,7 +61,6 @@ impl HttpMisc for Descriptions {
     }
 }
 
-#[async_trait]
 impl HttpGetEntity for Descriptions {
     async fn get_match(
         id: &EntityId,

@@ -2,7 +2,6 @@ use crate::{
     statements_patch::StatementsPatch, EditMetadata, EntityId, FromJson, HeaderInfo, HttpGetEntity,
     HttpMisc, Patch, RestApi, RestApiError, RevisionMatch, Statement,
 };
-use async_trait::async_trait;
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
@@ -167,7 +166,6 @@ impl Statements {
 }
 
 // GET
-#[async_trait]
 impl HttpGetEntity for Statements {
     async fn get_match(
         id: &EntityId,

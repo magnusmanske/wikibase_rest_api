@@ -2,7 +2,6 @@ use crate::{
     descriptions::Descriptions, labels::Labels, patch_entry::PatchEntry, EditMetadata, EntityId,
     FromJson, HttpMisc, Patch, PatchApply, RestApi, RestApiError,
 };
-use async_trait::async_trait;
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -94,7 +93,6 @@ impl Patch for LanguageStringsPatch {
     }
 }
 
-#[async_trait]
 impl PatchApply<Labels> for LanguageStringsPatch {
     async fn apply_match(
         &self,
@@ -112,7 +110,6 @@ impl PatchApply<Labels> for LanguageStringsPatch {
     }
 }
 
-#[async_trait]
 impl PatchApply<Descriptions> for LanguageStringsPatch {
     async fn apply_match(
         &self,
@@ -183,7 +180,9 @@ mod tests {
         let id = EntityId::new(id).unwrap();
         let mut patch = LanguageStringsPatch::labels();
         patch.replace("en", page_title);
-        let ls: Labels = patch.apply(&id, &mut api).await.unwrap();
+        let ls: Labels = PatchApply::<Labels>::apply(&patch, &id, &mut api)
+            .await
+            .unwrap();
         assert_eq!(ls.get_lang("en").unwrap(), page_title);
     }
 

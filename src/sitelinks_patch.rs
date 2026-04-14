@@ -1,7 +1,6 @@
 use crate::{
     patch_entry::PatchEntry, EntityId, HttpMisc, Patch, PatchApply, RestApiError, Sitelinks,
 };
-use async_trait::async_trait;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -41,7 +40,6 @@ impl Patch for SitelinksPatch {
     }
 }
 
-#[async_trait]
 impl PatchApply<Sitelinks> for SitelinksPatch {}
 
 impl HttpMisc for SitelinksPatch {

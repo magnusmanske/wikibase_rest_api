@@ -2,7 +2,6 @@ use crate::{
     patch_entry::PatchEntry, EditMetadata, EntityId, FromJson, HttpMisc, Patch, PatchApply,
     RestApi, RestApiError, Statement,
 };
-use async_trait::async_trait;
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -67,7 +66,6 @@ impl StatementPatch {
     }
 }
 
-#[async_trait]
 impl Patch for StatementPatch {
     fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
@@ -78,7 +76,6 @@ impl Patch for StatementPatch {
     }
 }
 
-#[async_trait]
 impl PatchApply<Statement> for StatementPatch {
     async fn apply_match(
         &self,

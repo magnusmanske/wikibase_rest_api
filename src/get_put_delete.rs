@@ -1,10 +1,8 @@
 use crate::{prelude::RestApiError, EditMetadata, EntityId, HeaderInfo, RestApi, RevisionMatch};
-use async_trait::async_trait;
 use reqwest::Request;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-#[async_trait]
 pub trait HttpMisc {
     fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
         Self::get_rest_api_path(id)
@@ -106,7 +104,6 @@ pub trait HttpMisc {
 }
 
 /// A trait implementing a HTTP GET operation.
-#[async_trait]
 pub trait HttpGet: Sized + HttpMisc {
     async fn get_match(
         id: &EntityId,
@@ -121,7 +118,6 @@ pub trait HttpGet: Sized + HttpMisc {
 }
 
 /// A trait implementing a HTTP PUT operation.
-#[async_trait]
 pub trait HttpPut: Sized + HttpMisc {
     async fn put_meta(
         &self,
@@ -136,7 +132,6 @@ pub trait HttpPut: Sized + HttpMisc {
 }
 
 /// A trait implementing a HTTP DELETE operation.
-#[async_trait]
 pub trait HttpDelete: Sized + HttpMisc {
     async fn delete_meta(
         &self,
@@ -150,7 +145,6 @@ pub trait HttpDelete: Sized + HttpMisc {
     }
 }
 
-#[async_trait]
 pub trait HttpGetEntity: Sized + HttpMisc {
     async fn get_match(
         id: &EntityId,
@@ -168,7 +162,6 @@ pub trait HttpGetEntity: Sized + HttpMisc {
     }
 }
 
-#[async_trait]
 pub trait HttpGetEntityWithFallback: Sized + HttpMisc {
     async fn get_match_with_fallback(
         id: &EntityId,

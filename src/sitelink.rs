@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeStruct};
 use serde_json::{json, Value};
@@ -138,7 +137,6 @@ impl HttpMisc for Sitelink {
     }
 }
 
-#[async_trait]
 impl HttpGet for Sitelink {
     async fn get_match(
         id: &EntityId,
@@ -152,7 +150,6 @@ impl HttpGet for Sitelink {
     }
 }
 
-#[async_trait]
 impl HttpDelete for Sitelink {
     async fn delete_meta(
         &self,
@@ -171,7 +168,6 @@ impl HttpDelete for Sitelink {
     }
 }
 
-#[async_trait]
 impl HttpPut for Sitelink {
     async fn put_meta(
         &self,

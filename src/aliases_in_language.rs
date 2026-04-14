@@ -1,7 +1,6 @@
 use crate::{
     EditMetadata, EntityId, HeaderInfo, HttpGet, HttpMisc, RestApi, RestApiError, RevisionMatch,
 };
-use async_trait::async_trait;
 use derive_where::DeriveWhere;
 use reqwest::{Response, StatusCode};
 use serde_json::{json, Value};
@@ -151,7 +150,6 @@ impl HttpMisc for AliasesInLanguage {
     }
 }
 
-#[async_trait]
 impl HttpGet for AliasesInLanguage {
     async fn get_match(
         id: &EntityId,

@@ -2,7 +2,6 @@ use crate::{
     EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpGetEntityWithFallback, HttpMisc,
     HttpPut, LanguageString, RestApi, RestApiError, RevisionMatch,
 };
-use async_trait::async_trait;
 use derive_where::DeriveWhere;
 use reqwest::Request;
 use serde_json::json;
@@ -79,7 +78,6 @@ impl HttpMisc for Label {
     }
 }
 
-#[async_trait]
 impl HttpGetEntityWithFallback for Label {
     async fn get_match_with_fallback(
         id: &EntityId,
@@ -109,7 +107,6 @@ impl HttpGetEntityWithFallback for Label {
     }
 }
 
-#[async_trait]
 impl HttpGet for Label {
     async fn get_match(
         id: &EntityId,
@@ -132,7 +129,6 @@ impl HttpGet for Label {
     }
 }
 
-#[async_trait]
 impl HttpDelete for Label {
     async fn delete_meta(
         &self,
@@ -152,7 +148,6 @@ impl HttpDelete for Label {
     }
 }
 
-#[async_trait]
 impl HttpPut for Label {
     async fn put_meta(
         &self,

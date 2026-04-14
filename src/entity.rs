@@ -1,5 +1,4 @@
 use crate::{EditMetadata, EntityId, HeaderInfo, HttpMisc, RestApi, RestApiError, RevisionMatch};
-use async_trait::async_trait;
 use reqwest::{Request, Response};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -31,7 +30,6 @@ impl EntityType {
     }
 }
 
-#[async_trait]
 pub trait Entity: Default + Sized + Serialize + HttpMisc {
     fn id(&self) -> EntityId;
     fn set_id(&mut self, id: EntityId);

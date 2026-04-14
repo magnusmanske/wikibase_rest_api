@@ -8,7 +8,6 @@ use crate::{
     statements::Statements,
     EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
 };
-use async_trait::async_trait;
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_json::Value;
@@ -31,7 +30,6 @@ impl HttpMisc for Property {
     }
 }
 
-#[async_trait]
 impl Entity for Property {
     fn id(&self) -> EntityId {
         self.id.to_owned()

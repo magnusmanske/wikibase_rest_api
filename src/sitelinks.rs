@@ -2,7 +2,6 @@ use crate::{
     sitelinks_patch::SitelinksPatch, EntityId, FromJson, HeaderInfo, HttpGetEntity, HttpMisc,
     RestApi, RestApiError, RevisionMatch, Sitelink,
 };
-use async_trait::async_trait;
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
@@ -46,7 +45,6 @@ impl FromJson for Sitelinks {
     }
 }
 
-#[async_trait]
 impl HttpGetEntity for Sitelinks {
     async fn get_match(
         id: &EntityId,

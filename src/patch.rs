@@ -1,10 +1,8 @@
 use crate::{
     patch_entry::PatchEntry, EditMetadata, EntityId, HeaderInfo, HttpMisc, RestApi, RestApiError,
 };
-use async_trait::async_trait;
 use serde_json::{json, Value};
 
-#[async_trait]
 pub trait Patch: Sized {
     /// Returns the patch entries
     fn patch(&self) -> &Vec<PatchEntry>;
@@ -36,7 +34,6 @@ pub trait Patch: Sized {
     }
 }
 
-#[async_trait]
 pub trait PatchApply<T: FromJson>: HttpMisc + Patch {
     /// Applies the entire patch against the API
     async fn apply(&self, id: &EntityId, api: &mut RestApi) -> Result<T, RestApiError> {

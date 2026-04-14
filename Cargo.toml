@@ -3,6 +3,7 @@ name = "wikibase_rest_api"
 version = "0.1.13"
 authors = ["Magnus Manske <magnusmanske@googlemail.com>"]
 edition = "2021"
+rust-version = "1.75"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 keywords = ["wikibase", "REST", "API", "client"]
@@ -18,7 +19,6 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
 unwrap_used = "deny"
 
 [dependencies]
-async-trait = "0.1"
 chrono = "0.4"
 derive-where = "1.5"
 futures = "0.3"

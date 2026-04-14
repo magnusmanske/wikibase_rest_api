@@ -2,7 +2,6 @@ use crate::{
     aliases::Aliases, patch_entry::PatchEntry, EditMetadata, EntityId, FromJson, HttpMisc, Patch,
     PatchApply, RestApi, RestApiError,
 };
-use async_trait::async_trait;
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -56,7 +55,6 @@ impl Patch for AliasesPatch {
     }
 }
 
-#[async_trait]
 impl PatchApply<Aliases> for AliasesPatch {
     async fn apply_match(
         &self,
