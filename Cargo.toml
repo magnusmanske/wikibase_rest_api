@@ -1,6 +1,6 @@
 [package]
 name = "wikibase_rest_api"
-version = "0.1.13"
+version = "0.1.14"
 authors = ["Magnus Manske <magnusmanske@googlemail.com>"]
 edition = "2021"
 rust-version = "1.75"
