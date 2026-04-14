@@ -45,6 +45,9 @@
 //! It provides a set of types and methods for interacting with the API,
 //! and implements all the [API endpoints](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
 
+#[macro_use]
+mod macros;
+
 pub mod aliases;
 pub mod aliases_in_language;
 pub mod aliases_patch;
