@@ -213,6 +213,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_search() {
         let query = "Magnus Manske";
         let language = Language::try_new("en").unwrap();
