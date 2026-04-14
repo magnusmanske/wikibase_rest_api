@@ -1,7 +1,9 @@
+use std::time::SystemTime;
+
 #[derive(Debug, Clone, Default, PartialEq, Copy)]
 pub struct HeaderInfo {
     revision_id: Option<u64>,
-    last_modified: Option<chrono::DateTime<chrono::Utc>>,
+    last_modified: Option<SystemTime>,
 }
 
 impl HeaderInfo {
@@ -14,8 +16,7 @@ impl HeaderInfo {
         let last_modified = header
             .get("Last-Modified")
             .and_then(|v| v.to_str().ok())
-            .and_then(|s| chrono::DateTime::parse_from_rfc2822(s).ok())
-            .map(|dt| dt.to_utc());
+            .and_then(|s| httpdate::parse_http_date(s).ok());
         Self {
             revision_id,
             last_modified,
@@ -28,8 +29,8 @@ impl HeaderInfo {
     }
 
     /// Returns the last modified date.
-    pub const fn last_modified(&self) -> Option<&chrono::DateTime<chrono::Utc>> {
-        self.last_modified.as_ref()
+    pub const fn last_modified(&self) -> Option<SystemTime> {
+        self.last_modified
     }
 }
 
@@ -49,9 +50,8 @@ mod tests {
         );
         let hi = HeaderInfo::from_header(&headers);
         assert_eq!(hi.revision_id(), Some(1234567890));
-        assert_eq!(
-            hi.last_modified().unwrap().to_rfc2822(),
-            "Wed, 21 Oct 2015 07:28:00 +0000"
-        );
+        assert!(hi.last_modified().is_some());
+        let formatted = httpdate::fmt_http_date(hi.last_modified().unwrap());
+        assert_eq!(formatted, "Wed, 21 Oct 2015 07:28:00 GMT");
     }
 }

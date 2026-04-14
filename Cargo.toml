@@ -19,7 +19,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
 unwrap_used = "deny"
 
 [dependencies]
-chrono = "0.4"
+httpdate = "1"
 derive-where = "1.5"
 futures = "0.3"
 json-patch = "4"
