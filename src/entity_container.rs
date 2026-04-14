@@ -24,15 +24,41 @@ impl EntityContainer {
     /// # Errors
     /// Returns an `RestApiError` if the request fails.
     pub async fn load(&self, entity_ids: &[EntityId]) -> Result<(), RestApiError> {
-        let mut items = self.items.write().await;
-        let item_ids = Self::get_items_to_load(&items, entity_ids);
-        self.load_items(&mut items, &item_ids).await?;
-        drop(items);
+        // Collect IDs to load while holding read locks briefly
+        let item_ids = {
+            let items = self.items.read().await;
+            Self::get_items_to_load(&items, entity_ids)
+        };
+        let property_ids = {
+            let properties = self.properties.read().await;
+            Self::get_properties_to_load(&properties, entity_ids)
+        };
 
-        let mut properties = self.properties.write().await;
-        let property_ids = Self::get_properties_to_load(&properties, entity_ids);
-        self.load_properties(&mut properties, &property_ids).await?;
-        drop(properties);
+        // Load items and properties concurrently without holding any locks
+        let (loaded_items, loaded_properties) = tokio::join!(
+            self.fetch_items(&item_ids),
+            self.fetch_properties(&property_ids),
+        );
+        let loaded_items = loaded_items?;
+        let loaded_properties = loaded_properties?;
+
+        // Insert results under write locks (brief, no I/O)
+        if !loaded_items.is_empty() {
+            let mut items = self.items.write().await;
+            for item in loaded_items {
+                if let Ok(id) = item.id().id() {
+                    items.insert(id.to_owned(), item);
+                }
+            }
+        }
+        if !loaded_properties.is_empty() {
+            let mut properties = self.properties.write().await;
+            for property in loaded_properties {
+                if let Ok(id) = property.id().id() {
+                    properties.insert(id.to_owned(), property);
+                }
+            }
+        }
 
         Ok(())
     }
@@ -41,35 +67,26 @@ impl EntityContainer {
         entity_ids
             .iter()
             .filter_map(|id| match id {
-                EntityId::Item(id) => Some(id.to_owned()),
+                EntityId::Item(id) => Some(id.as_str()),
                 _ => None,
             })
-            .filter(|id| !items.contains_key(id))
+            .filter(|id| !items.contains_key(*id))
+            .map(|id| id.to_owned())
             .collect()
     }
 
-    async fn load_items(
-        &self,
-        items: &mut HashMap<String, Item>,
-        item_ids: &[String],
-    ) -> Result<(), RestApiError> {
+    async fn fetch_items(&self, item_ids: &[String]) -> Result<Vec<Item>, RestApiError> {
         if item_ids.is_empty() {
-            return Ok(());
+            return Ok(Vec::new());
         }
         let futures = item_ids
             .iter()
-            .map(|id| Item::get(EntityId::item(id), &self.api))
-            .collect::<Vec<_>>();
-        let stream = futures::stream::iter(futures).buffer_unordered(self.max_concurrent_load);
-        let results = stream.collect::<Vec<_>>().await;
-        let results = results
-            .into_iter()
-            .collect::<Vec<Result<Item, RestApiError>>>();
-        for item in results.into_iter().flatten() {
-            let id = item.id().id()?.to_owned();
-            items.insert(id, item);
-        }
-        Ok(())
+            .map(|id| Item::get(EntityId::item(id), &self.api));
+        let results: Vec<_> = futures::stream::iter(futures)
+            .buffer_unordered(self.max_concurrent_load)
+            .collect()
+            .await;
+        Ok(results.into_iter().flatten().collect())
     }
 
     fn get_properties_to_load(
@@ -79,35 +96,29 @@ impl EntityContainer {
         entity_ids
             .iter()
             .filter_map(|id| match id {
-                EntityId::Property(id) => Some(id.to_owned()),
+                EntityId::Property(id) => Some(id.as_str()),
                 _ => None,
             })
-            .filter(|id| !properties.contains_key(id))
+            .filter(|id| !properties.contains_key(*id))
+            .map(|id| id.to_owned())
             .collect()
     }
 
-    async fn load_properties(
+    async fn fetch_properties(
         &self,
-        properties: &mut HashMap<String, Property>,
         property_ids: &[String],
-    ) -> Result<(), RestApiError> {
+    ) -> Result<Vec<Property>, RestApiError> {
         if property_ids.is_empty() {
-            return Ok(());
+            return Ok(Vec::new());
         }
         let futures = property_ids
             .iter()
-            .map(|id| Property::get(EntityId::property(id), &self.api))
-            .collect::<Vec<_>>();
-        let stream = futures::stream::iter(futures).buffer_unordered(self.max_concurrent_load);
-        let results = stream.collect::<Vec<_>>().await;
-        let results = results
-            .into_iter()
-            .collect::<Vec<Result<Property, RestApiError>>>();
-        for property in results.into_iter().flatten() {
-            let id = property.id().id()?.to_owned();
-            properties.insert(id, property);
-        }
-        Ok(())
+            .map(|id| Property::get(EntityId::property(id), &self.api));
+        let results: Vec<_> = futures::stream::iter(futures)
+            .buffer_unordered(self.max_concurrent_load)
+            .collect()
+            .await;
+        Ok(results.into_iter().flatten().collect())
     }
 
     /// Returns a reference to the items in the container.
@@ -145,7 +156,7 @@ impl EntityContainerBuilder {
     /// # Errors
     /// Returns an `RestApiError` if the API could not be built.
     pub fn build(self) -> Result<EntityContainer, RestApiError> {
-        let api = self.api.ok_or_else(|| RestApiError::ApiNotSet)?;
+        let api = self.api.ok_or(RestApiError::ApiNotSet)?;
         let mut max_concurrent_load = self.max_concurrent_load;
         if max_concurrent_load == 0 {
             max_concurrent_load = MAX_CONCURRENT_LOAD_DEFAULT;
