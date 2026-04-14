@@ -3,14 +3,48 @@
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE-MIT)
 [![License](https://img.shields.io/badge/license-APACHE2-blue?style=flat-square)](LICENSE-APACHE2)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/acffb6bb26d8407b8e82704843a4aa7e)](https://app.codacy.com/gh/magnusmanske/wikibase_rest_api/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![CI](https://github.com/magnusmanske/wikibase_rest_api/actions/workflows/rust.yml/badge.svg)](https://github.com/magnusmanske/wikibase_rest_api/actions/workflows/rust.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10599/badge)](https://www.bestpractices.dev/projects/10599)
 AvgCCN 2.1
 Codecov 100.00%
 
-This Rust crate provides a REST API for Wikibase.
-It is based on the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
-It works on any MediaWiki installation with the Wikibase extension and an enabled Wikibase REST API.
+# wikibase_rest_api
 
-# Usage
+A Rust client library for the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
+It provides async, type-safe access to Wikibase instances (including Wikidata) for reading and writing items, properties, labels, descriptions, aliases, statements, and sitelinks.
+It works on any MediaWiki installation with the Wikibase extension and an enabled REST API.
+
+## Installation
+
+Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+wikibase_rest_api = "0.1"
+```
+
+Or install via cargo:
+
+```bash
+cargo add wikibase_rest_api
+```
+
+### Building from source
+
+```bash
+git clone https://github.com/magnusmanske/wikibase_rest_api.git
+cd wikibase_rest_api
+cargo build
+```
+
+## Documentation
+
+- **API Reference**: [docs.rs/wikibase_rest_api](https://docs.rs/wikibase_rest_api)
+- **Wikibase REST API spec**: [doc.wikimedia.org](https://doc.wikimedia.org/Wikibase/master/js/rest-api/)
+- **Examples**: see the [examples](examples) directory
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+
+## Usage
 See also the [examples](examples).
 ```rust
 // Create an API (use the Wikidata API shortcut)
@@ -140,6 +174,18 @@ println!("{}",results[0].id());
 - [x] `/openapi.json`
 - [x] `/property-data-types`
 - [x] `seach items` (for Wikidata currently only in v0)
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+- **Bug reports**: [GitHub Issues](https://github.com/magnusmanske/wikibase_rest_api/issues)
+- **Feature requests**: [GitHub Issues](https://github.com/magnusmanske/wikibase_rest_api/issues)
+- **Security vulnerabilities**: see [SECURITY.md](SECURITY.md)
+
+## License
+
+This project is dual-licensed under the [MIT](LICENSE-MIT) and [Apache 2.0](LICENSE-APACHE2) licenses. You may choose either license at your option.
 
 # Developer notes
 ## TODO
