@@ -178,6 +178,36 @@ impl HttpGetEntity for Statements {
     }
 }
 
+impl Statements {
+    /// Returns statements for a specific property, filtering server-side.
+    pub async fn get_for_property(
+        id: &EntityId,
+        property_id: &str,
+        api: &RestApi,
+    ) -> Result<Self, RestApiError> {
+        Self::get_for_property_match(id, property_id, api, RevisionMatch::default()).await
+    }
+
+    /// Returns statements for a specific property, with revision matching.
+    pub async fn get_for_property_match(
+        id: &EntityId,
+        property_id: &str,
+        api: &RestApi,
+        rm: RevisionMatch,
+    ) -> Result<Self, RestApiError> {
+        let path = Self::get_rest_api_path(id)?;
+        let mut params = HashMap::new();
+        params.insert("property".to_string(), property_id.to_string());
+        let mut request = api
+            .wikibase_request_builder(&path, params, reqwest::Method::GET)
+            .await?
+            .build()?;
+        rm.modify_headers(request.headers_mut())?;
+        let (j, header_info) = Self::api_execute(api, request).await?;
+        Self::from_json_header_info(&j, header_info)
+    }
+}
+
 // POST
 impl Statements {
     /// Posts a new statement to an entity
@@ -408,6 +438,30 @@ mod tests {
         let statements_without_id = statements.get_statements_without_id();
         assert_eq!(statements_without_id.len(), 1);
         assert_eq!(statements_without_id[0].property().id(), "P1");
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_statements_get_for_property() {
+        let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
+        let v: Value = serde_json::from_str(&v).unwrap();
+        let p31_statements = json!({"P31": v["statements"]["P31"]});
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q42/statements"))
+            .and(wiremock::matchers::query_param("property", "P31"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&p31_statements))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
+
+        let id = EntityId::item("Q42");
+        let stmts = Statements::get_for_property(&id, "P31", &api).await.unwrap();
+        assert!(!stmts.property("P31").is_empty());
+        assert!(stmts.property("P21").is_empty());
     }
 
     #[test]
