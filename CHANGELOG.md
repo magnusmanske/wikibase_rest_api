@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2]
+
+### Added
+- `Property::data_type()` / `set_data_type()` — `data_type` is now stored, serialised, and deserialised on `Property` (required field for `POST /entities/properties`)
+- `Property::patch()` — generates a JSON Patch to transform one property into another
+- `Search::suggest_items()` / `suggest_properties()` — prefix-based autocomplete via `/suggest/{items,properties}`
+- `RestApi::get_property_data_types()` — exposes the `/property-data-types` endpoint publicly
+- `Entity::get_fields()` / `get_match_fields()` — pass `_fields=` to request a subset of entity fields
+- `Statements::get_for_property()` / `get_for_property_match()` — server-side filter by property ID via `?property=`
+- More types exported from `prelude`: `Aliases`, `Descriptions`, `Labels`, their patch types, `EntityType`, `HeaderInfo`, `RevisionMatch`, `SitelinksPatch`, `StatementPatch`
+
+### Fixed
+- `RevisionMatch::modify_headers()` now emits `If-Match` and `If-None-Match` headers from revision IDs and raw ETag strings (these were stored but never sent)
+- `Statement::delete_match()` uses the HTTP status code to determine success instead of matching on the response body string
+- `EditMetadata` no longer sends `"comment": ""` when no comment is set
+- `Item` and `Property` deserialisation tolerates missing fields (needed for partial `_fields` responses)
+
 ## [0.1.13] - 2026-02-10
 
 ### Fixed
