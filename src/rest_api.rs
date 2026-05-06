@@ -140,6 +140,27 @@ impl RestApi {
         Ok(json)
     }
 
+    /// Returns the map of property data types to value types.
+    /// Keys are data-type strings (e.g. `"wikibase-item"`); values are value-type strings
+    /// (e.g. `"wikibase-entityid"`).
+    /// # Errors
+    /// Returns an error if the request fails or the response cannot be parsed.
+    pub async fn get_property_data_types(
+        &self,
+    ) -> Result<std::collections::HashMap<String, String>, RestApiError> {
+        let request = self
+            .wikibase_request_builder(
+                "/property-data-types",
+                HashMap::new(),
+                reqwest::Method::GET,
+            )
+            .await?
+            .build()?;
+        let response = self.execute(request).await?;
+        let map = response.error_for_status()?.json().await?;
+        Ok(map)
+    }
+
     /// Returns the API URL
     pub fn api_url(&self) -> &str {
         &self.api_url
@@ -267,6 +288,28 @@ mod tests {
 
         let json = api.get_openapi_json().await.unwrap();
         assert_eq!(json, expected_json);
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_get_property_data_types() {
+        use std::collections::HashMap;
+        let expected: HashMap<String, String> = [
+            ("wikibase-item".to_string(), "wikibase-entityid".to_string()),
+            ("external-id".to_string(), "string".to_string()),
+        ]
+        .into();
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/w/rest.php/wikibase/v1/property-data-types"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&expected))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
+        let result = api.get_property_data_types().await.unwrap();
+        assert_eq!(result, expected);
     }
 
     #[test]
