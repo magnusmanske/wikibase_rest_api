@@ -5,8 +5,9 @@ use crate::{
     entity::{Entity, EntityType},
     entity_patch::EntityPatch,
     labels::Labels,
+    patch::Patch,
     statements::Statements,
-    EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
+    DataType, EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
 };
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
@@ -16,6 +17,7 @@ use serde_json::Value;
 #[derive_where(PartialEq)]
 pub struct Property {
     id: EntityId,
+    data_type: Option<DataType>,
     labels: Labels,
     descriptions: Descriptions,
     aliases: Aliases,
@@ -46,8 +48,10 @@ impl Entity for Property {
                 field: "id".to_string(),
                 j: j.clone(),
             })?;
+        let data_type = j["data_type"].as_str().and_then(|s| DataType::new(s).ok());
         Ok(Self {
             id: EntityId::property(id),
+            data_type,
             labels: Labels::from_json(&j["labels"])?,
             descriptions: Descriptions::from_json(&j["descriptions"])?,
             aliases: Aliases::from_json(&j["aliases"])?,
@@ -71,6 +75,9 @@ impl Serialize for Property {
         if self.id.is_some() {
             fields += 1;
         }
+        if self.data_type.is_some() {
+            fields += 1;
+        }
         if self.labels.is_empty() {
             fields -= 1;
         }
@@ -87,6 +94,9 @@ impl Serialize for Property {
         if self.id.is_some() {
             let id: String = self.id.to_owned().into();
             s.serialize_field("id", &id)?;
+        }
+        if let Some(dt) = self.data_type {
+            s.serialize_field("data_type", dt.as_str())?;
         }
         if !self.labels.is_empty() {
             s.serialize_field("labels", &self.labels)?;
@@ -162,9 +172,31 @@ impl Property {
         &self.header_info
     }
 
+    /// Returns the data type of the property
+    pub const fn data_type(&self) -> Option<DataType> {
+        self.data_type
+    }
+
+    /// Sets the data type of the property
+    pub fn set_data_type(&mut self, data_type: Option<DataType>) {
+        self.data_type = data_type;
+    }
+
     /// Generates a patch to transform `other` into `self`
-    pub fn patch(&self, _other: &Self) -> Result<EntityPatch, RestApiError> {
-        todo!()
+    pub fn patch(&self, other: &Self) -> Result<EntityPatch, RestApiError> {
+        let labels_patch = self.labels.patch(other.labels())?;
+        let descriptions_patch = self.descriptions.patch(other.descriptions())?;
+        let aliases_patch = self.aliases.patch(other.aliases())?;
+        let statements_patch = self.statements.patch(other.statements())?;
+
+        let mut ret = EntityPatch::property();
+        ret.patch_mut().extend(labels_patch.patch().to_owned());
+        ret.patch_mut()
+            .extend(descriptions_patch.patch().to_owned());
+        ret.patch_mut().extend(aliases_patch.patch().to_owned());
+        ret.patch_mut().extend(statements_patch.patch().to_owned());
+
+        Ok(ret)
     }
 }
 
@@ -197,6 +229,7 @@ mod tests {
         let property = Property::get(EntityId::property("P214"), &api)
             .await
             .unwrap();
+        assert_eq!(property.data_type(), Some(DataType::ExternalId));
         let j = serde_json::to_string(&property).unwrap(); // Convert property to JSON text
         let v: Value = serde_json::from_str(&j).unwrap(); // Convert to JSON value
         let property_from_json = Property::from_json(v).unwrap(); // Convert back to property
@@ -277,6 +310,7 @@ mod tests {
     fn test_serialize() {
         let mut property = Property {
             id: EntityId::property("P214"),
+            data_type: Some(DataType::ExternalId),
             ..Default::default()
         };
         property
@@ -291,6 +325,7 @@ mod tests {
         let j = serde_json::to_string(&property).unwrap();
         let v: Value = serde_json::from_str(&j).unwrap();
         assert_eq!(v["id"], "P214");
+        assert_eq!(v["data_type"], "external-id");
         assert_eq!(v["labels"]["en"], "label");
         assert_eq!(v["descriptions"]["en"], "description");
         assert_eq!(v["aliases"]["en"][0], "alias");
@@ -300,6 +335,7 @@ mod tests {
     fn test_from_json() {
         let v = json!({
             "id": "P214",
+            "data_type": "external-id",
             "labels": {"en": "label"},
             "descriptions": {"en": "description"},
             "aliases": {"en": ["alias"]},
@@ -307,12 +343,53 @@ mod tests {
         });
         let property = Property::from_json(v).unwrap();
         assert_eq!(property.id(), EntityId::property("P214"));
+        assert_eq!(property.data_type(), Some(DataType::ExternalId));
         assert_eq!(property.labels().get_lang("en").unwrap(), "label");
         assert_eq!(
             property.descriptions().get_lang("en").unwrap(),
             "description"
         );
         assert_eq!(property.aliases().get_lang("en"), &["alias"]);
+    }
+
+    #[test]
+    fn test_data_type() {
+        let mut property = Property::default();
+        assert_eq!(property.data_type(), None);
+        property.set_data_type(Some(DataType::WikibaseItem));
+        assert_eq!(property.data_type(), Some(DataType::WikibaseItem));
+        property.set_data_type(None);
+        assert_eq!(property.data_type(), None);
+    }
+
+    #[test]
+    fn test_serialize_data_type() {
+        let mut property = Property {
+            id: EntityId::property("P214"),
+            data_type: Some(DataType::ExternalId),
+            ..Default::default()
+        };
+        property
+            .labels_mut()
+            .insert(LanguageString::new("en", "label"));
+        let j = serde_json::to_string(&property).unwrap();
+        let v: Value = serde_json::from_str(&j).unwrap();
+        assert_eq!(v["data_type"], "external-id");
+    }
+
+    #[test]
+    fn test_data_type_roundtrip() {
+        let v = json!({
+            "id": "P214",
+            "data_type": "external-id",
+            "labels": {},
+            "descriptions": {},
+            "aliases": {},
+            "statements": {},
+        });
+        let property = Property::from_json(v).unwrap();
+        let j = serde_json::to_value(&property).unwrap();
+        assert_eq!(j["data_type"], "external-id");
     }
 
     #[tokio::test]
