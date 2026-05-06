@@ -69,8 +69,8 @@ impl EntityId {
     }
 
     /// Returns a new entity ID for a property.
-    pub fn property(s: &str) -> EntityId {
-        EntityId::Property(s.to_string())
+    pub fn property<S: Into<String>>(s: S) -> EntityId {
+        EntityId::Property(s.into())
     }
 
     /// Returns the REST API path for this entity, e.g. `/entities/items/Q42`.
