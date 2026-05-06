@@ -28,7 +28,7 @@ pub struct Item {
 
 impl HttpMisc for Item {
     fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!("/entities/{}/{id}", id.group()?))
+        id.entity_path()
     }
 }
 

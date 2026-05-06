@@ -73,6 +73,11 @@ impl EntityId {
         EntityId::Property(s.to_string())
     }
 
+    /// Returns the REST API path for this entity, e.g. `/entities/items/Q42`.
+    pub fn entity_path(&self) -> Result<String, RestApiError> {
+        Ok(format!("/entities/{}/{self}", self.group()?))
+    }
+
     /// Returns true if the entity ID is an item or a property.
     pub fn is_some(&self) -> bool {
         *self != EntityId::None
