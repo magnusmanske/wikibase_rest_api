@@ -23,7 +23,9 @@ pub trait HttpMisc {
             j["bot"] = json!(em.bot());
         }
         if j.get("comment").is_none() {
-            j["comment"] = json!(em.comment().unwrap_or_default());
+            if let Some(comment) = em.comment() {
+                j["comment"] = json!(comment);
+            }
         }
     }
 

@@ -270,16 +270,11 @@ impl Statement {
         let request = self
             .generate_json_request(&EntityId::None, reqwest::Method::DELETE, j0, api, &em)
             .await?;
-        let message: Value = api
-            .execute(request)
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
-        if message == "Statement deleted" {
+        let response = api.execute(request).await?;
+        if response.status().is_success() {
             return Ok(());
         }
-        Err(RestApiError::UnexpectedResponse(message))
+        Err(RestApiError::from_response(response).await)
     }
 
     /// Sets the statement property
@@ -537,9 +532,9 @@ mod tests {
             .await;
         Mock::given(method("DELETE"))
             .and(path(&mock_path2))
-            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-              "code": "invalid-statement-id",
-              "message": format!("Not a valid statement ID: {statement_id2}")
+            .respond_with(ResponseTemplate::new(404).set_body_json(json!({
+              "code": "statement-not-found",
+              "message": format!("Could not find a statement with the ID: {statement_id2}")
             })))
             .mount(&mock_server)
             .await;
@@ -555,11 +550,7 @@ mod tests {
         // Delete (error)
         let mut statement1 = Statement::new_string("P31", "Q42");
         statement1.set_id(Some(statement_id2.to_string()));
-        let result = statement1.delete(&mut api).await.unwrap_err().to_string();
-        assert_eq!(
-            result,
-            r#"Unexpected response: {"code":"invalid-statement-id","message":"Not a valid statement ID: no_such_statement"}"#
-        );
+        assert!(statement1.delete(&mut api).await.is_err());
     }
 
     #[test]
