@@ -86,7 +86,11 @@ pub trait Entity: Default + Sized + Serialize + HttpMisc {
         Ok(ret)
     }
 
-    async fn get_fields(id: EntityId, fields: &[&str], api: &RestApi) -> Result<Self, RestApiError> {
+    async fn get_fields(
+        id: EntityId,
+        fields: &[&str],
+        api: &RestApi,
+    ) -> Result<Self, RestApiError> {
         Self::get_match_fields(id, api, RevisionMatch::default(), fields).await
     }
 

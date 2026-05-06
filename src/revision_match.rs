@@ -27,7 +27,6 @@ impl RevisionMatch {
         }
     }
 
-
     pub fn modify_headers(&self, headers: &mut HeaderMap) -> Result<(), RestApiError> {
         if let Some(date) = self.modified_since_date {
             let hv = HeaderValue::from_str(&httpdate::fmt_http_date(date))?;

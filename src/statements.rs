@@ -449,7 +449,9 @@ mod tests {
 
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
-            .and(path("/w/rest.php/wikibase/v1/entities/items/Q42/statements"))
+            .and(path(
+                "/w/rest.php/wikibase/v1/entities/items/Q42/statements",
+            ))
             .and(wiremock::matchers::query_param("property", "P31"))
             .respond_with(ResponseTemplate::new(200).set_body_json(&p31_statements))
             .mount(&mock_server)
@@ -459,7 +461,9 @@ mod tests {
             .build();
 
         let id = EntityId::item("Q42");
-        let stmts = Statements::get_for_property(&id, "P31", &api).await.unwrap();
+        let stmts = Statements::get_for_property(&id, "P31", &api)
+            .await
+            .unwrap();
         assert!(!stmts.property("P31").is_empty());
         assert!(stmts.property("P21").is_empty());
     }

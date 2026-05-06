@@ -3,3 +3,5 @@ profraw/
 rust-code-analysis/
 target/
 .DS_Store
+.claude
+CLAUDE.md

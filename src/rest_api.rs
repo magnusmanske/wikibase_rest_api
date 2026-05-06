@@ -149,11 +149,7 @@ impl RestApi {
         &self,
     ) -> Result<std::collections::HashMap<String, String>, RestApiError> {
         let request = self
-            .wikibase_request_builder(
-                "/property-data-types",
-                HashMap::new(),
-                reqwest::Method::GET,
-            )
+            .wikibase_request_builder("/property-data-types", HashMap::new(), reqwest::Method::GET)
             .await?
             .build()?;
         let response = self.execute(request).await?;
