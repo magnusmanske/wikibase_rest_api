@@ -50,7 +50,7 @@ impl Statements {
 
     /// Returns the number of statements
     pub fn len(&self) -> usize {
-        self.statements.iter().flat_map(|(_, v)| v).count()
+        self.statements.values().flatten().count()
     }
 
     /// Returns true if there are no statements

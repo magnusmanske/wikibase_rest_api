@@ -307,7 +307,7 @@ macro_rules! impl_language_string_collection {
     };
 }
 
-/// Generates a language string patch type (LabelsPatch or DescriptionsPatch) with all trait implementations.
+/// Generates a language string patch type (`LabelsPatch` or `DescriptionsPatch`) with all trait implementations.
 macro_rules! impl_language_string_patch {
     (
         $type_name:ident,

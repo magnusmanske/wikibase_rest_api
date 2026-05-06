@@ -106,7 +106,7 @@ impl PatchApply<Labels> for LanguageStringsPatch {
             .await?;
         let response = api.execute(request).await?;
         let (j, header_info) = self.filter_response_error(response).await?;
-        Ok(Labels::from_json_header_info(&j, header_info)?)
+        Labels::from_json_header_info(&j, header_info)
     }
 }
 
@@ -123,7 +123,7 @@ impl PatchApply<Descriptions> for LanguageStringsPatch {
             .await?;
         let response = api.execute(request).await?;
         let (j, header_info) = self.filter_response_error(response).await?;
-        Ok(Descriptions::from_json_header_info(&j, header_info)?)
+        Descriptions::from_json_header_info(&j, header_info)
     }
 }
 

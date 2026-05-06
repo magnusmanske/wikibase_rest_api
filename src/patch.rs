@@ -53,7 +53,7 @@ pub trait PatchApply<T: FromJson>: HttpMisc + Patch {
             .await?;
         let response = api.execute(request).await?;
         let (j1, header_info) = self.filter_response_error(response).await?;
-        Ok(T::from_json_header_info(&j1, header_info)?)
+        T::from_json_header_info(&j1, header_info)
     }
 }
 

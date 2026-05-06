@@ -126,7 +126,7 @@ impl RestApi {
             return Duration::from_secs(retry_after);
         }
         // Exponential backoff: base_delay * 2^attempt
-        self.retry_base_delay * 2u32.pow(attempt)
+        self.retry_base_delay * 2_u32.pow(attempt)
     }
 
     /// Returns the `OpenAPI` JSON for the Wikibase REST API

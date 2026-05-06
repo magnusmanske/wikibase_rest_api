@@ -194,7 +194,7 @@ impl Property {
     }
 
     /// Sets the data type of the property
-    pub fn set_data_type(&mut self, data_type: Option<DataType>) {
+    pub const fn set_data_type(&mut self, data_type: Option<DataType>) {
         self.data_type = data_type;
     }
 
