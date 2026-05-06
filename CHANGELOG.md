@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.2]
+## [0.1.15] - 2024-11-15
 
 ### Added
 - `Property::data_type()` / `set_data_type()` — `data_type` is now stored, serialised, and deserialised on `Property` (required field for `POST /entities/properties`)
