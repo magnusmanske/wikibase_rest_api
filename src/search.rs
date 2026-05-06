@@ -76,9 +76,25 @@ impl SearchResult {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum SearchKind {
+    Search,
+    Suggest,
+}
+
+impl SearchKind {
+    const fn path_prefix(self) -> &'static str {
+        match self {
+            SearchKind::Search => "search",
+            SearchKind::Suggest => "suggest",
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Search {
     entity_type: EntityType,
+    kind: SearchKind,
     q: String,
     language: Language,
     limit: Option<SearchLimit>,
@@ -89,6 +105,7 @@ impl Search {
     pub fn items<S: Into<String>>(q: S, language: Language) -> Self {
         Self {
             entity_type: EntityType::Item,
+            kind: SearchKind::Search,
             q: q.into(),
             language,
             limit: None,
@@ -99,6 +116,29 @@ impl Search {
     pub fn properties<S: Into<String>>(q: S, language: Language) -> Self {
         Self {
             entity_type: EntityType::Property,
+            kind: SearchKind::Search,
+            q: q.into(),
+            language,
+            limit: None,
+            offset: None,
+        }
+    }
+
+    pub fn suggest_items<S: Into<String>>(q: S, language: Language) -> Self {
+        Self {
+            entity_type: EntityType::Item,
+            kind: SearchKind::Suggest,
+            q: q.into(),
+            language,
+            limit: None,
+            offset: None,
+        }
+    }
+
+    pub fn suggest_properties<S: Into<String>>(q: S, language: Language) -> Self {
+        Self {
+            entity_type: EntityType::Property,
+            kind: SearchKind::Suggest,
             q: q.into(),
             language,
             limit: None,
@@ -155,7 +195,11 @@ impl Search {
     }
 
     fn get_my_rest_api_path(&self) -> String {
-        format!("/search/{group}", group = self.entity_type.group_name())
+        format!(
+            "/{prefix}/{group}",
+            prefix = self.kind.path_prefix(),
+            group = self.entity_type.group_name()
+        )
     }
 
     async fn filter_response_error(
@@ -176,13 +220,22 @@ mod tests {
 
     #[test]
     fn test_get_my_rest_api_path() {
+        let en = Language::try_new("en").unwrap();
         assert_eq!(
-            Search::items("foo", Language::try_new("en").unwrap()).get_my_rest_api_path(),
+            Search::items("foo", en.clone()).get_my_rest_api_path(),
             "/search/items"
         );
         assert_eq!(
-            Search::properties("foo", Language::try_new("en").unwrap()).get_my_rest_api_path(),
+            Search::properties("foo", en.clone()).get_my_rest_api_path(),
             "/search/properties"
+        );
+        assert_eq!(
+            Search::suggest_items("foo", en.clone()).get_my_rest_api_path(),
+            "/suggest/items"
+        );
+        assert_eq!(
+            Search::suggest_properties("foo", en).get_my_rest_api_path(),
+            "/suggest/properties"
         );
     }
 
