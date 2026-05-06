@@ -64,6 +64,17 @@ pub trait FromJson: Sized {
     fn from_json(j: &Value) -> Result<Self, RestApiError> {
         Self::from_json_header_info(j, HeaderInfo::default())
     }
+
+    fn from_json_or_default(j: &Value) -> Result<Self, RestApiError>
+    where
+        Self: Default,
+    {
+        if j.is_null() {
+            Ok(Self::default())
+        } else {
+            Self::from_json(j)
+        }
+    }
 }
 
 #[cfg(test)]

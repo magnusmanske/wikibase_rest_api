@@ -52,26 +52,10 @@ impl Entity for Property {
         Ok(Self {
             id: EntityId::property(id),
             data_type,
-            labels: if j["labels"].is_null() {
-                Labels::default()
-            } else {
-                Labels::from_json(&j["labels"])?
-            },
-            descriptions: if j["descriptions"].is_null() {
-                Descriptions::default()
-            } else {
-                Descriptions::from_json(&j["descriptions"])?
-            },
-            aliases: if j["aliases"].is_null() {
-                Aliases::default()
-            } else {
-                Aliases::from_json(&j["aliases"])?
-            },
-            statements: if j["statements"].is_null() {
-                Statements::default()
-            } else {
-                Statements::from_json(&j["statements"])?
-            },
+            labels: Labels::from_json_or_default(&j["labels"])?,
+            descriptions: Descriptions::from_json_or_default(&j["descriptions"])?,
+            aliases: Aliases::from_json_or_default(&j["aliases"])?,
+            statements: Statements::from_json_or_default(&j["statements"])?,
             header_info,
         })
     }

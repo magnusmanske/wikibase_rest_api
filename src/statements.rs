@@ -21,6 +21,15 @@ impl Statements {
         Self::from_json_header_info(j, HeaderInfo::default())
     }
 
+    /// Creates a new `Statements` object from a JSON structure, returning a default if null
+    pub fn from_json_or_default(j: &Value) -> Result<Self, RestApiError> {
+        if j.is_null() {
+            Ok(Self::default())
+        } else {
+            Self::from_json(j)
+        }
+    }
+
     /// Creates a new `Statements` object from a JSON structure with header info
     pub fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
         let mut ret = Self::default();

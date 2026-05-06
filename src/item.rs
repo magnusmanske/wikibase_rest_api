@@ -51,31 +51,11 @@ impl Entity for Item {
             .to_string();
         Ok(Self {
             id: EntityId::Item(id),
-            labels: if j["labels"].is_null() {
-                Labels::default()
-            } else {
-                Labels::from_json(&j["labels"])?
-            },
-            descriptions: if j["descriptions"].is_null() {
-                Descriptions::default()
-            } else {
-                Descriptions::from_json(&j["descriptions"])?
-            },
-            aliases: if j["aliases"].is_null() {
-                Aliases::default()
-            } else {
-                Aliases::from_json(&j["aliases"])?
-            },
-            sitelinks: if j["sitelinks"].is_null() {
-                Sitelinks::default()
-            } else {
-                Sitelinks::from_json(&j["sitelinks"])?
-            },
-            statements: if j["statements"].is_null() {
-                Statements::default()
-            } else {
-                Statements::from_json(&j["statements"])?
-            },
+            labels: Labels::from_json_or_default(&j["labels"])?,
+            descriptions: Descriptions::from_json_or_default(&j["descriptions"])?,
+            aliases: Aliases::from_json_or_default(&j["aliases"])?,
+            sitelinks: Sitelinks::from_json_or_default(&j["sitelinks"])?,
+            statements: Statements::from_json_or_default(&j["statements"])?,
             header_info,
         })
     }
