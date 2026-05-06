@@ -13,6 +13,21 @@ pub struct RevisionMatch {
 }
 
 impl RevisionMatch {
+    fn etag(revision: u64) -> String {
+        format!("\"{revision}\"")
+    }
+
+    fn build_etag_header(revisions: &[u64], raw: &[String]) -> Option<String> {
+        let mut parts: Vec<String> = revisions.iter().map(|r| Self::etag(*r)).collect();
+        parts.extend_from_slice(raw);
+        if parts.is_empty() {
+            None
+        } else {
+            Some(parts.join(", "))
+        }
+    }
+
+
     pub fn modify_headers(&self, headers: &mut HeaderMap) -> Result<(), RestApiError> {
         if let Some(date) = self.modified_since_date {
             let hv = HeaderValue::from_str(&httpdate::fmt_http_date(date))?;
@@ -22,7 +37,16 @@ impl RevisionMatch {
             let hv = HeaderValue::from_str(&httpdate::fmt_http_date(date))?;
             headers.insert("If-Unmodified-Since", hv);
         }
-        // TODO FIXME complete
+        if let Some(value) =
+            Self::build_etag_header(&self.unmodified_since_revisions, &self.if_match)
+        {
+            headers.insert("If-Match", HeaderValue::from_str(&value)?);
+        }
+        if let Some(value) =
+            Self::build_etag_header(&self.modified_since_revisions, &self.if_none_match)
+        {
+            headers.insert("If-None-Match", HeaderValue::from_str(&value)?);
+        }
         Ok(())
     }
 
@@ -115,6 +139,59 @@ mod tests {
         assert_eq!(
             revision_match.if_none_match(),
             &["3".to_string(), "4".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_modify_headers_if_match() {
+        let mut rm = RevisionMatch::default();
+        rm.set_unmodified_since_revisions(vec![12345, 67890]);
+        rm.set_if_match(vec![r#""extra""#.to_string()]);
+
+        let mut headers = HeaderMap::new();
+        rm.modify_headers(&mut headers).unwrap();
+
+        let if_match = headers.get("If-Match").unwrap().to_str().unwrap();
+        assert!(if_match.contains(r#""12345""#));
+        assert!(if_match.contains(r#""67890""#));
+        assert!(if_match.contains(r#""extra""#));
+        assert!(headers.get("If-None-Match").is_none());
+    }
+
+    #[test]
+    fn test_modify_headers_if_none_match() {
+        let mut rm = RevisionMatch::default();
+        rm.set_modified_since_revisions(vec![99999]);
+
+        let mut headers = HeaderMap::new();
+        rm.modify_headers(&mut headers).unwrap();
+
+        let if_none_match = headers.get("If-None-Match").unwrap().to_str().unwrap();
+        assert!(if_none_match.contains(r#""99999""#));
+        assert!(headers.get("If-Match").is_none());
+    }
+
+    #[test]
+    fn test_modify_headers_empty() {
+        let rm = RevisionMatch::default();
+        let mut headers = HeaderMap::new();
+        rm.modify_headers(&mut headers).unwrap();
+        assert!(headers.get("If-Match").is_none());
+        assert!(headers.get("If-None-Match").is_none());
+        assert!(headers.get("If-Modified-Since").is_none());
+        assert!(headers.get("If-Unmodified-Since").is_none());
+    }
+
+    #[test]
+    fn test_build_etag_header() {
+        assert_eq!(RevisionMatch::build_etag_header(&[], &[]), None);
+        assert_eq!(
+            RevisionMatch::build_etag_header(&[123], &[]),
+            Some(r#""123""#.to_string())
+        );
+        assert_eq!(
+            RevisionMatch::build_etag_header(&[123, 456], &[r#""abc""#.to_string()]),
+            Some(r#""123", "456", "abc""#.to_string())
         );
     }
 }
