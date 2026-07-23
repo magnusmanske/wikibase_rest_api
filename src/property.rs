@@ -184,17 +184,17 @@ impl Property {
 
     /// Generates a patch to transform `other` into `self`
     pub fn patch(&self, other: &Self) -> Result<EntityPatch, RestApiError> {
-        let labels_patch = self.labels.patch(other.labels())?;
-        let descriptions_patch = self.descriptions.patch(other.descriptions())?;
-        let aliases_patch = self.aliases.patch(other.aliases())?;
-        let statements_patch = self.statements.patch(other.statements())?;
+        let mut labels_patch = self.labels.patch(other.labels())?;
+        let mut descriptions_patch = self.descriptions.patch(other.descriptions())?;
+        let mut aliases_patch = self.aliases.patch(other.aliases())?;
+        let mut statements_patch = self.statements.patch(other.statements())?;
 
+        // Drain each sub-patch into the combined patch instead of cloning its entries.
         let mut ret = EntityPatch::property();
-        ret.patch_mut().extend(labels_patch.patch().to_owned());
-        ret.patch_mut()
-            .extend(descriptions_patch.patch().to_owned());
-        ret.patch_mut().extend(aliases_patch.patch().to_owned());
-        ret.patch_mut().extend(statements_patch.patch().to_owned());
+        ret.patch_mut().append(labels_patch.patch_mut());
+        ret.patch_mut().append(descriptions_patch.patch_mut());
+        ret.patch_mut().append(aliases_patch.patch_mut());
+        ret.patch_mut().append(statements_patch.patch_mut());
 
         Ok(ret)
     }

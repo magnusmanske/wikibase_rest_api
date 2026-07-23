@@ -84,7 +84,7 @@ impl RestApi {
         &self,
         request: reqwest::Request,
     ) -> Result<reqwest::Response, RestApiError> {
-        self.token.write().await.check(self, &request).await?;
+        self.ensure_token_fresh(request.method()).await?;
 
         for attempt in 0..=self.max_retries {
             // Clone for a possible retry. If the body isn't cloneable (e.g. a stream),
@@ -114,6 +114,20 @@ impl RestApi {
         Err(RestApiError::EmptyValue(
             "all retry attempts exhausted".into(),
         ))
+    }
+
+    /// Renews the bearer token if the request requires it. Uses a read lock for the common
+    /// case (GETs, or a token that is still fresh) and only escalates to a write lock — with a
+    /// re-check — when a renewal is actually due, so concurrent requests don't serialize.
+    async fn ensure_token_fresh(&self, method: &reqwest::Method) -> Result<(), RestApiError> {
+        if !self.token.read().await.needs_renewal(method) {
+            return Ok(());
+        }
+        let mut token = self.token.write().await;
+        if token.needs_renewal(method) {
+            token.renew_access_token(self).await?;
+        }
+        Ok(())
     }
 
     /// Calculates the delay before retrying. Honors `Retry-After` (both delta-seconds and
@@ -279,12 +293,14 @@ impl RestApi {
         method: reqwest::Method,
     ) -> Result<reqwest::RequestBuilder, RestApiError> {
         let url = format!("{}{}", self.api_url, path.into());
+        // Only GET carries query params; non-GET bodies are set by the caller via body_mut(),
+        // so attaching an (always empty) form body here would just be overwritten.
         Ok(match method {
             reqwest::Method::GET => self.client.get(url).headers(headers).query(&params),
-            reqwest::Method::POST => self.client.post(url).headers(headers).form(&params),
-            reqwest::Method::PATCH => self.client.patch(url).headers(headers).form(&params),
-            reqwest::Method::PUT => self.client.put(url).headers(headers).form(&params),
-            reqwest::Method::DELETE => self.client.delete(url).headers(headers).form(&params),
+            reqwest::Method::POST => self.client.post(url).headers(headers),
+            reqwest::Method::PATCH => self.client.patch(url).headers(headers),
+            reqwest::Method::PUT => self.client.put(url).headers(headers),
+            reqwest::Method::DELETE => self.client.delete(url).headers(headers),
             _ => return Err(RestApiError::UnsupportedMethod(method)),
         })
     }

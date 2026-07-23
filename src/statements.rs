@@ -69,16 +69,16 @@ impl Statements {
     }
 
     /// Returns the Statements for a specific property
-    pub fn property<S: Into<String>>(&self, property: S) -> Vec<&Statement> {
+    pub fn property<S: AsRef<str>>(&self, property: S) -> Vec<&Statement> {
         self.statements
-            .get(&property.into())
+            .get(property.as_ref())
             .map_or_else(Vec::new, |v| v.iter().collect())
     }
 
     /// Returns the mutable Statements for a specific property
-    pub fn property_mut<S: Into<String>>(&mut self, property: S) -> Vec<&mut Statement> {
+    pub fn property_mut<S: AsRef<str>>(&mut self, property: S) -> Vec<&mut Statement> {
         self.statements
-            .get_mut(&property.into())
+            .get_mut(property.as_ref())
             .map_or_else(Vec::new, |v| v.iter_mut().collect())
     }
 

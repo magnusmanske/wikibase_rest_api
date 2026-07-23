@@ -151,14 +151,18 @@ impl BearerToken {
 
     /// Checks if the bearer token needs to be updated, and updates it if necessary
     pub async fn check(&mut self, api: &RestApi, request: &Request) -> Result<(), RestApiError> {
-        let method = request.method();
-        if method == reqwest::Method::GET {
-            return Ok(());
-        }
-        if self.can_update_access_token() {
+        if self.needs_renewal(request.method()) {
             self.renew_access_token(api).await?;
         }
         Ok(())
+    }
+
+    /// Returns `true` if a request with this method requires an up-front token renewal.
+    /// Read-only, so the hot path (GETs and fresh tokens) needs only a read lock.
+    pub(crate) fn needs_renewal(&self, method: &reqwest::Method) -> bool {
+        *method != reqwest::Method::GET
+            && self.can_update_access_token()
+            && self.does_access_token_need_updating()
     }
 
     /// Sets the `OAuth2` bearer token (owner-only clients are supported)
