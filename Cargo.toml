@@ -20,7 +20,7 @@ unwrap_used = "deny"
 
 [dependencies]
 httpdate = "1"
-derive-where = "1.5"
+derive-where = "1.6"
 futures = "0.3"
 json-patch = "4"
 reqwest = { version = "0.12", features = ["json"] }
@@ -30,7 +30,7 @@ tokio = { version = "1", features = ["sync", "time"] }
 uuid = { version = "1", features = ["v4"] }
 thiserror = "2"
 regex = "1"
-nutype = { version = "0.6", features = ["regex"] }
+nutype = { version = "0.7", features = ["regex"] }
 
 [dev-dependencies]
 wiremock = "0.6"
