@@ -20,7 +20,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-wikibase_rest_api = "0.1"
+wikibase_rest_api = "0.2"
 ```
 
 Or install via cargo:
