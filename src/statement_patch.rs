@@ -152,6 +152,31 @@ mod tests {
     }
 
     #[test]
+    fn test_from_json() {
+        let statement_id = "Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9";
+        let j = json!([{"op": "replace", "path": "/value/content", "value": "Q6"}]);
+        let patch = StatementPatch::from_json(statement_id, &j).unwrap();
+        assert_eq!(
+            patch.patch(),
+            &[PatchEntry::new("replace", "/value/content", json!("Q6"))]
+        );
+        assert_eq!(
+            patch.get_my_rest_api_path(&EntityId::None).unwrap(),
+            format!("/statements/{statement_id}")
+        );
+    }
+
+    #[test]
+    fn test_from_json_not_an_array() {
+        let j = json!({"op": "replace"});
+        let err = StatementPatch::from_json("Q42$X", &j).unwrap_err();
+        assert!(matches!(
+            err,
+            RestApiError::WrongType { field, .. } if field == "StatementPatch"
+        ));
+    }
+
+    #[test]
     fn test_get_rest_api_path() {
         let patch = StatementPatch::new("Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9");
         assert_eq!(

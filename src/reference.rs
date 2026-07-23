@@ -125,6 +125,22 @@ mod tests {
     }
 
     #[test]
+    fn test_serialize() {
+        // Covers the custom Serialize impl (hash + parts fields).
+        let reference = Reference {
+            parts: vec![PropertyValue::new(
+                PropertyType::new("P123", None),
+                StatementValue::new_string("test"),
+            )],
+            hash: "the-hash".to_string(),
+        };
+        let j = serde_json::to_value(&reference).unwrap();
+        assert_eq!(j["hash"], "the-hash");
+        assert!(j["parts"].is_array());
+        assert_eq!(j["parts"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
     fn test_hash() {
         let reference = Reference {
             parts: vec![PropertyValue::new(

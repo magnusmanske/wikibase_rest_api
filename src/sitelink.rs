@@ -279,6 +279,73 @@ mod tests {
         assert_eq!(new_sitelink.title(), sitelink.title());
     }
 
+    #[test]
+    fn test_sitelink_from_json() {
+        let j = json!({
+            "title": "Douglas Adams",
+            "badges": ["Q17437796"],
+            "url": "https://en.wikipedia.org/wiki/Douglas_Adams"
+        });
+        let sitelink = Sitelink::from_json("enwiki", &j).unwrap();
+        assert_eq!(sitelink.wiki(), "enwiki");
+        assert_eq!(sitelink.title(), "Douglas Adams");
+        assert_eq!(sitelink.badges(), &vec!["Q17437796".to_string()]);
+        assert_eq!(
+            sitelink.url(),
+            Some("https://en.wikipedia.org/wiki/Douglas_Adams")
+        );
+    }
+
+    #[test]
+    fn test_sitelink_serialize() {
+        // With a URL present, all three fields are serialized.
+        let sitelink = Sitelink::new_complete(
+            "enwiki".to_string(),
+            "Foo".to_string(),
+            vec!["Q17437796".to_string()],
+            Some("https://en.wikipedia.org/wiki/Foo".to_string()),
+        );
+        let v: Value = serde_json::to_value(&sitelink).unwrap();
+        assert_eq!(v["title"], json!("Foo"));
+        assert_eq!(v["badges"], json!(["Q17437796"]));
+        assert_eq!(v["url"], json!("https://en.wikipedia.org/wiki/Foo"));
+
+        // Without a URL, only title and badges are serialized.
+        let sitelink_no_url = Sitelink::new("enwiki", "Foo");
+        let v_no_url: Value = serde_json::to_value(&sitelink_no_url).unwrap();
+        assert_eq!(v_no_url["title"], json!("Foo"));
+        assert_eq!(v_no_url["badges"], json!([]));
+        assert!(v_no_url.get("url").is_none());
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_sitelink_delete_unexpected_response() {
+        let id = "Q42";
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/sitelinks/enwiki");
+        let mock_server = MockServer::start().await;
+        let token = "FAKE_TOKEN";
+        Mock::given(method("DELETE"))
+            .and(path(&mock_path))
+            .and(bearer_token(token))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!("something else")))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .with_access_token(token)
+            .build()
+            .unwrap();
+
+        let id = EntityId::item(id);
+        let sitelink = Sitelink::new("enwiki", "doesn't matter");
+        // An unexpected response body must surface as UnexpectedResponse.
+        match sitelink.delete(&id, &api).await.unwrap_err() {
+            RestApiError::UnexpectedResponse(j) => assert_eq!(j, json!("something else")),
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn test_sitelink_delete() {

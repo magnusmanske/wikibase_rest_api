@@ -6,7 +6,7 @@
 [![CI](https://github.com/magnusmanske/wikibase_rest_api/actions/workflows/rust.yml/badge.svg)](https://github.com/magnusmanske/wikibase_rest_api/actions/workflows/rust.yml)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10599/badge)](https://www.bestpractices.dev/projects/10599)
 AvgCCN 1.6
-[![Coverage](https://img.shields.io/badge/coverage-86.78%25-green?style=flat-square)](README.md)
+[![Coverage](https://img.shields.io/badge/coverage-95.31%25-brightgreen?style=flat-square)](README.md)
 
 # wikibase_rest_api
 

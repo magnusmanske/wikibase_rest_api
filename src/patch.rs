@@ -80,8 +80,56 @@ pub trait FromJson: Sized {
 #[cfg(test)]
 mod tests {
     use crate::aliases_patch::AliasesPatch;
+    use crate::patch_entry::PatchEntry;
+    use crate::Sitelinks;
 
     use super::*;
+
+    // A minimal patch type that relies on the *default* `apply`/`apply_match`.
+    #[derive(Default)]
+    struct DummyPatch {
+        patch: Vec<PatchEntry>,
+    }
+
+    impl Patch for DummyPatch {
+        fn patch(&self) -> &Vec<PatchEntry> {
+            &self.patch
+        }
+        fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
+            &mut self.patch
+        }
+    }
+
+    impl HttpMisc for DummyPatch {
+        fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+            Ok(format!("/entities/{}/{id}/sitelinks", id.group()?))
+        }
+    }
+
+    impl PatchApply<Sitelinks> for DummyPatch {}
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_default_apply() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("PATCH"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q1/sitelinks"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({})))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let patch = DummyPatch::default();
+        // Exercises the default `apply` -> default `apply_match` path.
+        let sitelinks = patch.apply(&EntityId::item("Q1"), &api).await.unwrap();
+        assert!(sitelinks.sitelinks().is_empty());
+    }
 
     #[test]
     fn test_add() {

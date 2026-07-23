@@ -156,4 +156,86 @@ mod tests {
             .push(PatchEntry::new("add", "/enwiki/title", json!("foo")));
         assert!(!patch.is_empty());
     }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_apply_item() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
+        let v: serde_json::Value = serde_json::from_str(&v).unwrap();
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("PATCH"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q42/item"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&v))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let mut patch = EntityPatch::item();
+        patch
+            .patch_mut()
+            .push(PatchEntry::new("add", "/labels/de", json!("Test")));
+
+        // apply_item -> apply_match_item (default EditMetadata).
+        let item = patch
+            .apply_item(&EntityId::item("Q42"), &api)
+            .await
+            .unwrap();
+        assert_eq!(item.id(), &EntityId::item("Q42"));
+
+        // apply_match_item directly, with explicit metadata.
+        let item2 = patch
+            .apply_match_item(&EntityId::item("Q42"), &api, EditMetadata::default())
+            .await
+            .unwrap();
+        assert_eq!(item2.id(), &EntityId::item("Q42"));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_apply_property() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let v = std::fs::read_to_string("test_data/P214.json").unwrap();
+        let v: serde_json::Value = serde_json::from_str(&v).unwrap();
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("PATCH"))
+            .and(path(
+                "/w/rest.php/wikibase/v1/entities/properties/P214/property",
+            ))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&v))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let mut patch = EntityPatch::property();
+        patch
+            .patch_mut()
+            .push(PatchEntry::new("add", "/labels/de", json!("Test")));
+
+        // apply_property -> apply_match_property (default EditMetadata).
+        let property = patch
+            .apply_property(&EntityId::property("P214"), &api)
+            .await
+            .unwrap();
+        assert_eq!(property.id(), &EntityId::property("P214"));
+
+        // apply_match_property directly, with explicit metadata.
+        let property2 = patch
+            .apply_match_property(&EntityId::property("P214"), &api, EditMetadata::default())
+            .await
+            .unwrap();
+        assert_eq!(property2.id(), &EntityId::property("P214"));
+    }
 }

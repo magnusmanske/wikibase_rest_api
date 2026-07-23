@@ -515,6 +515,103 @@ mod tests {
         assert!((0.0..1.0).contains(&f));
     }
 
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn test_wikidata() {
+        let api = RestApi::wikidata().unwrap();
+        assert_eq!(api.api_url(), "https://www.wikidata.org/w/rest.php");
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn test_max_retry_after_getter() {
+        let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .with_max_retry_after(Duration::from_secs(30))
+            .build()
+            .unwrap();
+        assert_eq!(api.max_retry_after(), Duration::from_secs(30));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_wikibase_request_builder_unsupported_method() {
+        // HEAD falls through to the `_` arm in both matches and yields UnsupportedMethod.
+        let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .build()
+            .unwrap();
+        let err = api
+            .wikibase_request_builder("/x", HashMap::new(), reqwest::Method::HEAD)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RestApiError::UnsupportedMethod(_)));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_headers_from_token_with_access_token() {
+        // Covers the `Some(access_token)` branch that inserts the Authorization header.
+        let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .with_access_token("TOK")
+            .build()
+            .unwrap();
+        let token = api.token.read().await;
+        let headers = api.headers_from_token(&token).await.unwrap();
+        assert_eq!(
+            headers
+                .get(reqwest::header::AUTHORIZATION)
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "Bearer TOK"
+        );
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_execute_renews_token() {
+        // A non-GET request with OAuth2 info triggers ensure_token_fresh's renewal path.
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/w/rest.php/oauth2/access_token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "access_token": "renewed_access",
+                "refresh_token": "renewed_refresh",
+                "expires_in": 3600,
+            })))
+            .mount(&mock_server)
+            .await;
+        Mock::given(method("PUT"))
+            .and(path("/w/rest.php/wikibase/v1/x"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+        {
+            let mut token = api.token.write().await;
+            token.set_oauth2_info("id", "secret");
+            token.set_tokens(None, Some("refresh".to_string()));
+        }
+
+        let request = api
+            .wikibase_request_builder("/x", HashMap::new(), reqwest::Method::PUT)
+            .await
+            .unwrap()
+            .build()
+            .unwrap();
+        let response = api.execute(request).await.unwrap();
+        assert!(response.status().is_success());
+        assert_eq!(
+            api.token.read().await.get(),
+            &Some("renewed_access".to_string())
+        );
+    }
+
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn test_retry_exhausted() {

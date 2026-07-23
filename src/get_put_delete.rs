@@ -198,6 +198,94 @@ mod tests {
     use crate::Sitelinks;
 
     use super::*;
+    use wiremock::matchers::{method as wm_method, path as wm_path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    // A type relying entirely on the default `HttpMisc` methods.
+    struct NoPath;
+    impl HttpMisc for NoPath {}
+
+    #[test]
+    fn test_get_rest_api_path_default_errors() {
+        let id = EntityId::item("Q1");
+        assert!(matches!(
+            NoPath::get_rest_api_path(&id),
+            Err(RestApiError::PathNotImplemented(_))
+        ));
+        // The default `get_my_rest_api_path` delegates to `get_rest_api_path`.
+        assert!(NoPath.get_my_rest_api_path(&id).is_err());
+    }
+
+    #[test]
+    fn test_add_metadata_to_json_with_comment() {
+        let mut em = EditMetadata::default();
+        em.set_comment(Some("a comment".to_string()));
+        em.set_bot(true);
+        em.set_tags(vec!["tag1".to_string()]);
+        let mut j = json!({});
+        Sitelinks::add_metadata_to_json(&mut j, &em);
+        assert_eq!(j["comment"], "a comment");
+        assert_eq!(j["bot"], true);
+        assert_eq!(j["tags"], json!(["tag1"]));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_get_match_internal() {
+        // Exercises get_match_internal -> api_execute -> parse_response (success path).
+        let mock_server = MockServer::start().await;
+        Mock::given(wm_method("GET"))
+            .and(wm_path(
+                "/w/rest.php/wikibase/v1/entities/items/Q1/sitelinks",
+            ))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({"enwiki": {}})))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let (j, _header_info) = Sitelinks::get_match_internal(
+            &api,
+            "/entities/items/Q1/sitelinks",
+            RevisionMatch::default(),
+        )
+        .await
+        .unwrap();
+        assert!(j.is_object());
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_run_json_query() {
+        // Exercises run_json_query -> generate_json_request (PUT branch) -> filter_response_error.
+        let mock_server = MockServer::start().await;
+        Mock::given(wm_method("PUT"))
+            .and(wm_path(
+                "/w/rest.php/wikibase/v1/entities/items/Q1/sitelinks",
+            ))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({})))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let sl = Sitelinks::default();
+        let (j, _header_info) = sl
+            .run_json_query(
+                &EntityId::item("Q1"),
+                reqwest::Method::PUT,
+                json!({}),
+                &api,
+                &EditMetadata::default(),
+            )
+            .await
+            .unwrap();
+        assert!(j.is_object());
+    }
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]

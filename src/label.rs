@@ -126,4 +126,82 @@ mod tests {
         assert_eq!(label.language(), "en");
         assert_eq!(label.value(), "Foo bar");
     }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_label_get_non_string() {
+        // A non-string GET response body must surface as MissingOrInvalidField.
+        let id = "Q42";
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels/en");
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(&mock_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!(123)))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let id = EntityId::item(id);
+        match Label::get(&id, "en", &api).await.unwrap_err() {
+            RestApiError::MissingOrInvalidField { field, .. } => assert_eq!(field, "Label"),
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_label_get_with_fallback_non_string() {
+        // A non-string fallback GET response body must surface as MissingOrInvalidField.
+        let id = "Q42";
+        let mock_path =
+            format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels_with_language_fallback/en");
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(&mock_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!(123)))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let id = EntityId::item(id);
+        match Label::get_with_fallback(&id, "en", &api).await.unwrap_err() {
+            RestApiError::MissingOrInvalidField { field, .. } => assert_eq!(field, "Label"),
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_label_put_non_string() {
+        // A non-string PUT response body must surface as MissingOrInvalidField.
+        let label = "Foo bar";
+        let id = "Q42";
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels/en");
+        let mock_server = MockServer::start().await;
+        let token = "FAKE_TOKEN";
+        Mock::given(method("PUT"))
+            .and(path(&mock_path))
+            .and(bearer_token(token))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!(123)))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .with_access_token(token)
+            .build()
+            .unwrap();
+
+        let id = EntityId::item(id);
+        let new_label = Label::new("en", label);
+        match new_label.put(&id, &api).await.unwrap_err() {
+            RestApiError::MissingOrInvalidField { field, .. } => assert_eq!(field, "Label"),
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
 }

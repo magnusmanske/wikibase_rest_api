@@ -248,4 +248,58 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn test_from_json_not_array() {
+        // A patch source must be a JSON array.
+        let err = LanguageStringsPatch::from_json(&json!(123)).unwrap_err();
+        match err {
+            RestApiError::MissingOrInvalidField { field, .. } => {
+                assert_eq!(field, "LanguageStringsPatch");
+            }
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_descriptions_patch_apply() {
+        let id = "Q42";
+        let new_desc = "Foo Bar";
+        let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
+        let v: Value = serde_json::from_str(&v).unwrap();
+        let mut new_descriptions = v["descriptions"].clone();
+        new_descriptions["en"] = json!(new_desc);
+
+        let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/descriptions");
+        let mock_server = MockServer::start().await;
+        let token = "FAKE_TOKEN";
+        Mock::given(body_partial_json(
+            json!({"patch":[{"op": "replace","path": "/en","value": new_desc}]}),
+        ))
+        .and(method("PATCH"))
+        .and(path(&mock_path))
+        .and(bearer_token(token))
+        .and(header("content-type", "application/json-patch+json"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("ETag", "12345")
+                .set_body_json(new_descriptions),
+        )
+        .mount(&mock_server)
+        .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .with_access_token(token)
+            .build()
+            .unwrap();
+
+        let id = EntityId::new(id).unwrap();
+        let mut patch = LanguageStringsPatch::descriptions();
+        patch.replace("en", new_desc);
+        let ls: Descriptions = PatchApply::<Descriptions>::apply(&patch, &id, &api)
+            .await
+            .unwrap();
+        assert_eq!(ls.get_lang("en").unwrap(), new_desc);
+    }
 }

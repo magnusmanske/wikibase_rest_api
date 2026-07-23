@@ -494,4 +494,96 @@ mod tests {
         assert_eq!(params.get("client_secret").unwrap(), "test_secret");
         assert_eq!(params.get("refresh_token").unwrap(), "test_refresh");
     }
+
+    #[test]
+    fn test_generate_get_access_token_parameters_missing_secret() {
+        // client_id present but client_secret missing -> ClientSecretRequired.
+        let token = BearerToken {
+            client_id: Some("id".to_string()),
+            ..Default::default()
+        };
+        assert!(matches!(
+            token.generate_get_access_token_parameters("code"),
+            Err(RestApiError::ClientSecretRequired)
+        ));
+    }
+
+    #[test]
+    fn test_get_renew_access_token_parameters_missing_secret() {
+        let token = BearerToken {
+            client_id: Some("id".to_string()),
+            ..Default::default()
+        };
+        assert!(matches!(
+            token.get_renew_access_token_parameters(),
+            Err(RestApiError::ClientSecretRequired)
+        ));
+    }
+
+    #[test]
+    fn test_get_renew_access_token_parameters_missing_refresh() {
+        // client_id + client_secret present, but no refresh token -> RefreshTokenRequired.
+        let mut token = BearerToken::default();
+        token.set_oauth2_info("id", "secret");
+        assert!(matches!(
+            token.get_renew_access_token_parameters(),
+            Err(RestApiError::RefreshTokenRequired)
+        ));
+    }
+
+    #[test]
+    fn test_set_tokens_from_json_missing_refresh() {
+        // access_token present but refresh_token missing -> RefreshTokenRequired.
+        let mut token = BearerToken::default();
+        let j = serde_json::json!({"access_token": "foo"});
+        assert!(matches!(
+            token.set_tokens_from_json(j),
+            Err(RestApiError::RefreshTokenRequired)
+        ));
+    }
+
+    #[test]
+    fn test_needs_renewal() {
+        let mut token = BearerToken::default();
+        // No OAuth2 info: never needs renewal.
+        assert!(!token.needs_renewal(&reqwest::Method::POST));
+        token.set_oauth2_info("id", "secret");
+        // GET is always read-only, so no renewal.
+        assert!(!token.needs_renewal(&reqwest::Method::GET));
+        // A non-GET with OAuth2 info and no prior update needs a renewal.
+        assert!(token.needs_renewal(&reqwest::Method::POST));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_check_renews() {
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/w/rest.php/oauth2/access_token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "access_token": "new_access",
+                "refresh_token": "new_refresh",
+                "expires_in": 3600,
+            })))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let mut token = BearerToken::default();
+        token.set_oauth2_info("id", "secret");
+        token.set_tokens(None, Some("refresh".to_string()));
+
+        // A GET request: needs_renewal is false, so check() is a no-op.
+        let get_req = Request::new(reqwest::Method::GET, api.api_url().parse().unwrap());
+        token.check(&api, &get_req).await.unwrap();
+        assert_eq!(token.get(), &None);
+
+        // A non-GET request triggers renewal via the mocked token endpoint.
+        let post_req = Request::new(reqwest::Method::POST, api.api_url().parse().unwrap());
+        token.check(&api, &post_req).await.unwrap();
+        assert_eq!(token.get(), &Some("new_access".to_string()));
+    }
 }

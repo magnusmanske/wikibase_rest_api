@@ -557,6 +557,40 @@ mod tests {
         assert!(report.failed()[0].1.is_rate_limited());
     }
 
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_load_single_kind_skips_empty_sweep() {
+        // Loading only a property leaves the item sweep with an empty id list (immediate
+        // break), and vice versa for loading only an item.
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q1"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(entity_json("Q1")))
+            .mount(&mock_server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/w/rest.php/wikibase/v1/entities/properties/P1"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(entity_json("P1")))
+            .mount(&mock_server)
+            .await;
+        let api = Arc::new(
+            RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+                .unwrap()
+                .build()
+                .unwrap(),
+        );
+
+        // Only a property: item sweep starts empty.
+        let ec = EntityContainer::builder().api(api.clone()).build().unwrap();
+        ec.load(&[EntityId::property("P1")]).await.unwrap();
+        assert!(ec.get_property("P1").await.is_some());
+
+        // Only an item: property sweep starts empty.
+        let ec2 = EntityContainer::builder().api(api).build().unwrap();
+        ec2.load(&[EntityId::item("Q1")]).await.unwrap();
+        assert!(ec2.get_item("Q1").await.is_some());
+    }
+
     #[test]
     #[cfg_attr(miri, ignore)] // TODO this should work in miri
     fn test_max_concurrent() {

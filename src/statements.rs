@@ -419,6 +419,47 @@ mod tests {
     }
 
     #[test]
+    fn test_from_json_not_an_object() {
+        let err = Statements::from_json(&json!([1, 2, 3])).unwrap_err();
+        assert!(matches!(
+            err,
+            RestApiError::MissingOrInvalidField { field, .. } if field == "Statements"
+        ));
+    }
+
+    #[test]
+    fn test_from_json_property_not_an_array() {
+        let err = Statements::from_json(&json!({"P31": "not an array"})).unwrap_err();
+        assert!(matches!(
+            err,
+            RestApiError::MissingOrInvalidField { field, .. } if field == "P31"
+        ));
+    }
+
+    #[test]
+    fn test_property_mut() {
+        let mut statements = Statements::default();
+        let mut statement = Statement::default();
+        statement.set_property("P31".into());
+        statement.set_value(StatementValue::new_string("Q1"));
+        statements.insert(statement);
+
+        // Unknown property returns an empty vector.
+        assert!(statements.property_mut("P999").is_empty());
+
+        // Known property returns mutable references we can edit in place.
+        {
+            let mut refs = statements.property_mut("P31");
+            assert_eq!(refs.len(), 1);
+            refs[0].set_value(StatementValue::new_string("Q2"));
+        }
+        assert_eq!(
+            statements.property("P31")[0].value(),
+            &StatementValue::new_string("Q2")
+        );
+    }
+
+    #[test]
     fn test_insert_and_len() {
         let mut statements = Statements::default();
         assert_eq!(statements.len(), 0);

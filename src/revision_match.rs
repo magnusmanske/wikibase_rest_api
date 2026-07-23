@@ -182,6 +182,32 @@ mod tests {
     }
 
     #[test]
+    fn test_modify_headers_dates() {
+        // Covers the If-Modified-Since / If-Unmodified-Since date branches.
+        let mut rm = RevisionMatch::default();
+        let modified = SystemTime::UNIX_EPOCH + Duration::from_secs(1609459200);
+        let unmodified = SystemTime::UNIX_EPOCH + Duration::from_secs(1609545600);
+        rm.set_modified_since_date(Some(modified));
+        rm.set_unmodified_since_date(Some(unmodified));
+
+        let mut headers = HeaderMap::new();
+        rm.modify_headers(&mut headers).unwrap();
+
+        assert_eq!(
+            headers.get("If-Modified-Since").unwrap().to_str().unwrap(),
+            httpdate::fmt_http_date(modified)
+        );
+        assert_eq!(
+            headers
+                .get("If-Unmodified-Since")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            httpdate::fmt_http_date(unmodified)
+        );
+    }
+
+    #[test]
     fn test_build_etag_header() {
         assert_eq!(RevisionMatch::build_etag_header(&[], &[]), None);
         assert_eq!(

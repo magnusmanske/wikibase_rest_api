@@ -222,6 +222,34 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
+    fn test_search_result_text_accessors() {
+        let t: SearchResultText =
+            serde_json::from_value(json!({"language": "en", "value": "potato"})).unwrap();
+        assert_eq!(t.language(), "en");
+        assert_eq!(t.value(), "potato");
+    }
+
+    #[test]
+    fn test_search_result_match_accessors() {
+        let m: SearchResultMatch =
+            serde_json::from_value(json!({"type": "label", "language": "de", "text": "Kartoffel"}))
+                .unwrap();
+        assert_eq!(m.match_type(), "label");
+        assert_eq!(m.language(), "de");
+        assert_eq!(m.text(), "Kartoffel");
+    }
+
+    #[test]
+    fn test_with_limit_and_offset() {
+        let en = Language::try_new("en").unwrap();
+        let search = Search::items("foo", en)
+            .with_limit(SearchLimit::try_new(10).unwrap())
+            .with_offset(20);
+        assert_eq!(search.limit, Some(SearchLimit::try_new(10).unwrap()));
+        assert_eq!(search.offset, Some(20));
+    }
+
+    #[test]
     fn test_get_my_rest_api_path() {
         let en = Language::try_new("en").unwrap();
         assert_eq!(

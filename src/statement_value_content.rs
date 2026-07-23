@@ -361,6 +361,37 @@ mod tests {
     }
 
     #[test]
+    fn test_from_u64_too_large() {
+        // Values above u8::MAX cannot be a TimePrecision.
+        let err = TimePrecision::try_from(u64::from(u8::MAX) + 1).unwrap_err();
+        assert_eq!(err, "Value too large for TimePrecision");
+    }
+
+    #[test]
+    fn test_from_json_invalid_precision() {
+        // A time value whose precision is out of range yields InvalidPrecision.
+        let j = json!({
+            "time": "+2021-01-01T00:00:00Z",
+            "precision": 99,
+            "calendarmodel": GREGORIAN_CALENDAR
+        });
+        let err = StatementValueContent::from_json(&j).unwrap_err();
+        assert!(matches!(err, RestApiError::InvalidPrecision));
+    }
+
+    #[test]
+    fn test_new_monolingual_text() {
+        let svc = StatementValueContent::new_monolingual_text("en", "foo");
+        assert_eq!(
+            svc,
+            StatementValueContent::MonolingualText {
+                language: "en".to_string(),
+                text: "foo".to_string(),
+            }
+        );
+    }
+
+    #[test]
     fn test_to_u64_conversion() {
         assert_eq!(u64::from(TimePrecision::BillionYears), 0);
         assert_eq!(u64::from(TimePrecision::HundredMillionYears), 1);

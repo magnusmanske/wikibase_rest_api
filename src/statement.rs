@@ -641,4 +641,117 @@ mod tests {
         statement.new_id_for_entity(&entity_id);
         assert_eq!(&statement.id().unwrap()[0..4], "Q42$");
     }
+
+    #[test]
+    fn test_new_external_id() {
+        let s = Statement::new_external_id("P214", "12345");
+        assert_eq!(s.property().datatype(), &Some(DataType::ExternalId));
+        assert_eq!(s.value(), &StatementValue::new_string("12345"));
+    }
+
+    #[test]
+    fn test_new_url() {
+        let s = Statement::new_url("P856", "https://example.org");
+        assert_eq!(s.property().datatype(), &Some(DataType::Url));
+        assert_eq!(
+            s.value(),
+            &StatementValue::new_string("https://example.org")
+        );
+    }
+
+    #[test]
+    fn test_new_monolingual_text() {
+        let s = Statement::new_monolingual_text("P1476", "en", "Hello");
+        assert_eq!(s.property().datatype(), &Some(DataType::MonolingualText));
+        assert_eq!(
+            s.value(),
+            &StatementValue::Value(StatementValueContent::new_monolingual_text("en", "Hello"))
+        );
+    }
+
+    #[test]
+    fn test_new_item() {
+        let s = Statement::new_item("P31", "Q42");
+        assert_eq!(s.property().datatype(), &Some(DataType::Item));
+        assert_eq!(s.value(), &StatementValue::new_string("Q42"));
+    }
+
+    #[test]
+    fn test_new_time() {
+        let s = Statement::new_time(
+            "P569",
+            "+2001-12-31T00:00:00Z",
+            TimePrecision::Day,
+            "http://www.wikidata.org/entity/Q1985727",
+        );
+        assert_eq!(s.property().datatype(), &Some(DataType::Time));
+        assert_eq!(
+            s.value(),
+            &StatementValue::Value(StatementValueContent::Time {
+                time: "+2001-12-31T00:00:00Z".to_string(),
+                precision: TimePrecision::Day,
+                calendarmodel: "http://www.wikidata.org/entity/Q1985727".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn test_new_file() {
+        let s = Statement::new_file("P18", "Example.jpg");
+        assert_eq!(s.property().datatype(), &Some(DataType::CommonsMedia));
+        assert_eq!(s.value(), &StatementValue::new_string("Example.jpg"));
+    }
+
+    #[test]
+    fn test_with_reference_and_references() {
+        let s = Statement::new_string("P31", "Q42")
+            .with_reference(Reference::default())
+            .with_references(vec![Reference::default(), Reference::default()]);
+        assert_eq!(s.references().len(), 3);
+    }
+
+    #[test]
+    fn test_with_qualifier_and_qualifiers() {
+        let qualifier = PropertyValue::new(
+            PropertyType::property("P580"),
+            StatementValue::new_string("Q42"),
+        );
+        let s = Statement::new_string("P31", "Q42")
+            .with_qualifier(qualifier.clone())
+            .with_qualifiers(vec![qualifier.clone(), qualifier]);
+        assert_eq!(s.qualifiers().len(), 3);
+    }
+
+    #[test]
+    fn test_as_property_value() {
+        let s = Statement::new_string("P31", "Q42");
+        let pv = s.as_property_value();
+        assert_eq!(
+            pv.property(),
+            &PropertyType::new("P31", Some(DataType::String))
+        );
+        assert_eq!(pv.value(), &StatementValue::new_string("Q42"));
+    }
+
+    #[test]
+    fn test_same_qualifiers_as() {
+        let qualifier = PropertyValue::new(
+            PropertyType::property("P580"),
+            StatementValue::new_string("Q42"),
+        );
+        let s1 = Statement::new_string("P31", "Q42").with_qualifier(qualifier.clone());
+        let s2 = Statement::new_string("P31", "Q42").with_qualifier(qualifier);
+        let s3 = Statement::new_string("P31", "Q42");
+        assert!(s1.same_qualifiers_as(&s2));
+        assert!(!s1.same_qualifiers_as(&s3));
+    }
+
+    #[test]
+    fn test_serialize_with_id() {
+        let mut s = Statement::new_string("P31", "Q42");
+        s.set_id(Some("Q42$abc".to_string()));
+        let v = json!(s);
+        assert_eq!(v["id"], "Q42$abc");
+        assert_eq!(v["property"]["id"], "P31");
+    }
 }

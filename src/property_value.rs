@@ -150,6 +150,17 @@ mod tests {
     }
 
     #[test]
+    fn test_property_value_serialize() {
+        let pt = PropertyType::new("P123", Some(DataType::String));
+        let value = StatementValueContent::String("Hello".to_string());
+        let pv = PropertyValue::new(pt, value.into());
+        let j = serde_json::to_value(&pv).unwrap();
+        assert_eq!(j["property"]["id"], "P123");
+        assert_eq!(j["property"]["data_type"], "string");
+        assert!(j["value"].is_object());
+    }
+
+    #[test]
     fn test_property_type_serialize() {
         let j = serde_json::json!({
             "id": "P123",

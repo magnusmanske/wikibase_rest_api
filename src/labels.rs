@@ -93,4 +93,42 @@ mod tests {
         assert!(s.contains(r#""en":"Foo""#));
         assert!(s.contains(r#""de":"Bar""#));
     }
+
+    #[test]
+    fn test_list() {
+        let mut l = Labels::default();
+        l.insert(LanguageString::new("en", "Foo"));
+        assert_eq!(l.list().get("en"), Some(&"Foo".to_string()));
+    }
+
+    #[test]
+    fn test_list_mut() {
+        let mut l = Labels::default();
+        l.insert(LanguageString::new("en", "Foo"));
+        l.list_mut().insert("de".to_string(), "Bar".to_string());
+        assert_eq!(l.get_lang("de"), Some("Bar"));
+    }
+
+    #[test]
+    fn test_from_json_not_object() {
+        // A non-object value must surface as WrongType.
+        let err = Labels::from_json(&json!(123)).unwrap_err();
+        match err {
+            RestApiError::WrongType { field, .. } => assert_eq!(field, "Labels"),
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
+    #[test]
+    fn test_from_json_value_not_string() {
+        // A non-string language value must surface as MissingOrInvalidField.
+        let err = Labels::from_json(&json!({"en": 123})).unwrap_err();
+        match err {
+            RestApiError::MissingOrInvalidField { field, j } => {
+                assert_eq!(field, "Labels");
+                assert_eq!(j, json!(123));
+            }
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
 }

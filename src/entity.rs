@@ -209,4 +209,80 @@ mod tests {
         assert_eq!(item.labels().get_lang("en"), Some("Douglas Adams"));
         assert!(item.statements().is_empty());
     }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_get_match() {
+        // Exercises the no-`_fields` request path and `get` -> `get_match`.
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q42"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "id": "Q42",
+                "labels": {"en": "Douglas Adams"},
+            })))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let item = Item::get(EntityId::item("Q42"), &api).await.unwrap();
+        assert_eq!(item.id(), &EntityId::item("Q42"));
+        assert_eq!(item.labels().get_lang("en"), Some("Douglas Adams"));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_post_with_type_success() {
+        // Exercises building the POST request body and parsing the created entity.
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "id": "Q123",
+                "labels": {"en": "test"},
+            })))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let item = Item::default();
+        let created = item.post_with_type(EntityType::Item, &api).await.unwrap();
+        assert_eq!(created.id(), &EntityId::item("Q123"));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_post_with_type_non_404_error() {
+        // A non-404 error response is surfaced as an `ApiError`, not `NotImplementedInRestApi`.
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items"))
+            .respond_with(ResponseTemplate::new(400).set_body_json(json!({
+                "code": "bad-request",
+                "message": "nope",
+            })))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let item = Item::default();
+        let err = item
+            .post_with_type(EntityType::Item, &api)
+            .await
+            .err()
+            .unwrap();
+        match err {
+            RestApiError::ApiError { status, .. } => assert_eq!(status, 400),
+            other => panic!("Wrong error type: {other:?}"),
+        }
+    }
 }

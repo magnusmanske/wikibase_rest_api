@@ -314,6 +314,33 @@ mod tests {
     }
 
     #[test]
+    fn test_new_field_defaults() {
+        // Covers the struct literal in `new()`: every optional field starts unset.
+        let builder = RestApiBuilder::new("https://www.wikidata.org/w/rest.php").unwrap();
+        assert!(builder.client.is_none());
+        assert!(builder.user_agent.is_none());
+        assert!(builder.api_version.is_none());
+        assert!(builder.renewal_interval.is_none());
+        assert!(builder.timeout.is_none());
+        assert!(builder.connect_timeout.is_none());
+        assert!(builder.max_retries.is_none());
+        assert!(builder.retry_base_delay.is_none());
+        assert!(builder.max_retry_after.is_none());
+        assert_eq!(builder.api_url, "https://www.wikidata.org/w/rest.php");
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn test_build_default_client() {
+        // Covers `build()` constructing a fresh client (the `None` branch, line 158).
+        let api = RestApiBuilder::new("https://www.wikidata.org/w/rest.php")
+            .unwrap()
+            .build()
+            .unwrap();
+        assert_eq!(api.api_url(), "https://www.wikidata.org/w/rest.php");
+    }
+
+    #[test]
     #[cfg_attr(miri, ignore)]
     fn test_with_retry_config() {
         let api = RestApi::builder("https://test.wikidata.org/w/rest.php")

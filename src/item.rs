@@ -425,6 +425,26 @@ mod tests {
     }
 
     #[test]
+    fn test_set_id() {
+        let mut item = Item::default();
+        assert!(item.id().is_none());
+        item.set_id(EntityId::item("Q42"));
+        assert_eq!(item.id(), &EntityId::item("Q42"));
+    }
+
+    #[test]
+    fn test_from_json_with_id_and_serialize() {
+        let v = json!({"id": "Q42", "labels": {"en": "Douglas Adams"}});
+        let item = Item::from_json(v).unwrap();
+        assert_eq!(item.id(), &EntityId::item("Q42"));
+        assert_eq!(item.labels().get_lang("en"), Some("Douglas Adams"));
+        // Serializing an item that has an ID emits the `id` field.
+        let j = serde_json::to_value(&item).unwrap();
+        assert_eq!(j["id"], "Q42");
+        assert_eq!(j["labels"]["en"], "Douglas Adams");
+    }
+
+    #[test]
     fn test_patch() {
         let mut item1 = Item::default();
         let mut item2 = Item::default();

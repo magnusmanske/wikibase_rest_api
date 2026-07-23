@@ -295,6 +295,30 @@ mod tests {
     }
 
     #[test]
+    fn test_statement_value_from_json_value() {
+        let j = json!({"type": "value", "content": "foo"});
+        let s = StatementValue::from_json(&j).unwrap();
+        assert_eq!(s, StatementValue::new_string("foo"));
+    }
+
+    #[test]
+    fn test_statement_value_from_json_missing_type() {
+        let j = json!({"content": "foo"});
+        let err = StatementValue::from_json(&j).unwrap_err();
+        assert!(matches!(
+            err,
+            RestApiError::MissingOrInvalidField { field, .. } if field == "type"
+        ));
+    }
+
+    #[test]
+    fn test_statement_value_from_json_unknown_type() {
+        let j = json!({"type": "bogus"});
+        let err = StatementValue::from_json(&j).unwrap_err();
+        assert!(matches!(err, RestApiError::UnknownValue(v) if v == "bogus"));
+    }
+
+    #[test]
     fn test_from_json_string() {
         let j = json!("foo");
         let s = StatementValueContent::from_json(&j).unwrap();

@@ -358,4 +358,17 @@ mod tests {
         let aliases2 = AliasesInLanguage::new("en", vec![]);
         assert!(aliases2.is_empty());
     }
+
+    #[test]
+    fn test_from_json_element_not_string() {
+        // An element in the aliases array must be a string.
+        let err = AliasesInLanguage::from_json("en", &json!([123])).unwrap_err();
+        match err {
+            RestApiError::MissingOrInvalidField { field, j } => {
+                assert_eq!(field, "Aliases");
+                assert_eq!(j, json!(123));
+            }
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
 }

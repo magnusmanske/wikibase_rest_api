@@ -393,6 +393,34 @@ mod tests {
         assert_eq!(j["data_type"], "external-id");
     }
 
+    #[test]
+    fn test_get_rest_api_path() {
+        let property = Property::default();
+        let id = EntityId::property("P214");
+        assert_eq!(
+            property.get_my_rest_api_path(&id).unwrap(),
+            "/entities/properties/P214"
+        );
+    }
+
+    #[test]
+    fn test_set_id() {
+        let mut property = Property::default();
+        assert!(property.id().is_none());
+        property.set_id(EntityId::property("P214"));
+        assert_eq!(property.id(), &EntityId::property("P214"));
+    }
+
+    #[test]
+    fn test_patch() {
+        let mut p1 = Property::default();
+        let mut p2 = Property::default();
+        p1.labels_mut().insert(LanguageString::new("en", "label"));
+        p2.labels_mut().insert(LanguageString::new("en", "label2"));
+        let patch = p1.patch(&p2).unwrap();
+        assert_eq!(patch.patch().len(), 1);
+    }
+
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn test_item_post() {

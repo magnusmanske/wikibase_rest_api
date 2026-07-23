@@ -52,6 +52,16 @@ mod tests {
     }
 
     #[test]
+    fn test_from_json_not_array() {
+        // A non-array patch source must surface as MissingOrInvalidField.
+        let err = LabelsPatch::from_json(&json!(123)).unwrap_err();
+        match err {
+            RestApiError::MissingOrInvalidField { field, .. } => assert_eq!(field, "LabelsPatch"),
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
+    #[test]
     fn test_get_rest_api_path_items() {
         let patch = LabelsPatch::default();
         let id = EntityId::new("Q12345").unwrap();

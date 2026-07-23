@@ -321,4 +321,41 @@ mod tests {
         l.insert(LanguageString::new("en", "Foo"));
         assert!(!l.is_empty());
     }
+
+    #[test]
+    fn test_from_json_non_object() {
+        // Top-level value is not an object.
+        let err = Aliases::from_json(&json!(123)).unwrap_err();
+        match err {
+            RestApiError::MissingOrInvalidField { field, .. } => {
+                assert_eq!(field, "LanguageStringsMultiple");
+            }
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
+    #[test]
+    fn test_from_json_value_not_array() {
+        // A language value must be an array of strings.
+        let err = Aliases::from_json(&json!({"en": "not an array"})).unwrap_err();
+        match err {
+            RestApiError::MissingOrInvalidField { field, .. } => {
+                assert_eq!(field, "LanguageStringsMultiple");
+            }
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
+    #[test]
+    fn test_from_json_element_not_string() {
+        // An element inside a language array must be a string.
+        let err = Aliases::from_json(&json!({"en": ["ok", 123]})).unwrap_err();
+        match err {
+            RestApiError::MissingOrInvalidField { field, j } => {
+                assert_eq!(field, "LanguageStringsMultiple");
+                assert_eq!(j, json!(123));
+            }
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
 }

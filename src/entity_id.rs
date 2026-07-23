@@ -255,6 +255,17 @@ mod tests {
     }
 
     #[test]
+    fn test_entity_id_into_string() {
+        let item_id: String = EntityId::item("Q123").into();
+        assert_eq!(item_id, "Q123");
+        let property_id: String = EntityId::property("P123").into();
+        assert_eq!(property_id, "P123");
+        // The `None` arm renders as an empty string.
+        let none_id: String = EntityId::none().into();
+        assert_eq!(none_id, "");
+    }
+
+    #[test]
     fn test_entity_id_display() {
         assert_eq!(EntityId::item("Q123").to_string(), "Q123");
         assert_eq!(EntityId::property("P123").to_string(), "P123");
