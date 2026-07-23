@@ -77,13 +77,8 @@ pub trait Entity: Default + Sized + Serialize + HttpMisc {
     ) -> Result<Self, RestApiError> {
         let request = Self::generate_get_match_request(id, api, rm).await?;
         let response = api.execute(request).await?;
-        if !response.status().is_success() {
-            return Err(RestApiError::from_response(response).await);
-        }
-        let hi = HeaderInfo::from_header(response.headers());
-        let j: Value = response.error_for_status()?.json().await?;
-        let ret = Self::from_json_header_info(j, hi)?;
-        Ok(ret)
+        let (j, hi) = Self::parse_response(response).await?;
+        Self::from_json_header_info(j, hi)
     }
 
     async fn get_fields(
@@ -102,11 +97,7 @@ pub trait Entity: Default + Sized + Serialize + HttpMisc {
     ) -> Result<Self, RestApiError> {
         let request = Self::generate_get_match_request_fields(id, api, rm, fields).await?;
         let response = api.execute(request).await?;
-        if !response.status().is_success() {
-            return Err(RestApiError::from_response(response).await);
-        }
-        let hi = HeaderInfo::from_header(response.headers());
-        let j: Value = response.error_for_status()?.json().await?;
+        let (j, hi) = Self::parse_response(response).await?;
         Self::from_json_header_info(j, hi)
     }
 

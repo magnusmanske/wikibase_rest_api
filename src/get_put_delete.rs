@@ -47,8 +47,20 @@ pub trait HttpMisc {
         request: Request,
     ) -> Result<(Value, HeaderInfo), RestApiError> {
         let response = api.execute(request).await?;
+        Self::parse_response(response).await
+    }
+
+    /// Parses a response into its JSON body and header info. Any non-success status
+    /// is converted into a `RestApiError::ApiError` carrying the server error payload,
+    /// so all operations report failures through the same variant.
+    async fn parse_response(
+        response: reqwest::Response,
+    ) -> Result<(Value, HeaderInfo), RestApiError> {
+        if !response.status().is_success() {
+            return Err(RestApiError::from_response(response).await);
+        }
         let header_info = HeaderInfo::from_header(response.headers());
-        let j = response.error_for_status()?.json().await?;
+        let j: Value = response.json().await?;
         Ok((j, header_info))
     }
 
@@ -96,12 +108,7 @@ pub trait HttpMisc {
         &self,
         response: reqwest::Response,
     ) -> Result<(Value, HeaderInfo), RestApiError> {
-        if !response.status().is_success() {
-            return Err(RestApiError::from_response(response).await);
-        }
-        let header_info = HeaderInfo::from_header(response.headers());
-        let j: Value = response.error_for_status()?.json().await?;
-        Ok((j, header_info))
+        Self::parse_response(response).await
     }
 }
 

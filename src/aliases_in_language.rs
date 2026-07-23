@@ -126,15 +126,13 @@ impl AliasesInLanguage {
         response: Response,
     ) -> Result<Self, RestApiError> {
         let header_info = HeaderInfo::from_header(response.headers());
-        let j: Value = match response.error_for_status() {
-            Ok(response) => response.json().await?,
-            Err(e) => {
-                if e.status() == Some(StatusCode::NOT_FOUND) {
-                    json!([])
-                } else {
-                    return Err(e.into());
-                }
-            }
+        // A 404 means there are no aliases in this language; other failures are real errors.
+        let j: Value = if response.status() == StatusCode::NOT_FOUND {
+            json!([])
+        } else if !response.status().is_success() {
+            return Err(RestApiError::from_response(response).await);
+        } else {
+            response.json().await?
         };
         Self::from_json_header_info(language, &j, header_info)
     }
@@ -198,6 +196,51 @@ mod tests {
         let id = EntityId::item("Q42");
         let aliases = AliasesInLanguage::get(&id, "en", &api).await.unwrap();
         assert!(aliases.values.contains(&"Douglas Noël Adams".to_string()));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_aliases_get_404_is_empty() {
+        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/aliases/en";
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(mock_path))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
+        // A 404 means "no aliases in this language", not an error.
+        let aliases = AliasesInLanguage::get(&EntityId::item("Q42"), "en", &api)
+            .await
+            .unwrap();
+        assert!(aliases.values.is_empty());
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_aliases_get_error() {
+        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/aliases/en";
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(mock_path))
+            .respond_with(
+                ResponseTemplate::new(400).set_body_json(json!({"code": "bad", "message": "no"})),
+            )
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
+        // Non-404 failures must surface as ApiError with the payload.
+        match AliasesInLanguage::get(&EntityId::item("Q42"), "en", &api)
+            .await
+            .unwrap_err()
+        {
+            RestApiError::ApiError { payload, .. } => assert_eq!(payload.code(), "bad"),
+            e => panic!("Wrong error type: {e:?}"),
+        }
     }
 
     #[tokio::test]

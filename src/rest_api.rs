@@ -129,15 +129,26 @@ impl RestApi {
         self.retry_base_delay * 2_u32.pow(attempt)
     }
 
+    /// Executes a request and returns the parsed JSON body. Any non-success status
+    /// is converted into a `RestApiError::ApiError` carrying the server error payload.
+    async fn execute_json(
+        &self,
+        request: reqwest::Request,
+    ) -> Result<serde_json::Value, RestApiError> {
+        let response = self.execute(request).await?;
+        if !response.status().is_success() {
+            return Err(RestApiError::from_response(response).await);
+        }
+        Ok(response.json().await?)
+    }
+
     /// Returns the `OpenAPI` JSON for the Wikibase REST API
     pub async fn get_openapi_json(&self) -> Result<serde_json::Value, RestApiError> {
         let request = self
             .wikibase_request_builder("/openapi.json", HashMap::new(), reqwest::Method::GET)
             .await?
             .build()?;
-        let response = self.execute(request).await?;
-        let json = response.json().await?;
-        Ok(json)
+        self.execute_json(request).await
     }
 
     /// Returns the map of property data types to value types.
@@ -152,8 +163,7 @@ impl RestApi {
             .wikibase_request_builder("/property-data-types", HashMap::new(), reqwest::Method::GET)
             .await?
             .build()?;
-        let response = self.execute(request).await?;
-        let map = response.error_for_status()?.json().await?;
+        let map = serde_json::from_value(self.execute_json(request).await?)?;
         Ok(map)
     }
 
@@ -317,6 +327,34 @@ mod tests {
             .with_client(client.clone())
             .build();
         assert_eq!(format!("{:?}", api.client), format!("{:?}", client));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_execute_json_error_carries_payload() {
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/w/rest.php/wikibase/v1/property-data-types"))
+            .respond_with(
+                ResponseTemplate::new(400)
+                    .set_body_json(serde_json::json!({"code": "bad", "message": "nope"})),
+            )
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
+
+        // A 4xx must surface as ApiError with the server payload, not a bare Reqwest error.
+        match api.get_property_data_types().await.unwrap_err() {
+            RestApiError::ApiError {
+                status, payload, ..
+            } => {
+                assert_eq!(status, 400);
+                assert_eq!(payload.code(), "bad");
+            }
+            e => panic!("Wrong error type: {e:?}"),
+        }
     }
 
     #[tokio::test]

@@ -111,17 +111,14 @@ impl Aliases {
     async fn get_match_check_response(
         response: reqwest::Response,
     ) -> Result<HashMap<String, Vec<String>>, RestApiError> {
-        let ls: HashMap<String, Vec<String>> = match response.error_for_status() {
-            Ok(response) => response.json().await?,
-            Err(e) => {
-                if e.status() == Some(StatusCode::NOT_FOUND) {
-                    HashMap::new()
-                } else {
-                    return Err(e.into());
-                }
-            }
-        };
-        Ok(ls)
+        // A 404 means the entity simply has no aliases; other failures are real errors.
+        if response.status() == StatusCode::NOT_FOUND {
+            return Ok(HashMap::new());
+        }
+        if !response.status().is_success() {
+            return Err(RestApiError::from_response(response).await);
+        }
+        Ok(response.json().await?)
     }
 }
 
@@ -210,6 +207,49 @@ mod tests {
         let sitelinks = Aliases::get(&EntityId::item("Q42"), &api).await.unwrap();
         assert_eq!(sitelinks.ls.len(), 64);
         assert_eq!(sitelinks.get_lang("tok")[0], "jan Takala Atan");
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_aliases_get_404_is_empty() {
+        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/aliases";
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(mock_path))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
+        // A 404 means "no aliases", not an error.
+        let aliases = Aliases::get(&EntityId::item("Q42"), &api).await.unwrap();
+        assert_eq!(aliases.ls.len(), 0);
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_aliases_get_error() {
+        let mock_path = "/w/rest.php/wikibase/v1/entities/items/Q42/aliases";
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(mock_path))
+            .respond_with(
+                ResponseTemplate::new(400).set_body_json(json!({"code": "bad", "message": "nope"})),
+            )
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
+        // Non-404 failures must surface as ApiError with the payload.
+        match Aliases::get(&EntityId::item("Q42"), &api)
+            .await
+            .unwrap_err()
+        {
+            RestApiError::ApiError { payload, .. } => assert_eq!(payload.code(), "bad"),
+            e => panic!("Wrong error type: {e:?}"),
+        }
     }
 
     #[test]

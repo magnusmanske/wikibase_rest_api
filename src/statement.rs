@@ -255,8 +255,7 @@ impl Statement {
             .generate_json_request(&EntityId::None, reqwest::Method::PUT, j0, api, &em)
             .await?;
         let response = api.execute(request).await?;
-        let header_info = HeaderInfo::from_header(response.headers());
-        let j: Value = response.error_for_status()?.json().await?;
+        let (j, header_info) = Self::parse_response(response).await?;
         Self::from_json_header_info(&j, header_info)
     }
 
