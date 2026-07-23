@@ -86,31 +86,29 @@ impl DataType {
 mod tests {
     use super::*;
     use crate::RestApi;
-    use std::collections::HashMap;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn test_data_type_from_str() {
-        // Useful to have this query the live API, and fast enough.
-        let api = RestApi::builder("https://www.wikidata.org/w/rest.php")
+        let body = serde_json::json!({
+            "wikibase-item": "wikibase-entityid",
+            "external-id": "string",
+            "time": "time",
+        });
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/w/rest.php/wikibase/v1/property-data-types"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .build();
-        let request = api
-            .wikibase_request_builder("/property-data-types", HashMap::new(), reqwest::Method::GET)
-            .await
-            .unwrap()
-            .build()
-            .unwrap();
-        let h: HashMap<String, String> = api
-            .execute(request)
-            .await
-            .unwrap()
-            .error_for_status()
-            .unwrap()
-            .json()
-            .await
-            .unwrap();
-        for (k, _v) in h {
+
+        let types = api.get_property_data_types().await.unwrap();
+        for k in types.into_keys() {
             let dt = DataType::new(&k).unwrap();
             assert_eq!(dt.as_str(), k);
         }

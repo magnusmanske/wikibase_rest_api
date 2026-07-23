@@ -181,17 +181,17 @@ impl Search {
         let request = self.generate_json_request(api).await?;
         let response = api.execute(request).await?;
         let response = self.filter_response_error(response).await?;
-        Self::response_to_results(response)
+        Self::response_to_results(&response)
     }
 
-    fn response_to_results(response: Value) -> Result<Vec<SearchResult>, RestApiError> {
-        let results = response["results"]
+    fn response_to_results(response: &Value) -> Result<Vec<SearchResult>, RestApiError> {
+        // A malformed entry is an error, not silently skipped: callers get the whole list or none.
+        response["results"]
             .as_array()
             .ok_or(RestApiError::MissingResults)?
             .iter()
-            .filter_map(|result| serde_json::from_value(result.clone()).ok())
-            .collect();
-        Ok(results)
+            .map(|result| SearchResult::deserialize(result).map_err(RestApiError::from))
+            .collect()
     }
 
     fn get_my_rest_api_path(&self) -> String {
@@ -209,7 +209,7 @@ impl Search {
         if !response.status().is_success() {
             return Err(RestApiError::from_response(response).await);
         }
-        let j: Value = response.error_for_status()?.json().await?;
+        let j: Value = response.json().await?;
         Ok(j)
     }
 }
@@ -217,6 +217,9 @@ impl Search {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn test_get_my_rest_api_path() {
@@ -244,7 +247,7 @@ mod tests {
     fn test_response_to_results() {
         let v = std::fs::read_to_string("test_data/test_search_response.json").unwrap();
         let v: Value = serde_json::from_str(&v).unwrap();
-        let results = Search::response_to_results(v).unwrap();
+        let results = Search::response_to_results(&v).unwrap();
         assert_eq!(results.len(), 4);
         assert_eq!(results[0].id(), "Q123");
         assert_eq!(results[1].id(), "Q234");
@@ -265,24 +268,63 @@ mod tests {
         assert_eq!(results[3].search_match().match_type(), "description");
     }
 
+    #[test]
+    fn test_response_to_results_malformed_is_error() {
+        // A result whose `id` is the wrong type must fail, not be silently dropped.
+        let v = json!({"results": [{"id": 123}]});
+        assert!(Search::response_to_results(&v).is_err());
+    }
+
+    #[test]
+    fn test_response_to_results_missing_field_is_error() {
+        let v = json!({"not_results": []});
+        assert!(Search::response_to_results(&v).is_err());
+    }
+
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn test_search() {
-        let query = "Magnus Manske";
-        let language = Language::try_new("en").unwrap();
-        let api = RestApi::builder("https://www.wikidata.org/w/rest.php")
+        let v = std::fs::read_to_string("test_data/test_search_response.json").unwrap();
+        let v: Value = serde_json::from_str(&v).unwrap();
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/w/rest.php/wikibase/v1/search/items"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&v))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .build();
-        let results = Search::items(query, language).get(&api).await.unwrap();
-        // Check for "Magnus Manske"
-        assert!(results
-            .iter()
-            .map(|result| result.id())
-            .any(|id| id == "Q13520818"));
-        // Check for "Magnus Manske Day"
-        assert!(results
-            .iter()
-            .map(|result| result.id())
-            .any(|id| id == "Q10995651"));
+
+        let language = Language::try_new("en").unwrap();
+        let results = Search::items("potato", language).get(&api).await.unwrap();
+        assert_eq!(results.len(), 4);
+        assert_eq!(results[0].id(), "Q123");
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_search_error() {
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/w/rest.php/wikibase/v1/search/items"))
+            .respond_with(
+                ResponseTemplate::new(400).set_body_json(json!({"code": "bad", "message": "no"})),
+            )
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build();
+
+        let language = Language::try_new("en").unwrap();
+        match Search::items("potato", language)
+            .get(&api)
+            .await
+            .unwrap_err()
+        {
+            RestApiError::ApiError { payload, .. } => assert_eq!(payload.code(), "bad"),
+            e => panic!("Wrong error type: {e:?}"),
+        }
     }
 }
