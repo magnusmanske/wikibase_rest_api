@@ -115,7 +115,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
-            .build();
+            .build()
+            .unwrap();
 
         // Apply patch
         let id = EntityId::new(id).unwrap();

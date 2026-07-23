@@ -135,7 +135,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let sitelinks = Sitelinks::get(&EntityId::item("Q42"), &api).await.unwrap();
         assert_eq!(sitelinks.sitelinks.len(), 122);

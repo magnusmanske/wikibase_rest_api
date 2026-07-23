@@ -27,7 +27,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let label = Label::get_with_fallback(&id, "foo", &api).await.unwrap();
@@ -48,7 +49,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let label = Label::get(&id, "en", &api).await.unwrap();
@@ -74,7 +76,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let new_label = Label::new("en", label);
@@ -99,7 +102,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let label = Label::new("en", "");

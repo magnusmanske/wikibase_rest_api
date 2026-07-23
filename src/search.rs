@@ -294,7 +294,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let language = Language::try_new("en").unwrap();
         let results = Search::items("potato", language).get(&api).await.unwrap();
@@ -315,7 +316,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let language = Language::try_new("en").unwrap();
         match Search::items("potato", language)

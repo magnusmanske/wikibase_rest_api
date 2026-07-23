@@ -49,7 +49,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::new("Q42").unwrap();
         let ls = Descriptions::get(&id, &api).await.unwrap();

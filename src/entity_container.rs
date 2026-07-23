@@ -364,7 +364,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let ec = EntityContainer::builder()
             .api(Arc::new(api))
@@ -429,7 +430,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_max_retries(0)
-            .build();
+            .build()
+            .unwrap();
         let ec = EntityContainer::builder()
             .api(Arc::new(api))
             .build()
@@ -469,7 +471,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_max_retries(0)
-            .build();
+            .build()
+            .unwrap();
         let ec = EntityContainer::builder()
             .api(Arc::new(api))
             .build()
@@ -509,7 +512,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_max_retries(0)
-            .build();
+            .build()
+            .unwrap();
         let ec = EntityContainer::builder()
             .api(Arc::new(api))
             .container_backoff(std::time::Duration::from_millis(1))
@@ -539,7 +543,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_max_retries(0)
-            .build();
+            .build()
+            .unwrap();
         let ec = EntityContainer::builder()
             .api(Arc::new(api))
             .container_retries(1)
@@ -558,7 +563,8 @@ mod tests {
         let api = Arc::new(
             RestApi::builder("https://test.wikidata.org/w/rest.php")
                 .unwrap()
-                .build(),
+                .build()
+                .unwrap(),
         );
         let ec = EntityContainer::builder()
             .api(api.clone())
@@ -574,7 +580,8 @@ mod tests {
         let api = Arc::new(
             RestApi::builder("https://test.wikidata.org/w/rest.php")
                 .unwrap()
-                .build(),
+                .build()
+                .unwrap(),
         );
         let ec = EntityContainer::builder()
             .api(api.clone())

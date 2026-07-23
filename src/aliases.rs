@@ -202,7 +202,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let sitelinks = Aliases::get(&EntityId::item("Q42"), &api).await.unwrap();
         assert_eq!(sitelinks.ls.len(), 64);
@@ -221,7 +222,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         // A 404 means "no aliases", not an error.
         let aliases = Aliases::get(&EntityId::item("Q42"), &api).await.unwrap();
         assert_eq!(aliases.ls.len(), 0);
@@ -241,7 +243,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         // Non-404 failures must surface as ApiError with the payload.
         match Aliases::get(&EntityId::item("Q42"), &api)
             .await

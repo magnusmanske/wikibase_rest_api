@@ -200,7 +200,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let item = Item::get_fields(EntityId::item("Q42"), &["labels"], &api)
             .await

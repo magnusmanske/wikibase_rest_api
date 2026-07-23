@@ -191,7 +191,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item("Q42");
         let aliases = AliasesInLanguage::get(&id, "en", &api).await.unwrap();
@@ -210,7 +211,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         // A 404 means "no aliases in this language", not an error.
         let aliases = AliasesInLanguage::get(&EntityId::item("Q42"), "en", &api)
             .await
@@ -232,7 +234,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         // Non-404 failures must surface as ApiError with the payload.
         match AliasesInLanguage::get(&EntityId::item("Q42"), "en", &api)
             .await
@@ -272,7 +275,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
-            .build();
+            .build()
+            .unwrap();
 
         let id2 = EntityId::item("Q42");
         let aliases = AliasesInLanguage::get(&id2, "en", &api).await.unwrap();

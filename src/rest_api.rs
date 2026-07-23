@@ -73,7 +73,7 @@ impl RestApi {
 
     /// Returns a `RestApi` instance for Wikidata
     pub fn wikidata() -> Result<RestApi, RestApiError> {
-        Ok(RestApi::builder("https://www.wikidata.org/w/rest.php")?.build())
+        RestApi::builder("https://www.wikidata.org/w/rest.php")?.build()
     }
 
     /// Executes a `reqwest::Request` with automatic retry on 429 and 5xx errors.
@@ -344,7 +344,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let json = api.get_openapi_json().await.unwrap();
         assert_eq!(json, expected_json);
@@ -367,7 +368,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         let result = api.get_property_data_types().await.unwrap();
         assert_eq!(result, expected);
     }
@@ -379,7 +381,8 @@ mod tests {
         let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
             .with_client(client.clone())
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(format!("{:?}", api.client), format!("{:?}", client));
     }
 
@@ -397,7 +400,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         // A 4xx must surface as ApiError with the server payload, not a bare Reqwest error.
         match api.get_property_data_types().await.unwrap_err() {
@@ -434,7 +438,8 @@ mod tests {
             .unwrap()
             .with_max_retries(3)
             .with_retry_base_delay(Duration::from_millis(10))
-            .build();
+            .build()
+            .unwrap();
 
         let result = api.get_openapi_json().await;
         assert!(result.is_ok());
@@ -483,7 +488,8 @@ mod tests {
         let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
             .with_max_retry_after(Duration::from_secs(10))
-            .build();
+            .build()
+            .unwrap();
         // Server asks for a day; we clamp to the configured maximum.
         let response = response_with_retry_after("86400");
         assert_eq!(api.retry_delay(&response, 0), Duration::from_secs(10));
@@ -494,7 +500,8 @@ mod tests {
         let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
             .with_retry_base_delay(Duration::from_secs(1))
-            .build();
+            .build()
+            .unwrap();
         // Attempt 2 => base 4s, jittered into [3s, 5s).
         let delay = api.backoff_with_jitter(2);
         assert!(delay >= Duration::from_secs(3) && delay < Duration::from_secs(5));
@@ -522,7 +529,8 @@ mod tests {
             .unwrap()
             .with_max_retries(1)
             .with_retry_base_delay(Duration::from_millis(10))
-            .build();
+            .build()
+            .unwrap();
 
         let result = api.get_openapi_json().await;
         assert!(result.is_err());

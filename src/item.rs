@@ -234,7 +234,8 @@ mod tests {
             .mount(&mock_server).await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         Item::get(EntityId::item(id), &api).await
     }
@@ -273,7 +274,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         // Check that an error is returned when trying to post an item that already has an ID
         let r0 = item.post(&api).await;
@@ -292,7 +294,8 @@ mod tests {
         let mock_server = MockServer::start().await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         let r = item.post(&api).await;
         assert_eq!(
             r.err().unwrap().to_string(),

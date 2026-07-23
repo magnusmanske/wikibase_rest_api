@@ -124,11 +124,12 @@ impl RestApiBuilder {
         self
     }
 
-    /// Builds the `RestApi`. Returns an error if no REST API URL is set.
-    /// The builder gets consumed by this operation.
-    /// # Returns
-    /// Returns a `RestApi` instance.
-    pub fn build(self) -> RestApi {
+    /// Builds the `RestApi`. The builder gets consumed by this operation.
+    ///
+    /// # Errors
+    /// Returns a `RestApiError` if the HTTP client could not be constructed (e.g. TLS
+    /// initialization failure); configured timeouts are never silently discarded.
+    pub fn build(self) -> Result<RestApi, RestApiError> {
         let api_url = self.api_url;
         let mut token = self.token;
         if let Some(interval) = self.renewal_interval {
@@ -144,17 +145,20 @@ impl RestApiBuilder {
         let max_retry_after = self
             .max_retry_after
             .unwrap_or(RestApi::default_max_retry_after());
-        let client = self.client.unwrap_or_else(|| {
-            let mut builder = reqwest::Client::builder();
-            if let Some(timeout) = self.timeout {
-                builder = builder.timeout(timeout);
+        let client = match self.client {
+            Some(client) => client,
+            None => {
+                let mut builder = reqwest::Client::builder();
+                if let Some(timeout) = self.timeout {
+                    builder = builder.timeout(timeout);
+                }
+                if let Some(connect_timeout) = self.connect_timeout {
+                    builder = builder.connect_timeout(connect_timeout);
+                }
+                builder.build()?
             }
-            if let Some(connect_timeout) = self.connect_timeout {
-                builder = builder.connect_timeout(connect_timeout);
-            }
-            builder.build().unwrap_or_default()
-        });
-        RestApi::new(
+        };
+        Ok(RestApi::new(
             client,
             user_agent,
             api_url,
@@ -163,7 +167,7 @@ impl RestApiBuilder {
             max_retries,
             retry_base_delay,
             max_retry_after,
-        )
+        ))
     }
 
     /// Checks if the REST API URL is valid. The URL must end in "rest.php".
@@ -220,13 +224,15 @@ mod tests {
     fn test_user_agent() {
         let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(api1.user_agent(), RestApiBuilder::default_user_agent());
 
         let api2 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
             .with_user_agent("Test User Agent")
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(api2.user_agent(), "Test User Agent");
     }
 
@@ -235,13 +241,15 @@ mod tests {
     fn test_with_api_version() {
         let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(api1.api_version(), WIKIBASE_REST_API_VERSION);
 
         let api2 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
             .with_api_version(2)
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(api2.api_version(), 2);
     }
 
@@ -250,7 +258,8 @@ mod tests {
     async fn test_with_access_token_renewal() {
         let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(
             api1.token().read().await.access_token_renewal_interval(),
             Duration::from_secs(0)
@@ -259,7 +268,8 @@ mod tests {
         let api2 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
             .with_access_token_renewal(Duration::from_secs(60))
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(
             api2.token().read().await.access_token_renewal_interval(),
             Duration::from_secs(60)
@@ -271,14 +281,16 @@ mod tests {
     async fn test_with_oauth2_info() {
         let api1 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(*api1.token().read().await.client_id(), None);
         assert_eq!(*api1.token().read().await.client_secret(), None);
 
         let api2 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
             .with_oauth2_info("client_id", "client_secret")
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(
             *api2.token().read().await.client_id(),
             Some("client_id".to_string())
@@ -297,7 +309,8 @@ mod tests {
             .unwrap()
             .with_timeout(Duration::from_secs(30))
             .with_connect_timeout(Duration::from_secs(5))
-            .build();
+            .build()
+            .unwrap();
     }
 
     #[test]
@@ -307,7 +320,8 @@ mod tests {
             .unwrap()
             .with_max_retries(5)
             .with_retry_base_delay(Duration::from_millis(500))
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(api.max_retries(), 5);
         assert_eq!(api.retry_base_delay(), Duration::from_millis(500));
     }

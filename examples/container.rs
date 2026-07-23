@@ -6,7 +6,7 @@ use wikibase_rest_api::prelude::*;
 #[allow(clippy::result_large_err)]
 async fn main() -> Result<(), RestApiError> {
     // #lizard forgives the complexity
-    let api = RestApi::builder("https://www.wikidata.org/w/rest.php")?.build();
+    let api = RestApi::builder("https://www.wikidata.org/w/rest.php")?.build()?;
     let api = Arc::new(api);
 
     // Load several items at once

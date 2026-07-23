@@ -8,7 +8,7 @@ async fn main() -> Result<(), RestApiError> {
     // let token = "MY_ACCESS_TOKEN";
     let api = RestApi::builder("https://test.wikidata.org/w/rest.php")?
         // .with_access_token(token)
-        .build();
+        .build()?;
     let mut item = Item::default();
     item.labels_mut()
         .insert(LanguageString::new("en", "My label"));

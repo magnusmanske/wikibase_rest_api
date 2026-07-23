@@ -299,7 +299,8 @@ mod tests {
         let mut token = BearerToken::default();
         let api = RestApi::builder("https://www.wikidata.org/w/rest.php")
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         token.set_oauth2_info("client_id", "client_secret");
         assert_eq!(token.authorization_code_url(&api).unwrap(), "https://www.wikidata.org/w/rest.php/oauth2/authorize?client_id=client_id&response_type=code");
     }
@@ -348,7 +349,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         // Test error cases
         assert!(api
@@ -413,7 +415,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         // Test error cases
         assert!(api
@@ -458,7 +461,8 @@ mod tests {
     async fn test_renew_access_token_no_need() {
         let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
         let mut bt = BearerToken::default();
         bt.touch_access_token();
         bt.renewal_interval = std::time::Duration::from_secs(3600);

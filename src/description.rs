@@ -27,7 +27,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let description = Description::get_with_fallback(&id, "foo", &api)
@@ -51,7 +52,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let description = Description::get(&id, "en", &api).await.unwrap();
@@ -77,7 +79,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let new_description = Description::new("en", description);
@@ -102,7 +105,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let description = Description::new("en", "");

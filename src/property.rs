@@ -224,7 +224,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let property = Property::get(EntityId::property("P214"), &api)
             .await
@@ -411,7 +412,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         // Check that an error is returned when trying to post an item that already has an ID
         let r0 = property.post(&api).await;

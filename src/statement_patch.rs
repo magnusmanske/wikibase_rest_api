@@ -130,7 +130,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
-            .build();
+            .build()
+            .unwrap();
 
         // Patch statement
         let mut patch = StatementPatch::new(statement_id);

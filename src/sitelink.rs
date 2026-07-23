@@ -229,7 +229,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let sitelink = Sitelink::get(&EntityId::item(id), "enwiki", &api)
             .await
@@ -268,7 +269,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let sitelink = Sitelink::new("enwiki", page_title);
@@ -296,7 +298,8 @@ mod tests {
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
-            .build();
+            .build()
+            .unwrap();
 
         let id = EntityId::item(id);
         let new_sitelink = Sitelink::new("enwiki", "doesn't matter");

@@ -105,7 +105,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let types = api.get_property_data_types().await.unwrap();
         for k in types.into_keys() {

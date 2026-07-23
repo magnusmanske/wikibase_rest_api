@@ -98,7 +98,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let item = Item::get(EntityId::item(id), &api).await.unwrap();
         let prop = item.statements().property("P2021")[0].to_owned();
@@ -122,7 +123,8 @@ mod tests {
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
-            .build();
+            .build()
+            .unwrap();
 
         let item = Item::get(EntityId::item(id), &api).await.unwrap();
         let prop = item.statements().property("P40")[0];
