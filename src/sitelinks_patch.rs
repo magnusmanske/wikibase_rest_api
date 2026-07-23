@@ -84,7 +84,7 @@ mod tests {
         )
         .mount(&mock_server)
         .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
@@ -93,7 +93,7 @@ mod tests {
         let id = EntityId::new(id).unwrap();
         let mut patch = SitelinksPatch::default();
         patch.replace_title("enwiki", page_title);
-        let sl = patch.apply(&id, &mut api).await.unwrap();
+        let sl = patch.apply(&id, &api).await.unwrap();
         assert_eq!(sl.get_wiki("enwiki").unwrap().title(), page_title);
     }
 

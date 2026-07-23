@@ -205,17 +205,17 @@ impl Statement {
     /// use wikibase_rest_api::prelude::*;
     /// #[tokio::main]
     /// async fn main() {
-    ///     let mut api = RestApi::wikidata().unwrap(); // Use Wikidata API
+    ///     let api = RestApi::wikidata().unwrap(); // Use Wikidata API
     ///     let mut statement = Statement::new_string("P31", "Q42"); // New statement
     ///     statement.new_id_for_entity(&EntityId::new("Q13406268").unwrap()); // New statement ID for entity
-    ///     statement = statement.put(&mut api).await.unwrap(); // Add statement to entity
+    ///     statement = statement.put(&api).await.unwrap(); // Add statement to entity
     /// }
-    pub async fn put(&self, api: &mut RestApi) -> Result<Self, RestApiError> {
+    pub async fn put(&self, api: &RestApi) -> Result<Self, RestApiError> {
         self.put_match(api, EditMetadata::default()).await
     }
 
     /// Deletes a statement via the API
-    pub async fn delete(&self, api: &mut RestApi) -> Result<(), RestApiError> {
+    pub async fn delete(&self, api: &RestApi) -> Result<(), RestApiError> {
         self.delete_match(api, EditMetadata::default()).await
     }
 
@@ -240,16 +240,12 @@ impl Statement {
     /// use wikibase_rest_api::prelude::*;
     /// #[tokio::main]
     /// async fn main() {
-    ///     let mut api = RestApi::wikidata().unwrap(); // Use Wikidata API
+    ///     let api = RestApi::wikidata().unwrap(); // Use Wikidata API
     ///     let mut statement = Statement::new_string("P31", "Q42"); // New statement
     ///     statement.new_id_for_entity(&EntityId::new("Q13406268").unwrap()); // New statement ID for entity
-    ///     statement = statement.put_match(&mut api, EditMetadata::default()).await.unwrap();
+    ///     statement = statement.put_match(&api, EditMetadata::default()).await.unwrap();
     /// }
-    pub async fn put_match(
-        &self,
-        api: &mut RestApi,
-        em: EditMetadata,
-    ) -> Result<Self, RestApiError> {
+    pub async fn put_match(&self, api: &RestApi, em: EditMetadata) -> Result<Self, RestApiError> {
         let j0 = json!({"statement": self});
         let request = self
             .generate_json_request(&EntityId::None, reqwest::Method::PUT, j0, api, &em)
@@ -260,11 +256,7 @@ impl Statement {
     }
 
     /// Deletes a statement via the API with revision matching
-    pub async fn delete_match(
-        &self,
-        api: &mut RestApi,
-        em: EditMetadata,
-    ) -> Result<(), RestApiError> {
+    pub async fn delete_match(&self, api: &RestApi, em: EditMetadata) -> Result<(), RestApiError> {
         let j0 = json!({});
         let request = self
             .generate_json_request(&EntityId::None, reqwest::Method::DELETE, j0, api, &em)
@@ -497,7 +489,7 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&v["after"]))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .build();
 
@@ -509,7 +501,7 @@ mod tests {
         statement.value = mock_value_after.to_owned();
 
         // PUT, and check return value
-        let statement = statement.put(&mut api).await.unwrap();
+        let statement = statement.put(&api).await.unwrap();
         assert_eq!(*statement.value(), mock_value_after);
     }
 
@@ -537,19 +529,19 @@ mod tests {
             })))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .build();
 
         // Delete
         let mut statement0 = Statement::new_string("P31", "Q42");
         statement0.set_id(Some(statement_id.to_string()));
-        assert!(statement0.delete(&mut api).await.is_ok());
+        assert!(statement0.delete(&api).await.is_ok());
 
         // Delete (error)
         let mut statement1 = Statement::new_string("P31", "Q42");
         statement1.set_id(Some(statement_id2.to_string()));
-        assert!(statement1.delete(&mut api).await.is_err());
+        assert!(statement1.delete(&api).await.is_err());
     }
 
     #[test]

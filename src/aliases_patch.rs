@@ -59,7 +59,7 @@ impl PatchApply<Aliases> for AliasesPatch {
     async fn apply_match(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Aliases, RestApiError> {
         let j = json!({"patch": self.patch});
@@ -112,7 +112,7 @@ mod tests {
         )
         .mount(&mock_server)
         .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
@@ -121,7 +121,7 @@ mod tests {
         let id = EntityId::new(id).unwrap();
         let mut patch = AliasesPatch::default();
         patch.replace("en", 1, new_alias);
-        let new_aliases2 = patch.apply(&id, &mut api).await.unwrap();
+        let new_aliases2 = patch.apply(&id, &api).await.unwrap();
         assert_eq!(new_aliases2.get_lang("en")[1], new_alias);
     }
 }

@@ -44,7 +44,7 @@ impl EntityPatch {
     }
 
     /// Applies the entire patch against the API
-    pub async fn apply_item(&self, id: &EntityId, api: &mut RestApi) -> Result<Item, RestApiError> {
+    pub async fn apply_item(&self, id: &EntityId, api: &RestApi) -> Result<Item, RestApiError> {
         self.apply_match_item(id, api, EditMetadata::default())
             .await
     }
@@ -52,7 +52,7 @@ impl EntityPatch {
     pub async fn apply_property(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
     ) -> Result<Property, RestApiError> {
         self.apply_match_property(id, api, EditMetadata::default())
             .await
@@ -62,7 +62,7 @@ impl EntityPatch {
     pub async fn apply_match_item(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Item, RestApiError> {
         let j0 = json!({"patch": self.patch()});
@@ -79,7 +79,7 @@ impl EntityPatch {
         // TODO
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Property, RestApiError> {
         let j0 = json!({"patch": self.patch()});

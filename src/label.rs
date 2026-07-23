@@ -71,14 +71,14 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!(label)))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
 
         let id = EntityId::item(id);
         let new_label = Label::new("en", label);
-        let return_label = new_label.put(&id, &mut api).await.unwrap();
+        let return_label = new_label.put(&id, &api).await.unwrap();
         assert_eq!(return_label.language(), "en");
         assert_eq!(return_label.value(), label);
     }
@@ -96,14 +96,14 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Label deleted")))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
 
         let id = EntityId::item(id);
         let label = Label::new("en", "");
-        let result = label.delete(&id, &mut api).await;
+        let result = label.delete(&id, &api).await;
         assert!(result.is_ok());
     }
 

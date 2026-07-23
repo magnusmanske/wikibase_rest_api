@@ -36,7 +36,7 @@ pub trait Patch: Sized {
 
 pub trait PatchApply<T: FromJson>: HttpMisc + Patch {
     /// Applies the entire patch against the API
-    async fn apply(&self, id: &EntityId, api: &mut RestApi) -> Result<T, RestApiError> {
+    async fn apply(&self, id: &EntityId, api: &RestApi) -> Result<T, RestApiError> {
         self.apply_match(id, api, EditMetadata::default()).await
     }
 
@@ -44,7 +44,7 @@ pub trait PatchApply<T: FromJson>: HttpMisc + Patch {
     async fn apply_match(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<T, RestApiError> {
         let j0 = json!({"patch": self.patch()});

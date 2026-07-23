@@ -142,7 +142,7 @@ macro_rules! impl_language_string_value {
             async fn delete_meta(
                 &self,
                 id: &EntityId,
-                api: &mut RestApi,
+                api: &RestApi,
                 em: EditMetadata,
             ) -> Result<(), RestApiError> {
                 let j = json!({});
@@ -156,7 +156,7 @@ macro_rules! impl_language_string_value {
             async fn put_meta(
                 &self,
                 id: &EntityId,
-                api: &mut RestApi,
+                api: &RestApi,
                 em: EditMetadata,
             ) -> Result<Self, RestApiError> {
                 let j = json!({$json_field: self.ls.value()});

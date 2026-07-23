@@ -262,7 +262,7 @@ impl Statements {
         &self,
         id: &EntityId,
         statement: Statement,
-        api: &mut RestApi,
+        api: &RestApi,
     ) -> Result<Statement, RestApiError> {
         self.post_meta(id, statement, api, EditMetadata::default())
             .await
@@ -273,7 +273,7 @@ impl Statements {
         &self,
         id: &EntityId,
         mut statement: Statement,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Statement, RestApiError> {
         statement.set_id(None);
@@ -368,7 +368,7 @@ mod tests {
         .respond_with(ResponseTemplate::new(200).set_body_json(&v))
         .mount(&mock_server)
         .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
@@ -383,7 +383,7 @@ mod tests {
         statement.set_value(StatementValue::new_string("Q5"));
 
         // POST new statement
-        let statement = statements.post(&id, statement, &mut api).await.unwrap();
+        let statement = statements.post(&id, statement, &api).await.unwrap();
         assert_eq!(statement.value(), &StatementValue::new_string("Q5"));
     }
 

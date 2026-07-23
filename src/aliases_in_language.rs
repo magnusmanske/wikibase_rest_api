@@ -95,7 +95,7 @@ impl AliasesInLanguage {
     ///
     /// # Errors
     /// Returns an `RestApiError` if the request fails.
-    pub async fn post(&self, id: &EntityId, api: &mut RestApi) -> Result<Self, RestApiError> {
+    pub async fn post(&self, id: &EntityId, api: &RestApi) -> Result<Self, RestApiError> {
         self.post_meta(id, api, EditMetadata::default()).await
     }
 
@@ -106,7 +106,7 @@ impl AliasesInLanguage {
     pub async fn post_meta(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Self, RestApiError> {
         let j = json!({"aliases": self.values});
@@ -269,7 +269,7 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(&new_aliases))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
@@ -277,7 +277,7 @@ mod tests {
         let id2 = EntityId::item("Q42");
         let aliases = AliasesInLanguage::get(&id2, "en", &api).await.unwrap();
         let new_aliases2 = AliasesInLanguage::new("en", vec![new_alias.to_string()]);
-        let new_aliases2 = new_aliases2.post(&id2, &mut api).await.unwrap();
+        let new_aliases2 = new_aliases2.post(&id2, &api).await.unwrap();
         assert_eq!(new_aliases2.len(), aliases.len() + 1);
         assert!(new_aliases2.values.contains(&new_alias.to_string()));
 

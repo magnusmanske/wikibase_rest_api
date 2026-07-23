@@ -74,14 +74,14 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!(description)))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
 
         let id = EntityId::item(id);
         let new_description = Description::new("en", description);
-        let return_description = new_description.put(&id, &mut api).await.unwrap();
+        let return_description = new_description.put(&id, &api).await.unwrap();
         assert_eq!(return_description.language(), "en");
         assert_eq!(return_description.value(), description);
     }
@@ -99,14 +99,14 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Description deleted")))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
 
         let id = EntityId::item(id);
         let description = Description::new("en", "");
-        let result = description.delete(&id, &mut api).await;
+        let result = description.delete(&id, &api).await;
         assert!(result.is_ok());
     }
 

@@ -154,7 +154,7 @@ impl HttpDelete for Sitelink {
     async fn delete_meta(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<(), RestApiError> {
         let j = json!({});
@@ -172,7 +172,7 @@ impl HttpPut for Sitelink {
     async fn put_meta(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Sitelink, RestApiError> {
         let j = json!({
@@ -265,14 +265,14 @@ mod tests {
         )
         .mount(&mock_server)
         .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
 
         let id = EntityId::item(id);
         let sitelink = Sitelink::new("enwiki", page_title);
-        let new_sitelink = sitelink.put(&id, &mut api).await.unwrap();
+        let new_sitelink = sitelink.put(&id, &api).await.unwrap();
         assert_eq!(new_sitelink.wiki(), sitelink.wiki());
         assert_eq!(new_sitelink.title(), sitelink.title());
     }
@@ -293,13 +293,13 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!("Sitelink deleted")))
             .mount(&mock_server)
             .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
 
         let id = EntityId::item(id);
         let new_sitelink = Sitelink::new("enwiki", "doesn't matter");
-        new_sitelink.delete(&id, &mut api).await.unwrap();
+        new_sitelink.delete(&id, &api).await.unwrap();
     }
 }

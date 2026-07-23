@@ -52,14 +52,14 @@ impl StatementPatch {
     }
 
     // Overrides the Patch<Statement> implementation becaue we don't need the EntityId
-    pub async fn apply(&self, api: &mut RestApi) -> Result<Statement, RestApiError> {
+    pub async fn apply(&self, api: &RestApi) -> Result<Statement, RestApiError> {
         self.apply_match(api, EditMetadata::default()).await
     }
 
     // Overrides the Patch<Statement> implementation becaue we don't need the EntityId
     pub async fn apply_match(
         &self,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Statement, RestApiError> {
         <Self as PatchApply<Statement>>::apply_match(self, &EntityId::None, api, em).await
@@ -80,7 +80,7 @@ impl PatchApply<Statement> for StatementPatch {
     async fn apply_match(
         &self,
         _id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Statement, RestApiError> {
         let j0 = json!({"patch":self.patch});
@@ -127,7 +127,7 @@ mod tests {
         )
         .mount(&mock_server)
         .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
@@ -135,7 +135,7 @@ mod tests {
         // Patch statement
         let mut patch = StatementPatch::new(statement_id);
         patch.replace_content(json!("Q6"));
-        let statement = patch.apply(&mut api).await.unwrap();
+        let statement = patch.apply(&api).await.unwrap();
         assert_eq!(statement.header_info().revision_id(), Some(12345));
         assert_eq!(statement.value(), &StatementValue::new_string("Q6"));
     }

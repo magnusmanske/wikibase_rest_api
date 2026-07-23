@@ -69,7 +69,7 @@ pub trait HttpMisc {
         id: &EntityId,
         method: reqwest::Method,
         j: Value,
-        api: &mut RestApi,
+        api: &RestApi,
         em: &EditMetadata,
     ) -> Result<(Value, HeaderInfo), RestApiError> {
         let request = self.generate_json_request(id, method, j, api, em).await?;
@@ -82,7 +82,7 @@ pub trait HttpMisc {
         id: &EntityId,
         method: reqwest::Method,
         mut j: Value,
-        api: &mut RestApi,
+        api: &RestApi,
         em: &EditMetadata,
     ) -> Result<reqwest::Request, RestApiError> {
         Self::add_metadata_to_json(&mut j, em);
@@ -131,11 +131,11 @@ pub trait HttpPut: Sized + HttpMisc {
     async fn put_meta(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Self, RestApiError>;
 
-    async fn put(&self, id: &EntityId, api: &mut RestApi) -> Result<Self, RestApiError> {
+    async fn put(&self, id: &EntityId, api: &RestApi) -> Result<Self, RestApiError> {
         self.put_meta(id, api, EditMetadata::default()).await
     }
 }
@@ -145,11 +145,11 @@ pub trait HttpDelete: Sized + HttpMisc {
     async fn delete_meta(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<(), RestApiError>;
 
-    async fn delete(&self, id: &EntityId, api: &mut RestApi) -> Result<(), RestApiError> {
+    async fn delete(&self, id: &EntityId, api: &RestApi) -> Result<(), RestApiError> {
         self.delete_meta(id, api, EditMetadata::default()).await
     }
 }

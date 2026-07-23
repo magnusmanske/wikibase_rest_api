@@ -97,7 +97,7 @@ impl PatchApply<Labels> for LanguageStringsPatch {
     async fn apply_match(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Labels, RestApiError> {
         let j0 = json!({"patch": self.patch});
@@ -114,7 +114,7 @@ impl PatchApply<Descriptions> for LanguageStringsPatch {
     async fn apply_match(
         &self,
         id: &EntityId,
-        api: &mut RestApi,
+        api: &RestApi,
         em: EditMetadata,
     ) -> Result<Descriptions, RestApiError> {
         let j0 = json!({"patch": self.patch});
@@ -171,7 +171,7 @@ mod tests {
         )
         .mount(&mock_server)
         .await;
-        let mut api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .with_access_token(token)
             .build();
@@ -180,7 +180,7 @@ mod tests {
         let id = EntityId::new(id).unwrap();
         let mut patch = LanguageStringsPatch::labels();
         patch.replace("en", page_title);
-        let ls: Labels = PatchApply::<Labels>::apply(&patch, &id, &mut api)
+        let ls: Labels = PatchApply::<Labels>::apply(&patch, &id, &api)
             .await
             .unwrap();
         assert_eq!(ls.get_lang("en").unwrap(), page_title);
