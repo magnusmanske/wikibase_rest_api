@@ -509,6 +509,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // jitter_fraction() uses the realtime clock, unavailable under miri
     fn test_jitter_fraction_range() {
         let f = RestApi::jitter_fraction();
         assert!((0.0..1.0).contains(&f));
