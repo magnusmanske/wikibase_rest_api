@@ -1,5 +1,6 @@
 use crate::{
-    EditMetadata, EntityId, HeaderInfo, HttpGet, HttpMisc, RestApi, RestApiError, RevisionMatch,
+    EditMetadata, EntityId, HeaderInfo, HttpGet, HttpMisc, Language, RestApi, RestApiError,
+    RevisionMatch,
 };
 use derive_where::DeriveWhere;
 use reqwest::{Response, StatusCode};
@@ -140,10 +141,10 @@ impl AliasesInLanguage {
 
 impl HttpMisc for AliasesInLanguage {
     fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+        let language = Language::validated(&self.language)?;
         Ok(format!(
             "/entities/{group}/{id}/aliases/{language}",
-            group = id.group()?,
-            language = self.language
+            group = id.group()?
         ))
     }
 }
@@ -155,6 +156,7 @@ impl HttpGet for AliasesInLanguage {
         api: &RestApi,
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
+        let language = Language::validated(language)?;
         let path = format!(
             "/entities/{group}/{id}/aliases/{language}",
             group = id.group()?
@@ -165,7 +167,7 @@ impl HttpGet for AliasesInLanguage {
             .build()?;
         rm.modify_headers(request.headers_mut())?;
         let response = api.execute(request).await?;
-        Self::check_get_match_response(language, response).await
+        Self::check_get_match_response(&language, response).await
     }
 }
 
@@ -294,6 +296,19 @@ mod tests {
                 .len(),
             0
         );
+    }
+
+    #[test]
+    fn test_aliases_invalid_language_path_is_rejected() {
+        // A malformed language that could inject path segments errors before any request.
+        let aliases = AliasesInLanguage::new("en/../aliases", vec!["Foo".to_string()]);
+        match aliases
+            .get_my_rest_api_path(&EntityId::item("Q42"))
+            .unwrap_err()
+        {
+            RestApiError::InvalidLanguageCode(_) => {}
+            e => panic!("Wrong error type: {e:?}"),
+        }
     }
 
     #[test]

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-07-23
+
+### Added
+- `SiteId` — a validated newtype for site (wiki) identifiers, exported from the crate root and prelude
+- `RestApiError::InvalidLanguageCode` and `RestApiError::InvalidSiteId` variants
+
+### Changed
+- **Breaking:** language codes and site IDs are now validated before a request is issued. Malformed values — including ones that could inject extra URL path segments — fail fast with `RestApiError::InvalidLanguageCode` / `RestApiError::InvalidSiteId` instead of producing a garbled REST path. Values are trimmed and lower-cased, so previously a mixed-case code was sent verbatim; it is now normalised. Calls that used well-formed codes (`"en"`, `"enwiki"`, …) are unaffected. This applies to the `get`/`put`/`delete` operations on `Label`, `Description`, `AliasesInLanguage`, and `Sitelink`; data constructors (`new`, `from_json`) remain infallible and continue to accept whatever the server returns.
+
 ## [0.2.2] - 2026-07-23
 
 ### Security

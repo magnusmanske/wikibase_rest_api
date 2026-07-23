@@ -31,7 +31,7 @@ pub use crate::rest_api::RestApi;
 pub use crate::rest_api_builder::RestApiBuilder;
 pub use crate::revision_match::RevisionMatch;
 pub use crate::search::{Search, SearchLimit, SearchResult};
-pub use crate::sitelink::Sitelink;
+pub use crate::sitelink::{SiteId, Sitelink};
 pub use crate::sitelinks::Sitelinks;
 pub use crate::sitelinks_patch::SitelinksPatch;
 pub use crate::statement::Statement;

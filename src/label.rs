@@ -111,6 +111,33 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_label_get_invalid_language() {
+        // A malformed language is rejected before any request is issued.
+        let api = RestApi::wikidata().unwrap();
+        match Label::get(&EntityId::item("Q42"), "en/../labels", &api)
+            .await
+            .unwrap_err()
+        {
+            RestApiError::InvalidLanguageCode(_) => {}
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
+    #[test]
+    fn test_label_put_path_invalid_language_is_rejected() {
+        // The PUT/DELETE path is built from the stored language, which is validated too.
+        let label = Label::new("en/../labels", "whatever");
+        match label
+            .get_my_rest_api_path(&EntityId::item("Q42"))
+            .unwrap_err()
+        {
+            RestApiError::InvalidLanguageCode(_) => {}
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
+
     #[test]
     fn test_into_language_string() {
         let label = Label::new("en", "Foo bar");

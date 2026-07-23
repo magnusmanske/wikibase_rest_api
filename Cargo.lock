@@ -1721,7 +1721,7 @@ dependencies = [
 
 [[package]]
 name = "wikibase_rest_api"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "derive-where",
  "futures",

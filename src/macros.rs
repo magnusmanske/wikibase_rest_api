@@ -16,7 +16,7 @@ macro_rules! impl_language_string_value {
     ) => {
         use crate::{
             EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpGetEntityWithFallback,
-            HttpMisc, HttpPut, LanguageString, RestApi, RestApiError, RevisionMatch,
+            HttpMisc, HttpPut, Language, LanguageString, RestApi, RestApiError, RevisionMatch,
         };
         use derive_where::DeriveWhere;
         use reqwest::Request;
@@ -85,7 +85,7 @@ macro_rules! impl_language_string_value {
         impl HttpMisc for $type_name {
             fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
                 let group = id.group()?;
-                let language = self.ls.language();
+                let language = Language::validated(self.ls.language())?;
                 Ok(format!("/entities/{group}/{id}/{}/{language}", $path_segment))
             }
         }
@@ -97,8 +97,9 @@ macro_rules! impl_language_string_value {
                 api: &RestApi,
                 rm: RevisionMatch,
             ) -> Result<Self, RestApiError> {
+                let language = Language::validated(language)?;
                 let request = Self::generate_get_match_request(
-                    id, language, api, rm, $fallback_segment,
+                    id, &language, api, rm, $fallback_segment,
                 )
                 .await?;
                 let (j, header_info) = Self::api_execute(api, request).await?;
@@ -122,8 +123,9 @@ macro_rules! impl_language_string_value {
                 api: &RestApi,
                 rm: RevisionMatch,
             ) -> Result<Self, RestApiError> {
+                let language = Language::validated(language)?;
                 let request =
-                    Self::generate_get_match_request(id, language, api, rm, $path_segment).await?;
+                    Self::generate_get_match_request(id, &language, api, rm, $path_segment).await?;
                 let (j, header_info) = Self::api_execute(api, request).await?;
                 let s = j
                     .as_str()

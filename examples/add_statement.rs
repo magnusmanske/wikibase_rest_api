@@ -25,7 +25,9 @@ async fn main() -> Result<(), RestApiError> {
 
     // Attach an edit summary to the write.
     let mut meta = EditMetadata::default();
-    meta.set_comment(Some("Add example statement via wikibase_rest_api".to_string()));
+    meta.set_comment(Some(
+        "Add example statement via wikibase_rest_api".to_string(),
+    ));
 
     // POST the new statement; the server returns the created statement (with its ID).
     let created = Statements::default()

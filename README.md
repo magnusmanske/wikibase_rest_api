@@ -6,11 +6,11 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/acffb6bb26d8407b8e82704843a4aa7e)](https://app.codacy.com/gh/magnusmanske/wikibase_rest_api/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![CI](https://github.com/magnusmanske/wikibase_rest_api/actions/workflows/rust.yml/badge.svg)](https://github.com/magnusmanske/wikibase_rest_api/actions/workflows/rust.yml)
 [![docs.rs](https://img.shields.io/docsrs/wikibase_rest_api?style=flat-square)](https://docs.rs/wikibase_rest_api)
-[![Dependencies](https://deps.rs/repo/github/magnusmanske/wikibase_rest_api/status.svg)](https://deps.rs/repo/github/magnusmanske/wikibase_rest_api)
+[![Dependencies](https://deps.rs/crate/wikibase_rest_api/latest/status.svg)](https://deps.rs/crate/wikibase_rest_api)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10599/badge)](https://www.bestpractices.dev/projects/10599)
 [![Unsafe: forbidden](https://img.shields.io/badge/unsafe-forbidden-success?style=flat-square)](src/lib.rs)
 [![Avg. CCN](https://img.shields.io/badge/avg%20CCN-1.6-brightgreen?style=flat-square)](README.md)
-[![Coverage](https://img.shields.io/badge/coverage-95.31%25-brightgreen?style=flat-square)](README.md)
+[![Coverage](https://img.shields.io/badge/coverage-95.09%25-brightgreen?style=flat-square)](README.md)
 
 # wikibase_rest_api
 
@@ -37,7 +37,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-wikibase_rest_api = "0.2"
+wikibase_rest_api = "0.3"
 ```
 
 Or install via cargo:
@@ -296,6 +296,12 @@ match Item::get(EntityId::new("Q0")?, &api).await {
 The client already retries automatically on `429`/`5xx` responses, honouring the
 `Retry-After` header (capped via `RestApiBuilder::with_max_retry_after`).
 
+Language codes and site IDs are validated before a request is issued: passing a
+malformed value (including one that could inject extra URL path segments) fails
+fast with `RestApiError::InvalidLanguageCode` / `RestApiError::InvalidSiteId`
+rather than producing a garbled path. Values are trimmed and lower-cased, so
+`"EN"` and `"en"` behave identically.
+
 ## Examples
 
 Runnable programs live in the [`examples`](examples) directory — run them with
@@ -360,6 +366,7 @@ Contributions are very welcome — whether it's a bug report, a feature idea, do
 - **Reporting:** please follow the process in [SECURITY.md](SECURITY.md) — use private [GitHub Security Advisories](https://github.com/magnusmanske/wikibase_rest_api/security/advisories/new); do **not** open a public issue for vulnerabilities.
 - **No unsafe code:** the crate is `#![forbid(unsafe_code)]`, so the library contains no `unsafe` blocks.
 - **Transport security:** all requests go over HTTPS via `reqwest` (rustls TLS backend).
+- **Path-segment validation:** entity IDs, language codes, and site IDs are validated before being interpolated into a REST path, rejecting values that could inject extra URL path segments.
 
 ## License
 

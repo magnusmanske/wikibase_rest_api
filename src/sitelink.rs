@@ -1,4 +1,5 @@
 use derive_where::DeriveWhere;
+use nutype::nutype;
 use serde::ser::{Serialize, SerializeStruct};
 use serde_json::{json, Value};
 
@@ -6,6 +7,26 @@ use crate::{
     EditMetadata, EntityId, HeaderInfo, HttpDelete, HttpGet, HttpMisc, HttpPut, RestApi,
     RestApiError, RevisionMatch,
 };
+
+/// A validated site (wiki) identifier, e.g. `enwiki`.
+#[nutype(
+    sanitize(trim, lowercase),
+    validate(regex = "^[a-z][a-z0-9_-]*$"),
+    derive(Debug, Display, Clone, PartialEq)
+)]
+pub struct SiteId(String);
+
+impl SiteId {
+    /// Validates a raw site ID for use in a REST API path, returning the
+    /// sanitized (trimmed, lower-cased) form. Rejects anything that is not a
+    /// well-formed site ID — including strings that could inject extra URL
+    /// path segments — as [`RestApiError::InvalidSiteId`].
+    pub(crate) fn validated(input: &str) -> Result<String, RestApiError> {
+        Self::try_new(input)
+            .map(Self::into_inner)
+            .map_err(|_| RestApiError::InvalidSiteId(input.to_string()))
+    }
+}
 
 #[derive(DeriveWhere, Debug, Clone)]
 #[derive_where(PartialEq)]
@@ -104,6 +125,7 @@ impl Sitelink {
     }
 
     fn get_rest_api_path_from_wiki(id: &EntityId, wiki: &str) -> Result<String, RestApiError> {
+        let wiki = SiteId::validated(wiki)?;
         Ok(format!(
             "/entities/{group}/{id}/sitelinks/{wiki}",
             group = id.group()?
@@ -194,6 +216,29 @@ mod tests {
     use super::*;
     use wiremock::matchers::{bearer_token, body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[test]
+    fn test_site_id_validated() {
+        // Well-formed IDs are trimmed and lower-cased; malformed ones are rejected.
+        assert_eq!(SiteId::validated(" ENWIKI ").unwrap(), "enwiki");
+        assert_eq!(SiteId::validated("be_x_oldwiki").unwrap(), "be_x_oldwiki");
+        for bad in ["", "1wiki", "en/sitelinks", "../enwiki", "en wiki"] {
+            match SiteId::validated(bad).unwrap_err() {
+                RestApiError::InvalidSiteId(input) => assert_eq!(input, bad),
+                e => panic!("Wrong error type for {bad:?}: {e:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_sitelink_invalid_wiki_path_is_rejected() {
+        // A malformed wiki that could inject path segments errors before any request.
+        let sl = Sitelink::new("en/../items/Q1", "whatever");
+        match sl.get_my_rest_api_path(&EntityId::item("Q42")).unwrap_err() {
+            RestApiError::InvalidSiteId(_) => {}
+            e => panic!("Wrong error type: {e:?}"),
+        }
+    }
 
     #[test]
     fn test_sitelink() {

@@ -17,7 +17,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let results = Search::items(query, language).get(&api).await?;
     println!("Top results for '{query}':");
     for result in results.iter().take(10) {
-        let label = result.display_label().map(|l| l.value()).unwrap_or_default();
+        let label = result
+            .display_label()
+            .map(|l| l.value())
+            .unwrap_or_default();
         let description = result.description().map(|d| d.value()).unwrap_or_default();
         println!("  {:10} {label} — {description}", result.id());
     }

@@ -110,7 +110,7 @@ pub use property::Property;
 pub use reference::Reference;
 pub use rest_api::RestApi;
 pub use revision_match::RevisionMatch;
-pub use sitelink::Sitelink;
+pub use sitelink::{SiteId, Sitelink};
 pub use sitelinks::Sitelinks;
 pub use statement::Statement;
 pub use statement_rank::StatementRank;

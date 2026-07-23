@@ -94,6 +94,10 @@ pub enum RestApiError {
     ApiNotSet,
     #[error("Empty value: {0}")]
     EmptyValue(String),
+    #[error("Invalid language code: {0}")]
+    InvalidLanguageCode(String),
+    #[error("Invalid site ID: {0}")]
+    InvalidSiteId(String),
     #[error("Unsupported method: {0}")]
     UnsupportedMethod(reqwest::Method),
     #[error("REST API URL is invalid: {0}")]
