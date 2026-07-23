@@ -496,6 +496,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn test_backoff_with_jitter_bounds() {
         let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
