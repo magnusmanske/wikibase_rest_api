@@ -96,6 +96,7 @@ pub(crate) mod statements_patch;
 pub use config::Config;
 pub use data_type::DataType;
 pub use edit_metadata::EditMetadata;
+pub use entity_container::{EntityContainer, EntityContainerBuilder, LoadReport};
 pub use entity_id::EntityId;
 pub use error::RestApiError;
 pub use get_put_delete::*;

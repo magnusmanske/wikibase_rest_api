@@ -121,6 +121,24 @@ impl From<serde_json::Error> for RestApiError {
 }
 
 impl RestApiError {
+    /// Returns `true` if this is an API error with HTTP status 429 (Too Many Requests).
+    pub const fn is_rate_limited(&self) -> bool {
+        matches!(
+            self,
+            RestApiError::ApiError { status, .. }
+                if status.as_u16() == reqwest::StatusCode::TOO_MANY_REQUESTS.as_u16()
+        )
+    }
+
+    /// Returns `true` if this is an API error with HTTP status 404 (Not Found).
+    pub const fn is_not_found(&self) -> bool {
+        matches!(
+            self,
+            RestApiError::ApiError { status, .. }
+                if status.as_u16() == reqwest::StatusCode::NOT_FOUND.as_u16()
+        )
+    }
+
     pub async fn from_response(response: reqwest::Response) -> Self {
         let status = response.status();
         let status_text = status.canonical_reason().unwrap_or_default().to_string();
