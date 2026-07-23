@@ -21,6 +21,7 @@ pub struct RestApiBuilder {
     connect_timeout: Option<Duration>,
     max_retries: Option<u32>,
     retry_base_delay: Option<Duration>,
+    max_retry_after: Option<Duration>,
 }
 
 impl RestApiBuilder {
@@ -40,6 +41,7 @@ impl RestApiBuilder {
             connect_timeout: None,
             max_retries: None,
             retry_base_delay: None,
+            max_retry_after: None,
         })
     }
 
@@ -89,10 +91,18 @@ impl RestApiBuilder {
     }
 
     /// Sets the base delay for exponential backoff retries. Default is 1 second.
-    /// Actual delay doubles with each retry attempt (1s, 2s, 4s, ...) unless
-    /// the server provides a `Retry-After` header.
+    /// Actual delay doubles with each retry attempt (1s, 2s, 4s, ...), with ±25% jitter,
+    /// unless the server provides a `Retry-After` header.
     pub const fn with_retry_base_delay(mut self, delay: Duration) -> Self {
         self.retry_base_delay = Some(delay);
+        self
+    }
+
+    /// Sets the maximum delay honored for a single retry. Default is 60 seconds.
+    /// A server `Retry-After` larger than this is clamped, so a misconfigured or hostile
+    /// header can never block the client indefinitely.
+    pub const fn with_max_retry_after(mut self, delay: Duration) -> Self {
+        self.max_retry_after = Some(delay);
         self
     }
 
@@ -131,6 +141,9 @@ impl RestApiBuilder {
         let retry_base_delay = self
             .retry_base_delay
             .unwrap_or(RestApi::default_retry_base_delay());
+        let max_retry_after = self
+            .max_retry_after
+            .unwrap_or(RestApi::default_max_retry_after());
         let client = self.client.unwrap_or_else(|| {
             let mut builder = reqwest::Client::builder();
             if let Some(timeout) = self.timeout {
@@ -149,6 +162,7 @@ impl RestApiBuilder {
             token,
             max_retries,
             retry_base_delay,
+            max_retry_after,
         )
     }
 

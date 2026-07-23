@@ -1,10 +1,17 @@
 use crate::{bearer_token::BearerToken, rest_api_builder::RestApiBuilder, RestApiError};
 use reqwest::header::HeaderMap;
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 use tokio::sync::RwLock;
 
 const DEFAULT_MAX_RETRIES: u32 = 3;
 const DEFAULT_RETRY_BASE_DELAY: Duration = Duration::from_secs(1);
+/// Upper bound on how long a single retry will wait, even if the server asks for more.
+/// Prevents a hostile or misconfigured `Retry-After` from blocking the client indefinitely.
+const DEFAULT_MAX_RETRY_AFTER: Duration = Duration::from_secs(60);
 
 #[derive(Debug, Clone)]
 pub struct RestApi {
@@ -15,6 +22,7 @@ pub struct RestApi {
     pub token: Arc<RwLock<BearerToken>>,
     max_retries: u32,
     retry_base_delay: Duration,
+    max_retry_after: Duration,
 }
 
 impl RestApi {
@@ -78,55 +86,74 @@ impl RestApi {
     ) -> Result<reqwest::Response, RestApiError> {
         self.token.write().await.check(self, &request).await?;
 
-        let mut last_error = None;
         for attempt in 0..=self.max_retries {
-            // Clone the request for retries (first attempt uses original)
-            let req = if attempt == 0 {
-                request
-                    .try_clone()
-                    .ok_or_else(|| RestApiError::EmptyValue("request not cloneable".into()))?
-            } else {
-                match request.try_clone() {
-                    Some(r) => r,
-                    None => break, // Can't retry streaming requests
-                }
+            // Clone for a possible retry. If the body isn't cloneable (e.g. a stream),
+            // we can only send it once — execute the original and return its result.
+            let req = match request.try_clone() {
+                Some(req) => req,
+                None => return Ok(self.client.execute(request).await?),
             };
 
             let response = self.client.execute(req).await?;
             let status = response.status();
+            let retryable =
+                status == reqwest::StatusCode::TOO_MANY_REQUESTS || status.is_server_error();
 
-            if status == reqwest::StatusCode::TOO_MANY_REQUESTS || status.is_server_error() {
-                if attempt < self.max_retries {
-                    let delay = self.retry_delay(&response, attempt);
-                    tokio::time::sleep(delay).await;
-                    last_error = Some(RestApiError::from_response(response).await);
-                    continue;
-                }
-                // Last attempt failed — return the error
+            if retryable && attempt < self.max_retries {
+                let delay = self.retry_delay(&response, attempt);
+                tokio::time::sleep(delay).await;
+                continue;
+            }
+            if retryable {
                 return Err(RestApiError::from_response(response).await);
             }
-
             return Ok(response);
         }
 
-        // Unreachable in normal flow, but handle edge case
-        Err(last_error
-            .unwrap_or_else(|| RestApiError::EmptyValue("all retry attempts exhausted".into())))
+        // The loop always returns; this satisfies the type checker only.
+        Err(RestApiError::EmptyValue(
+            "all retry attempts exhausted".into(),
+        ))
     }
 
-    /// Calculates the delay before retrying, respecting `Retry-After` header if present.
+    /// Calculates the delay before retrying. Honors `Retry-After` (both delta-seconds and
+    /// HTTP-date forms), capped at `max_retry_after`; otherwise uses jittered exponential backoff.
     fn retry_delay(&self, response: &reqwest::Response, attempt: u32) -> Duration {
-        // Check for Retry-After header (seconds)
-        if let Some(retry_after) = response
-            .headers()
-            .get("Retry-After")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|s| s.parse::<u64>().ok())
-        {
-            return Duration::from_secs(retry_after);
+        if let Some(retry_after) = Self::retry_after(response) {
+            return retry_after.min(self.max_retry_after);
         }
-        // Exponential backoff: base_delay * 2^attempt
-        self.retry_base_delay * 2_u32.pow(attempt)
+        self.backoff_with_jitter(attempt)
+    }
+
+    /// Parses a `Retry-After` header, supporting both delta-seconds and HTTP-date forms.
+    fn retry_after(response: &reqwest::Response) -> Option<Duration> {
+        let value = response.headers().get("Retry-After")?.to_str().ok()?;
+        if let Ok(seconds) = value.parse::<u64>() {
+            return Some(Duration::from_secs(seconds));
+        }
+        let when = httpdate::parse_http_date(value).ok()?;
+        when.duration_since(SystemTime::now()).ok()
+    }
+
+    /// Exponential backoff with ±25% jitter, capped at `max_retry_after`.
+    /// Jitter avoids synchronized retry storms when many clients back off together.
+    fn backoff_with_jitter(&self, attempt: u32) -> Duration {
+        let multiplier = 2_u32.saturating_pow(attempt.min(16));
+        let base = self
+            .retry_base_delay
+            .saturating_mul(multiplier)
+            .min(self.max_retry_after);
+        let factor = 0.75 + Self::jitter_fraction() * 0.5; // [0.75, 1.25)
+        base.mul_f64(factor)
+    }
+
+    /// A pseudo-random fraction in [0, 1) derived from the current time. Good enough for
+    /// jitter; deliberately dependency-free (no `rand`).
+    fn jitter_fraction() -> f64 {
+        let nanos = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map_or(0, |d| d.subsec_nanos());
+        f64::from(nanos % 1000) / 1000.0
     }
 
     /// Executes a request and returns the parsed JSON body. Any non-success status
@@ -188,6 +215,7 @@ impl RestApi {
         token: Arc<RwLock<BearerToken>>,
         max_retries: u32,
         retry_base_delay: Duration,
+        max_retry_after: Duration,
     ) -> Self {
         Self {
             client,
@@ -197,6 +225,7 @@ impl RestApi {
             token,
             max_retries,
             retry_base_delay,
+            max_retry_after,
         }
     }
 
@@ -229,6 +258,11 @@ impl RestApi {
     /// Returns the base delay for exponential backoff retries.
     pub const fn retry_base_delay(&self) -> Duration {
         self.retry_base_delay
+    }
+
+    /// Returns the maximum delay honored for a single retry (the `Retry-After` cap).
+    pub const fn max_retry_after(&self) -> Duration {
+        self.max_retry_after
     }
 
     /// Returns the root path for the Wikibase REST API, based on the version number
@@ -267,6 +301,10 @@ impl RestApi {
 
     pub(crate) const fn default_retry_base_delay() -> Duration {
         DEFAULT_RETRY_BASE_DELAY
+    }
+
+    pub(crate) const fn default_max_retry_after() -> Duration {
+        DEFAULT_MAX_RETRY_AFTER
     }
 }
 
@@ -384,6 +422,72 @@ mod tests {
 
         let result = api.get_openapi_json().await;
         assert!(result.is_ok());
+    }
+
+    fn response_with_retry_after(value: &str) -> reqwest::Response {
+        reqwest::Response::from(
+            http::Response::builder()
+                .status(429)
+                .header("Retry-After", value)
+                .body("")
+                .unwrap(),
+        )
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn test_retry_after_seconds() {
+        let response = response_with_retry_after("5");
+        assert_eq!(
+            RestApi::retry_after(&response),
+            Some(Duration::from_secs(5))
+        );
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn test_retry_after_http_date_future() {
+        // A date ~1h in the future should yield a positive, roughly-1h delay.
+        let future = SystemTime::now() + Duration::from_secs(3600);
+        let response = response_with_retry_after(&httpdate::fmt_http_date(future));
+        let delay = RestApi::retry_after(&response).unwrap();
+        assert!(delay > Duration::from_secs(3000) && delay <= Duration::from_secs(3600));
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn test_retry_after_garbage_is_none() {
+        let response = response_with_retry_after("not-a-date");
+        assert_eq!(RestApi::retry_after(&response), None);
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn test_retry_delay_caps_retry_after() {
+        let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .with_max_retry_after(Duration::from_secs(10))
+            .build();
+        // Server asks for a day; we clamp to the configured maximum.
+        let response = response_with_retry_after("86400");
+        assert_eq!(api.retry_delay(&response, 0), Duration::from_secs(10));
+    }
+
+    #[test]
+    fn test_backoff_with_jitter_bounds() {
+        let api = RestApi::builder("https://test.wikidata.org/w/rest.php")
+            .unwrap()
+            .with_retry_base_delay(Duration::from_secs(1))
+            .build();
+        // Attempt 2 => base 4s, jittered into [3s, 5s).
+        let delay = api.backoff_with_jitter(2);
+        assert!(delay >= Duration::from_secs(3) && delay < Duration::from_secs(5));
+    }
+
+    #[test]
+    fn test_jitter_fraction_range() {
+        let f = RestApi::jitter_fraction();
+        assert!((0.0..1.0).contains(&f));
     }
 
     #[tokio::test]
