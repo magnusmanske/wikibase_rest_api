@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-23
+
+### Changed
+- Upgraded `reqwest` to 0.13 — its default TLS backend is now **rustls** instead of native-tls; the `query` and `form` features are enabled explicitly (they became optional in 0.13)
+- Upgraded `nutype` to 0.7 and `derive-where` to 1.6
+
+### Added
+- Substantially expanded the test suite (line coverage raised to ~95%)
+- README badges for docs.rs, dependency status (deps.rs), MSRV, and `unsafe: forbidden`, plus generated AvgCCN and coverage badges with refresh scripts (`scripts/update-badges.sh`) and a version-bump git hook (`.githooks/pre-commit`)
+- `.github/dependabot.yml` for automated dependency-update pull requests
+- A Security section in the README
+
 ## [0.2.0] - 2026-07-23
 
 ### Added

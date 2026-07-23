@@ -28,7 +28,7 @@ cargo build
 
 ### Policy
 
-All new functionality must be accompanied by tests. Bug fixes should include a test that reproduces the issue. The project aims to maintain its current high level of code coverage (100%).
+All new functionality must be accompanied by tests. Bug fixes should include a test that reproduces the issue. The project aims to maintain a high level of code coverage.
 
 ### Running Tests
 

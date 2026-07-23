@@ -183,6 +183,12 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 - **Feature requests**: [GitHub Issues](https://github.com/magnusmanske/wikibase_rest_api/issues)
 - **Security vulnerabilities**: see [SECURITY.md](SECURITY.md)
 
+## Security
+
+- **Reporting:** please follow the process in [SECURITY.md](SECURITY.md) — use private [GitHub Security Advisories](https://github.com/magnusmanske/wikibase_rest_api/security/advisories/new); do **not** open a public issue for vulnerabilities.
+- **No unsafe code:** the crate is `#![forbid(unsafe_code)]`, so the library contains no `unsafe` blocks.
+- **Transport security:** all requests go over HTTPS via `reqwest` (rustls TLS backend).
+
 ## License
 
 This project is dual-licensed under the [MIT](LICENSE-MIT) and [Apache 2.0](LICENSE-APACHE2) licenses. You may choose either license at your option.
