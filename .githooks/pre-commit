@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook: when the crate version in Cargo.toml changes in this commit,
+# regenerate the README.md badges (AvgCCN + coverage) and stage the result.
+#
+# Enable once per clone with:
+#     git config core.hooksPath .githooks
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+
+# Did this commit change the `version = "..."` line in Cargo.toml?
+if ! git diff --cached -U0 -- Cargo.toml | grep -qE '^\+version = '; then
+  exit 0
+fi
+
+echo "pre-commit: Cargo.toml version changed — refreshing README badges ..." >&2
+
+if ! "${repo_root}/scripts/update-badges.sh"; then
+  echo "pre-commit: warning: badge update failed (are cargo-tarpaulin and lizard installed?); committing without refreshed badges." >&2
+  exit 0
+fi
+
+git add "${repo_root}/README.md"

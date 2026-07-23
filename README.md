@@ -189,11 +189,21 @@ This project is dual-licensed under the [MIT](LICENSE-MIT) and [Apache 2.0](LICE
 
 Code analysis is run via `analysis.sh`.
 
+## Badges (AvgCCN + coverage)
+`./scripts/update-badges.sh` refreshes both the AvgCCN and coverage badges at the
+top of this README in one go (it calls `update-ccn.sh` and `update-coverage.sh`).
+
+A git hook regenerates them automatically whenever a commit changes the crate
+version in `Cargo.toml`. Enable it once per clone:
+```bash
+git config core.hooksPath .githooks
+```
+
 ## Code coverage
 ```bash
 cargo install cargo-tarpaulin # Once
 cargo tarpaulin -o html       # Detailed HTML report
-./scripts/update-coverage.sh  # Refresh the coverage badge at the top of this README
+./scripts/update-coverage.sh  # Refresh only the coverage badge
 ```
 
 ## Lizard
