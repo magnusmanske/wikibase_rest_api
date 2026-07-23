@@ -1,3 +1,7 @@
+//! Create a brand-new item with a label, description, and one statement.
+//!
+//! Writing requires an OAuth 2.0 access token; this targets test.wikidata.org.
+//! Run with: `cargo run --example create_item`
 use wikibase_rest_api::prelude::*;
 
 #[cfg(not(tarpaulin_include))]

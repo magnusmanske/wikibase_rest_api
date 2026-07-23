@@ -1,3 +1,6 @@
+//! Bulk-load several items and properties concurrently via `EntityContainer`.
+//!
+//! Run with: `cargo run --example container`
 use std::sync::Arc;
 use wikibase_rest_api::prelude::*;
 

@@ -15,8 +15,21 @@
 # wikibase_rest_api
 
 A Rust client library for the [Wikibase REST API](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
-It provides async, type-safe access to Wikibase instances (including Wikidata) for reading and writing items, properties, labels, descriptions, aliases, statements, and sitelinks.
+It provides async, type-safe access to Wikibase instances (including [Wikidata](https://www.wikidata.org)) for reading and writing items, properties, labels, descriptions, aliases, statements, and sitelinks.
 It works on any MediaWiki installation with the Wikibase extension and an enabled REST API.
+
+New to Wikibase data? Items (`Q…`) and properties (`P…`) are the core objects; each carries multilingual labels/descriptions/aliases, a set of statements (property–value pairs, optionally with qualifiers and references), and — for items — sitelinks to wiki pages. This crate maps all of those to Rust types.
+
+## Features
+
+- 🔍 **Read** items, properties, and their individual parts (labels, descriptions, aliases, statements, sitelinks).
+- ✍️ **Write** with full CRUD — create entities, `PUT`/`DELETE` individual parts, and apply JSON Patch (RFC 6902) edits.
+- 🌐 **Search** for items and properties by text.
+- 🚀 **Bulk-load** many entities concurrently with a configurable parallelism limit.
+- 🔁 **Automatic retries** that honour `Retry-After` on rate-limit / server errors.
+- 🔑 **Authentication** via OAuth 2.0 access tokens.
+- 🧭 **Edit metadata** — attach edit summaries and tags to every write.
+- 🛡️ Type-safe IDs and values, `#![forbid(unsafe_code)]`, and no live network calls in the test suite.
 
 ## Installation
 
@@ -33,6 +46,12 @@ Or install via cargo:
 cargo add wikibase_rest_api
 ```
 
+You will also need an async runtime; the examples below use [`tokio`](https://tokio.rs):
+
+```bash
+cargo add tokio --features macros,rt-multi-thread
+```
+
 ### Building from source
 
 ```bash
@@ -41,147 +60,300 @@ cd wikibase_rest_api
 cargo build
 ```
 
-## Documentation
+## Quick start
 
-- **API Reference**: [docs.rs/wikibase_rest_api](https://docs.rs/wikibase_rest_api)
-- **Wikibase REST API spec**: [doc.wikimedia.org](https://doc.wikimedia.org/Wikibase/master/js/rest-api/)
-- **Examples**: see the [examples](examples) directory
-- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+Read the English label of [Q42](https://www.wikidata.org/wiki/Q42) (Douglas Adams) from Wikidata:
 
-## Usage
-See also the [examples](examples).
 ```rust
-// Create an API (use the Wikidata API shortcut)
-let api = RestApi::wikidata()?;
+use wikibase_rest_api::prelude::*;
 
-// Use Q42 (Douglas Adams) as an example item
-let id = EntityId::new("Q42")?;
+#[tokio::main]
+async fn main() -> Result<(), RestApiError> {
+    // Connect to the Wikidata REST API.
+    let api = RestApi::wikidata()?;
 
-// Get the label and sitelink of Q42
-let q42_label_en = Label::get(&id, "en", &api).await?.value().to_owned();
-let q42_sitelink = Sitelink::get(&id, "enwiki", &api).await?.title().to_owned();
-println!("Q42 '{q42_label_en}' => [[enwiki:{q42_sitelink}]]");
+    // Fetch a single label.
+    let id = EntityId::new("Q42")?;
+    let label = Label::get(&id, "en", &api).await?;
+    println!("Q42 is '{}'", label.value());
 
-// Create a new item
-let mut item = Item::default();
-item.labels_mut()
-    .insert(LanguageString::new("en", "My label"));
-item.statements_mut()
-    .insert(Statement::new_string("P31", "Q42"));
-let item: Item = item.post(&api).await?;
-println!("Created new item {}", item.id());
-
-// Load multiple entities concurrently
-let entity_ids = [
-    "Q42", "Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "P214",
-]
-.iter()
-.map(|id| EntityId::new(*id))
-.collect::<Result<Vec<_>, RestApiError>>()?;
-
-// A container will manage the concurrent loading of entities.
-let api = Arc::new(api);
-let entity_container = EntityContainer::builder()
-    .api(api)
-    .max_concurrent(50)
-    .build()?;
-// Missing entities (e.g. Q6-Q9 here) are simply absent; use load_report() to inspect failures.
-entity_container.load(&entity_ids).await?;
-if let Some(q42) = entity_container.get_item("Q42").await {
-    if let Some(label) = q42.labels().get_lang("en") {
-        println!("Q42 label[en]: {label}");
-    }
+    Ok(())
 }
-
-// Search for "Tim Berners-Lee" (in English) on Wikidata.
-let query = "Tim Berners-Lee";
-let language = Language::try_new("en")?;
-let api = RestApi::builder("https://www.wikidata.org/w/rest.php")?
-    .with_api_version(0) // Currently only works with v0 not v1
-    .build()?;
-let results = Search::items(query, language).get(&api).await?;
-println!("{}", results[0].id());
 ```
 
-# Implemented REST API actions
-## items
-- [x] `post`
-- [x] `get`
-- [ ] `patch`
-## properties
-- [x] `post`
-- [x] `get`
-- [ ] `patch`
-## sitelinks
-- [x] `get item_id`
-- [x] `patch`
-- [x] `get itemid/sitelink_id`
-- [x] `put itemid/sitelink_id`
-- [x] `delete itemid/sitelink_id`
-## labels
-- [x] `get item_id`
-- [x] `patch item_id`
-- [x] `get property_id`
-- [x] `patch property_id`
-- [x] `get item_id/language_code`
-- [x] `put item_id/language_code`
-- [x] `delete item_id/language_code`
-- [x] `get item_id/language_code` with fallback language
-- [x] `get property_id/language_code`
-- [x] `put property_id/language_code`
-- [x] `delete property_id/language_code`
-- [x] `get property_id/language_code` with fallback language
-## descriptions
-- [x] `get item_id`
-- [x] `patch item_id`
-- [x] `get property_id`
-- [x] `patch property_id`
-- [x] `get item_id/language_code`
-- [x] `put item_id/language_code`
-- [x] `delete item_id/language_code`
-- [x] `get item_id/language_code` with fallback language
-- [x] `get property_id/language_code`
-- [x] `put property_id/language_code`
-- [x] `delete property_id/language_code`
-- [x] `get property_id/language_code` with fallback language
-## aliases
-- [x] `get item_id`
-- [x] `patch item_id`
-- [x] `get property_id`
-- [x] `patch property_id`
-- [x] `get item_id/language_code`
-- [x] `post item_id/language_code`
-- [x] `get property_id/language_code`
-- [x] `post property_id/language_code`
-## statements
-- [x] `get item_id`
-- [x] `post item_id`
-- [x] `get item_id/statement_id` as `get statement_id`
-- [x] `put item_id/statement_id` as `put statement_id`
-- [x] `patch item_id/statement_id` as `patch statement_id`
-- [x] `delete item_id/statement_id` as `delete statement_id`
-- [x] `get property_id`
-- [x] `post property_id`
-- [x] `get property_id/statement_id` as `get statement_id`
-- [x] `put property_id/statement_id` as `put statement_id`
-- [x] `patch property_id/statement_id` as `patch statement_id`
-- [x] `delete property_id/statement_id` as `delete statement_id`
-- [x] `get statement_id`
-- [x] `put statement_id`
-- [x] `patch statement_id`
-- [x] `delete statement_id`
-## misc
-- [x] `/openapi.json`
-- [x] `/property-data-types`
-- [x] `seach items` (for Wikidata currently only in v0)
+The [`prelude`](https://docs.rs/wikibase_rest_api/latest/wikibase_rest_api/prelude/) re-exports everything you need. All network methods are `async` and return `Result<_, RestApiError>`.
+
+## Usage
+
+The snippets below are fragments: assume `use wikibase_rest_api::prelude::*;`, an
+async context, and an `api` value obtained as shown in
+[Connecting to a Wikibase](#connecting-to-a-wikibase). Complete, runnable
+programs live in [`examples`](examples).
+
+### Connecting to a Wikibase
+
+```rust
+// Wikidata shortcut.
+let api = RestApi::wikidata()?;
+
+// Any Wikibase instance, with an (encouraged) descriptive user agent.
+let api = RestApi::builder("https://www.wikidata.org/w/rest.php")?
+    .with_user_agent("my-app/1.0 (https://example.org; me@example.org)")
+    .build()?;
+```
+
+### Reading an entity
+
+Load a whole item and read its parts. `Item` and `Property` both implement the
+[`Entity`](https://docs.rs/wikibase_rest_api/latest/wikibase_rest_api/entity/trait.Entity.html) trait.
+
+```rust
+let item = Item::get(EntityId::new("Q42")?, &api).await?;
+
+// Labels, descriptions and aliases are language-keyed.
+if let Some(label) = item.labels().get_lang("en") {
+    println!("label: {label}");
+}
+if let Some(description) = item.descriptions().get_lang("en") {
+    println!("description: {description}");
+}
+println!("en aliases: {:?}", item.aliases().get_lang("en"));
+
+// Sitelinks (items only).
+if let Some(sitelink) = item.sitelinks().get_wiki("enwiki") {
+    println!("English Wikipedia: {}", sitelink.title());
+}
+```
+
+Individual parts can also be fetched on their own — cheaper than loading the whole entity:
+
+```rust
+let id = EntityId::new("Q42")?;
+let label = Label::get(&id, "en", &api).await?;
+let sitelink = Sitelink::get(&id, "enwiki", &api).await?;
+println!("{} => [[enwiki:{}]]", label.value(), sitelink.title());
+```
+
+### Working with statements
+
+Statements are property–value pairs. Fetch them, filter by property, then match
+on the value enum.
+
+```rust
+let id = EntityId::new("Q42")?;
+let statements = Statements::get(&id, &api).await?;
+
+// "instance of" (P31) — the values are item IDs.
+for statement in statements.property("P31") {
+    if let StatementValue::Value(StatementValueContent::String(other_id)) = statement.value() {
+        println!("Q42 is an instance of {other_id}");
+    }
+}
+```
+
+Build statements with the `new_*` constructors, and attach qualifiers and references fluently:
+
+```rust
+// A reference is a bundle of property-value "snaks".
+let mut reference = Reference::default();
+reference.parts_mut().push(
+    Statement::new_url("P854", "https://example.org/source").as_property_value(),
+);
+
+// P106 "occupation" = Q36180 "writer", backed by that reference.
+let statement = Statement::new_item("P106", "Q36180").with_reference(reference);
+```
+
+### Searching
+
+```rust
+let language = Language::try_new("en")?;
+let results = Search::items("Douglas Adams", language).get(&api).await?;
+
+for result in results.iter().take(5) {
+    let label = result.display_label().map(|l| l.value()).unwrap_or_default();
+    println!("{}: {label}", result.id());
+}
+```
+
+Use `Search::properties`, `Search::suggest_items`, or `Search::suggest_properties` for the other search modes.
+
+### Loading many entities at once
+
+`EntityContainer` fetches a batch of entities concurrently, with a configurable
+limit, and holds the results for you. Missing entities (e.g. deleted IDs) are
+simply absent — use `load_report` when you need to know exactly what failed.
+
+```rust
+use std::sync::Arc;
+
+let api = Arc::new(RestApi::wikidata()?);
+let container = EntityContainer::builder()
+    .api(api)
+    .max_concurrent(10)
+    .build()?;
+
+let ids = ["Q42", "Q1", "P31"]
+    .iter()
+    .map(|id| EntityId::new(*id))
+    .collect::<Result<Vec<_>, _>>()?;
+
+let report = container.load_report(&ids).await;
+println!("loaded {}, missing {}", report.loaded().len(), report.missing().len());
+
+if let Some(q42) = container.get_item("Q42").await {
+    println!("{:?}", q42.labels().get_lang("en"));
+}
+```
+
+### Authentication
+
+Read access is anonymous. Writing requires an OAuth 2.0 access token (create one
+under *Special:OAuthConsumerRegistration* / *Special:AppManagement* on your wiki):
+
+```rust
+let api = RestApi::builder("https://test.wikidata.org/w/rest.php")?
+    .with_access_token("YOUR_ACCESS_TOKEN")
+    .with_user_agent("my-app/1.0 (me@example.org)")
+    .build()?;
+```
+
+> **Tip:** experiment against [test.wikidata.org](https://test.wikidata.org) rather than live Wikidata while developing writes.
+
+### Creating and editing
+
+Create a new item:
+
+```rust
+let mut item = Item::default();
+item.labels_mut().insert(LanguageString::new("en", "Douglas Adams"));
+item.descriptions_mut().insert(LanguageString::new("en", "English author"));
+item.statements_mut().insert(Statement::new_item("P31", "Q5")); // instance of human
+
+let created = item.post(&api).await?;
+println!("created {}", created.id());
+```
+
+Set or overwrite a single part with `PUT`; `DELETE` removes one (the language is
+taken from the object, so the value can be empty when deleting):
+
+```rust
+let id = EntityId::new("Q42")?;
+
+// Create or overwrite the German label.
+Label::new("de", "Douglas Adams").put(&id, &api).await?;
+
+// Remove the French description.
+Description::new("fr", "").delete(&id, &api).await?;
+```
+
+### Edit metadata (summaries & tags)
+
+Attach an edit summary and change tags to any write via the `*_meta` methods:
+
+```rust
+let id = EntityId::new("Q42")?;
+
+let mut meta = EditMetadata::default();
+meta.set_comment(Some("fix English label".to_string()));
+meta.set_tags(vec!["my-bot".to_string()]);
+
+Label::new("en", "Douglas Adams").put_meta(&id, &api, meta).await?;
+```
+
+### Patch-based edits
+
+For finer-grained changes, diff two versions of a collection and apply the
+resulting [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902):
+
+```rust
+let id = EntityId::new("Q42")?;
+let before = Labels::get(&id, &api).await?;
+
+let mut after = before.clone();
+after.insert(LanguageString::new("es", "Douglas Adams"));
+
+// Applies only the difference (adds the Spanish label).
+let updated = after.patch(&before)?.apply(&id, &api).await?;
+```
+
+Whole entities can be patched too, via `Item::patch` / `Property::patch`.
+
+### Error handling
+
+Every network call returns `RestApiError`. Common cases have helpers, so you
+don't have to match on message strings:
+
+```rust
+match Item::get(EntityId::new("Q0")?, &api).await {
+    Ok(item) => println!("{}", item.id()),
+    Err(e) if e.is_not_found() => println!("no such item"),
+    Err(e) if e.is_rate_limited() => println!("slow down!"),
+    Err(e) => return Err(e),
+}
+```
+
+The client already retries automatically on `429`/`5xx` responses, honouring the
+`Retry-After` header (capped via `RestApiBuilder::with_max_retry_after`).
+
+## Examples
+
+Runnable programs live in the [`examples`](examples) directory — run them with
+`cargo run --example <name>`:
+
+| Example | What it shows |
+| --- | --- |
+| [`Q42`](examples/Q42.rs) | Read a label, a sitelink, and statements of a single item |
+| [`read_entity`](examples/read_entity.rs) | Load a whole item and print all of its parts |
+| [`search`](examples/search.rs) | Search Wikidata for items and print the results |
+| [`container`](examples/container.rs) | Bulk-load many entities concurrently |
+| [`create_item`](examples/create_item.rs) | Create a new item (needs a token; targets test.wikidata.org) |
+| [`add_statement`](examples/add_statement.rs) | Add a statement with an edit summary (needs a token) |
+
+The read-only examples run against live Wikidata as-is; the writing examples
+target [test.wikidata.org](https://test.wikidata.org) and need an access token.
+
+## Supported API endpoints
+
+The crate implements the full Wikibase REST API surface.
+
+### Items & properties
+- [x] `GET` / `POST` items and properties
+- [x] `PATCH` items and properties (`Item::patch` / `Property::patch`)
+
+### Labels, descriptions, aliases
+- [x] `GET` / `PATCH` the whole collection (per item and per property)
+- [x] `GET` / `PUT` / `DELETE` a single label or description by language code
+- [x] `GET` a single label / description with language fallback
+- [x] `GET` / `POST` aliases in a given language
+
+### Sitelinks
+- [x] `GET` / `PATCH` all sitelinks of an item
+- [x] `GET` / `PUT` / `DELETE` a single sitelink
+
+### Statements
+- [x] `GET` / `POST` statements of an item or property
+- [x] `GET` / `PUT` / `PATCH` / `DELETE` a statement (by entity + statement ID, or by statement ID alone)
+
+### Misc
+- [x] `GET /openapi.json`
+- [x] `GET /property-data-types`
+- [x] Search items and properties (on Wikidata currently only via API `v0`)
+
+## Documentation
+
+- **API reference**: [docs.rs/wikibase_rest_api](https://docs.rs/wikibase_rest_api)
+- **Examples**: the [`examples`](examples) directory
+- **Wikibase REST API spec**: [doc.wikimedia.org](https://doc.wikimedia.org/Wikibase/master/js/rest-api/)
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are very welcome — whether it's a bug report, a feature idea, docs, or code.
 
-- **Bug reports**: [GitHub Issues](https://github.com/magnusmanske/wikibase_rest_api/issues)
-- **Feature requests**: [GitHub Issues](https://github.com/magnusmanske/wikibase_rest_api/issues)
-- **Security vulnerabilities**: see [SECURITY.md](SECURITY.md)
+- **Bug reports & feature requests**: [GitHub Issues](https://github.com/magnusmanske/wikibase_rest_api/issues)
+- **Contribution guidelines**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Working on the crate itself**: see [DEVELOPMENT.md](DEVELOPMENT.md) for build, test, coverage, and release workflows.
 
 ## Security
 
@@ -192,55 +364,3 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 ## License
 
 This project is dual-licensed under the [MIT](LICENSE-MIT) and [Apache 2.0](LICENSE-APACHE2) licenses. You may choose either license at your option.
-
-# Developer notes
-## TODO
-- Maxlag/rate limits?
-
-Code analysis is run via `analysis.sh`.
-
-## Badges (AvgCCN + coverage)
-`./scripts/update-badges.sh` refreshes both the AvgCCN and coverage badges at the
-top of this README in one go (it calls `update-ccn.sh` and `update-coverage.sh`).
-
-A git hook regenerates them automatically whenever a commit changes the crate
-version in `Cargo.toml`. Enable it once per clone:
-```bash
-git config core.hooksPath .githooks
-```
-
-## Code coverage
-```bash
-cargo install cargo-tarpaulin # Once
-cargo tarpaulin -o html       # Detailed HTML report
-./scripts/update-coverage.sh  # Refresh only the coverage badge
-```
-
-## Lizard
-Lizard is a simple code analyzer, giving cyclomatic complexity etc.
-https://github.com/terryyin/lizard
-```bash
-lizard src -C 7 -V -L 40
-./scripts/update-ccn.sh # Refresh the AvgCCN badge at the top of this README
-```
-
-## Analysis
-Run `rust-code-analysis.py` (requires `rust-code-analysis-cli` to be installed) to generate `analysis.tab`.
-This contains many metrics on code complexity and quality.
-```bash
-./rust-code-analysis.py
-```
-
-## Tarpaulin
-```bash
-cargo tarpaulin -o html
-```
-
-## grcov
-[grcov](https://github.com/mozilla/grcov)
-
-## Miri
-Installation and usage: https://github.com/rust-lang/miri
-```bash
-cargo +nightly miri test
-```

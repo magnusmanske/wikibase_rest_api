@@ -1,3 +1,6 @@
+//! Read a single item's label, sitelink, and "instance of" statements.
+//!
+//! Run with: `cargo run --example Q42`
 use wikibase_rest_api::prelude::*;
 
 #[cfg(not(tarpaulin_include))]
