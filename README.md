@@ -64,7 +64,7 @@ item.labels_mut()
     .insert(LanguageString::new("en", "My label"));
 item.statements_mut()
     .insert(Statement::new_string("P31", "Q42"));
-let item: Item = item.post(&api).await.unwrap();
+let item: Item = item.post(&api).await?;
 println!("Created new item {}", item.id());
 
 // Load multiple entities concurrently
@@ -81,26 +81,22 @@ let entity_container = EntityContainer::builder()
     .api(api)
     .max_concurrent(50)
     .build()?;
+// Missing entities (e.g. Q6-Q9 here) are simply absent; use load_report() to inspect failures.
 entity_container.load(&entity_ids).await?;
-let q42 = entity_container
-    .items()
-    .read()
-    .await
-    .get("Q42")
-    .unwrap()
-    .to_owned();
-let q42_label_en = q42.labels().get_lang("en").unwrap();
-println!("Q42 label[en]: {q42_label_en}");
+if let Some(q42) = entity_container.get_item("Q42").await {
+    if let Some(label) = q42.labels().get_lang("en") {
+        println!("Q42 label[en]: {label}");
+    }
+}
 
 // Search for "Tim Berners-Lee" (in English) on Wikidata.
 let query = "Tim Berners-Lee";
-let language = Language::try_new("en").unwrap();
-let api = RestApi::builder("https://www.wikidata.org/w/rest.php")
-    .unwrap()
+let language = Language::try_new("en")?;
+let api = RestApi::builder("https://www.wikidata.org/w/rest.php")?
     .with_api_version(0) // Currently only works with v0 not v1
-    .build();
-let results = Search::items(query, language).get(&api).await.unwrap();
-println!("{}",results[0].id());
+    .build()?;
+let results = Search::items(query, language).get(&api).await?;
+println!("{}", results[0].id());
 ```
 
 # Implemented REST API actions

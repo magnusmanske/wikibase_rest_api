@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0]
+
+### Added
+- `EntityContainer::load_report()` and `LoadReport` — bulk loads report every ID as loaded, missing (404), or failed; nothing is dropped
+- `EntityContainer` builder: `container_retries`, `container_backoff`; plus `get_item()` / `get_property()` accessors
+- `RestApiBuilder::with_max_retry_after()` — caps how long a `Retry-After` can pause the client (default 60s)
+- `RestApiError::is_rate_limited()` / `is_not_found()`
+- Retry now parses HTTP-date `Retry-After` and adds ±25% backoff jitter
+
+### Changed
+- **Breaking:** `RestApiBuilder::build()` returns `Result` (no longer silently discards timeouts on client-build failure)
+- **Breaking:** write operations (`put`/`delete`/`apply`/…) take `&RestApi` instead of `&mut RestApi`
+- **Breaking:** `Entity::id()` returns `&EntityId` instead of a clone
+- **Breaking:** `EntityId::new()` / `new_from_config()` validate the ID shape (type letter + digits); `item()` / `property()` remain unchecked
+- **Breaking:** `RestApi.token` field is now `pub(crate)` — use `RestApi::token()`
+- **Breaking:** glob re-exports replaced with explicit ones
+- All non-success responses now surface as `RestApiError::ApiError` with the server payload (some paths previously returned a bare reqwest error)
+- `HttpMisc::get_rest_api_path` default returns an error instead of panicking
+- New error variants: `InvalidEntityId`, `PathNotImplemented`
+
+### Fixed
+- `EntityContainer::load()` no longer silently discards per-entity fetch failures
+- Entity-level statement patches now use valid `/statements/{property}/{index}` paths with correct add/remove classification and index-safe ordering (previously invalid and inverted)
+- `Search` no longer silently drops malformed results; parse errors are returned
+- `Retry-After` can no longer block the client indefinitely; non-cloneable requests are sent once instead of failing
+- `Statements::is_empty()` is now consistent with `len()`
+- `Display for EntityId::None` renders empty instead of risking a panic via `format!`
+- PATCH content-type corrected to `application/json-patch+json`
+
+### Performance
+- `tokio` reduced to the `sync` + `time` features (smaller downstream builds)
+- Token freshness is checked under a read lock, so concurrent requests no longer serialize on it
+- Fewer allocations in request building, `Statements::property`, and entity patch merging
+
+### Removed
+- Live-network tests replaced with mocked (wiremock) equivalents
+
 ## [0.1.16] - 2024-11-15
 
 ### Added
