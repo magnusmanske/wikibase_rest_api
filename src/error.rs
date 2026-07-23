@@ -80,6 +80,8 @@ pub enum RestApiError {
     IsNone,
     #[error("Unrecognized entity ID letter: {0}")]
     UnknownEntityLetter(String),
+    #[error("Invalid entity ID: {0}")]
+    InvalidEntityId(String),
     #[error("Unknown value: {0}")]
     UnknownValue(String),
     #[error("Unknown data type: {0}")]
@@ -100,6 +102,8 @@ pub enum RestApiError {
     InvalidPrecision,
     #[error("Missing results field in response")]
     MissingResults,
+    #[error("REST API path not implemented: {0}")]
+    PathNotImplemented(String),
 }
 
 impl From<reqwest::Error> for RestApiError {

@@ -33,8 +33,8 @@ impl HttpMisc for Property {
 }
 
 impl Entity for Property {
-    fn id(&self) -> EntityId {
-        self.id.to_owned()
+    fn id(&self) -> &EntityId {
+        &self.id
     }
 
     fn set_id(&mut self, id: EntityId) {
@@ -244,7 +244,7 @@ mod tests {
             id: id.to_owned(),
             ..Default::default()
         };
-        assert_eq!(property.id(), id);
+        assert_eq!(property.id(), &id);
     }
 
     #[test]
@@ -343,7 +343,7 @@ mod tests {
             "statements": {},
         });
         let property = Property::from_json(v).unwrap();
-        assert_eq!(property.id(), EntityId::property("P214"));
+        assert_eq!(property.id(), &EntityId::property("P214"));
         assert_eq!(property.data_type(), Some(DataType::ExternalId));
         assert_eq!(property.labels().get_lang("en").unwrap(), "label");
         assert_eq!(

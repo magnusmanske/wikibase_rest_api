@@ -44,18 +44,26 @@ impl EntityId {
     }
 
     /// Creates a new entity ID from a string, using a bespoke configuration.
+    ///
+    /// The ID must be a type letter followed by digits (e.g. `Q42`). This validation rejects
+    /// malformed input — including strings that could inject extra URL path segments.
     pub fn new_from_config<S: Into<String>>(
         id: S,
         config: &Config,
     ) -> Result<EntityId, RestApiError> {
         let id = id.into();
-        if id.starts_with(config.item_letter()) {
-            Ok(EntityId::Item(id))
-        } else if id.starts_with(config.property_letter()) {
-            Ok(EntityId::Property(id))
-        } else {
-            Err(RestApiError::UnknownEntityLetter(id))
+        let (variant, number): (fn(String) -> EntityId, &str) =
+            if let Some(number) = id.strip_prefix(config.item_letter()) {
+                (EntityId::Item, number)
+            } else if let Some(number) = id.strip_prefix(config.property_letter()) {
+                (EntityId::Property, number)
+            } else {
+                return Err(RestApiError::UnknownEntityLetter(id));
+            };
+        if number.is_empty() || !number.bytes().all(|b| b.is_ascii_digit()) {
+            return Err(RestApiError::InvalidEntityId(id));
         }
+        Ok(variant(id))
     }
 
     /// Returns an unset (None) entity ID.
@@ -63,12 +71,14 @@ impl EntityId {
         EntityId::None
     }
 
-    /// Returns a new entity ID for an item.
+    /// Returns a new entity ID for an item. The ID is **not** validated; prefer
+    /// [`new`](Self::new) for untrusted input.
     pub fn item<S: Into<String>>(s: S) -> EntityId {
         EntityId::Item(s.into())
     }
 
-    /// Returns a new entity ID for a property.
+    /// Returns a new entity ID for a property. The ID is **not** validated; prefer
+    /// [`new`](Self::new) for untrusted input.
     pub fn property<S: Into<String>>(s: S) -> EntityId {
         EntityId::Property(s.into())
     }
@@ -261,5 +271,31 @@ mod tests {
         assert_eq!(id_b, EntityId::property("B123"));
         let id_x = EntityId::new_from_config("X123", &config);
         assert!(id_x.is_err());
+    }
+
+    #[test]
+    fn test_entity_id_new_rejects_malformed() {
+        // Correct letter but non-numeric body (would inject a URL path segment).
+        assert!(matches!(
+            EntityId::new("Q42/labels/en"),
+            Err(RestApiError::InvalidEntityId(_))
+        ));
+        assert!(matches!(
+            EntityId::new("QWERTY"),
+            Err(RestApiError::InvalidEntityId(_))
+        ));
+        // Just the letter, no number.
+        assert!(matches!(
+            EntityId::new("Q"),
+            Err(RestApiError::InvalidEntityId(_))
+        ));
+        // Unknown letter.
+        assert!(matches!(
+            EntityId::new("X1"),
+            Err(RestApiError::UnknownEntityLetter(_))
+        ));
+        // Valid.
+        assert_eq!(EntityId::new("Q42").unwrap(), EntityId::item("Q42"));
+        assert_eq!(EntityId::new("P31").unwrap(), EntityId::property("P31"));
     }
 }

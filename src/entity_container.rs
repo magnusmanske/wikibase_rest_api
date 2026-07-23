@@ -387,12 +387,12 @@ mod tests {
         // Convenience accessors.
         assert_eq!(
             ec.get_item("Q42").await.unwrap().id(),
-            EntityId::item("Q42")
+            &EntityId::item("Q42")
         );
         assert!(ec.get_item("Q999").await.is_none());
         assert_eq!(
             ec.get_property("P214").await.unwrap().id(),
-            EntityId::property("P214")
+            &EntityId::property("P214")
         );
         assert!(ec.get_property("P999").await.is_none());
     }

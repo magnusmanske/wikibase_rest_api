@@ -9,10 +9,12 @@ pub trait HttpMisc {
     }
 
     fn get_rest_api_path(id: &EntityId) -> Result<String, RestApiError> {
-        panic!(
-            "{}::get_rest_api_path is not implemented but was used for {id}",
+        // A type that relies on the default `get_my_rest_api_path` must implement this;
+        // returning an error (rather than panicking) keeps the misuse recoverable.
+        Err(RestApiError::PathNotImplemented(format!(
+            "{}::get_rest_api_path for {id}",
             std::any::type_name::<Self>()
-        );
+        )))
     }
 
     fn add_metadata_to_json(j: &mut Value, em: &EditMetadata) {

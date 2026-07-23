@@ -33,8 +33,8 @@ impl HttpMisc for Item {
 }
 
 impl Entity for Item {
-    fn id(&self) -> EntityId {
-        self.id.to_owned()
+    fn id(&self) -> &EntityId {
+        &self.id
     }
 
     fn set_id(&mut self, id: EntityId) {
@@ -244,7 +244,7 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     async fn test_item_get() {
         let item = get_test_item("Q42").await.unwrap();
-        assert_eq!(item.id(), EntityId::item("Q42"));
+        assert_eq!(item.id(), &EntityId::item("Q42"));
         assert!(item.labels.has_language("en"));
         assert_eq!(item.labels().get_lang("en").unwrap(), "Douglas Adams");
         assert!(item

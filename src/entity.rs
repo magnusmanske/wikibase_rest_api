@@ -31,7 +31,7 @@ impl EntityType {
 }
 
 pub trait Entity: Default + Sized + Serialize + HttpMisc {
-    fn id(&self) -> EntityId;
+    fn id(&self) -> &EntityId;
     fn set_id(&mut self, id: EntityId);
     fn from_json_header_info(j: Value, header_info: HeaderInfo) -> Result<Self, RestApiError>;
 
