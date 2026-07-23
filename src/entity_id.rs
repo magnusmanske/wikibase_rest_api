@@ -100,10 +100,10 @@ impl From<EntityId> for String {
 
 impl fmt::Display for EntityId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // `None` renders as empty rather than `Err`, so `format!("{id}")` can never panic.
         match self {
-            EntityId::Item(id) => write!(f, "{id}"),
-            EntityId::Property(id) => write!(f, "{id}"),
-            EntityId::None => Err(fmt::Error),
+            EntityId::Item(id) | EntityId::Property(id) => write!(f, "{id}"),
+            EntityId::None => Ok(()),
         }
     }
 }
@@ -242,6 +242,14 @@ mod tests {
     fn test_entity_id_none_new() {
         let id = EntityId::new("X123");
         assert!(id.is_err());
+    }
+
+    #[test]
+    fn test_entity_id_display() {
+        assert_eq!(EntityId::item("Q123").to_string(), "Q123");
+        assert_eq!(EntityId::property("P123").to_string(), "P123");
+        // `None` renders as empty and must never panic.
+        assert_eq!(EntityId::none().to_string(), "");
     }
 
     #[test]

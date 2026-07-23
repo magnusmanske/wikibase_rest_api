@@ -49,7 +49,7 @@ impl RestApi {
             reqwest::Method::PATCH => {
                 headers.insert(
                     reqwest::header::CONTENT_TYPE,
-                    reqwest::header::HeaderValue::from_static("json-patch+json"),
+                    reqwest::header::HeaderValue::from_static("application/json-patch+json"),
                 );
             }
             _ => {

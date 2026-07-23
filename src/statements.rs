@@ -62,9 +62,10 @@ impl Statements {
         self.statements.values().flatten().count()
     }
 
-    /// Returns true if there are no statements
+    /// Returns true if there are no statements.
+    /// Consistent with `len()`: a property key holding an empty list still counts as empty.
     pub fn is_empty(&self) -> bool {
-        self.statements.is_empty()
+        self.statements.values().all(Vec::is_empty)
     }
 
     /// Returns the Statements for a specific property

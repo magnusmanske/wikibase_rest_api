@@ -35,10 +35,11 @@ impl EntityContainer {
         };
 
         // Load items and properties concurrently without holding any locks
-        let (loaded_items, loaded_properties) = tokio::join!(
+        let (loaded_items, loaded_properties) = futures::future::join(
             self.fetch_items(&item_ids),
             self.fetch_properties(&property_ids),
-        );
+        )
+        .await;
         let loaded_items = loaded_items?;
         let loaded_properties = loaded_properties?;
 
