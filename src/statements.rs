@@ -1,11 +1,11 @@
 use crate::{
-    statements_patch::StatementsPatch, EditMetadata, EntityId, FromJson, HeaderInfo, HttpGetEntity,
-    HttpMisc, Patch, RestApi, RestApiError, RevisionMatch, Statement,
+    patch_entry::PatchEntry, statements_patch::StatementsPatch, EditMetadata, EntityId, FromJson,
+    HeaderInfo, HttpGetEntity, HttpMisc, Patch, RestApi, RestApiError, RevisionMatch, Statement,
 };
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeMap};
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(DeriveWhere, Debug, Clone, Default)]
 #[derive_where(PartialEq)]
@@ -120,58 +120,95 @@ impl Statements {
             .collect()
     }
 
+    /// Locates every statement (by ID) in this collection as `(id, property, index, statement)`.
+    /// The index is the position within its property's array — i.e. the JSON Patch path component.
+    fn id_locations(&self) -> Vec<(&str, &str, usize, &Statement)> {
+        let mut locations = Vec::new();
+        for (property, statements) in &self.statements {
+            for (index, statement) in statements.iter().enumerate() {
+                if let Some(id) = statement.id() {
+                    locations.push((id.as_str(), property.as_str(), index, statement));
+                }
+            }
+        }
+        locations
+    }
+
+    /// Generates a JSON Patch that transforms `other` into `self`, suitable for the entity
+    /// PATCH endpoint. Paths address statements as `/statements/{property}/{index}` using
+    /// `other`'s indices (that is the document the patch is applied to).
+    ///
+    /// Operations are ordered so sequential application stays correct: modifications first
+    /// (they don't resize arrays), then removals highest-index-first (so earlier removals
+    /// don't shift later ones), then additions appended with `-`.
     pub fn patch(&self, other: &Self) -> Result<StatementsPatch, RestApiError> {
-        // Statements without ID in other => fail
+        // #lizard forgives the complexity
+        // Every base statement must have an ID; without one it cannot be matched or located.
         if !other.get_statements_without_id().is_empty() {
             return Err(RestApiError::MissingId);
         }
 
-        let mut patch = StatementsPatch::default();
-        let from_statements_with_id = self.get_id_statement_map();
-        let to_statements_with_id = other.get_id_statement_map();
+        let mut base = other.id_locations();
+        base.sort_by(|a, b| a.1.cmp(b.1).then(a.2.cmp(&b.2))); // by property, then index
+        let target_by_id = self.get_id_statement_map();
+        let base_ids: HashSet<&str> = base.iter().map(|&(id, ..)| id).collect();
 
-        Self::patch_modify_remove(&mut patch, &from_statements_with_id, &to_statements_with_id)?;
-        Self::patch_add_new(&mut patch, from_statements_with_id, to_statements_with_id);
+        let mut patch = StatementsPatch::default();
+
+        // 1. Modify statements present in both (matched by ID).
+        for &(id, property, index, base_stmt) in &base {
+            if let Some(target_stmt) = target_by_id.get(id).copied() {
+                let prefix = format!("/statements/{property}/{index}");
+                Self::push_modify(&mut patch, &prefix, target_stmt, base_stmt)?;
+            }
+        }
+
+        // 2. Remove statements in `other` but not in `self`, highest index first per property.
+        let mut removals: Vec<(&str, usize)> = base
+            .iter()
+            .filter(|(id, ..)| !target_by_id.contains_key(id))
+            .map(|&(_, property, index, _)| (property, index))
+            .collect();
+        removals.sort_by(|a, b| a.0.cmp(b.0).then(b.1.cmp(&a.1)));
+        for (property, index) in removals {
+            patch.remove(format!("/statements/{property}/{index}"));
+        }
+
+        // 3. Add statements new to `self` (no ID, or an ID absent from `other`), appended.
+        let mut properties: Vec<&String> = self.statements.keys().collect();
+        properties.sort();
+        for property in properties {
+            for statement in self.statements.get(property).into_iter().flatten() {
+                let is_new = statement
+                    .id()
+                    .is_none_or(|id| !base_ids.contains(id.as_str()));
+                if is_new {
+                    patch.add(format!("/statements/{property}/-"), json!(statement));
+                }
+            }
+        }
 
         Ok(patch)
     }
 
-    fn patch_modify_remove(
+    /// Appends a single statement's diff to `patch`, prefixing each op path with the statement's
+    /// entity-level location so the ops apply within the entity document.
+    fn push_modify(
         patch: &mut StatementsPatch,
-        from_statements_with_id: &HashMap<&str, &Statement>,
-        to_statements_with_id: &HashMap<&str, &Statement>,
+        prefix: &str,
+        target: &Statement,
+        base: &Statement,
     ) -> Result<(), RestApiError> {
-        for (statement_id, from_statement) in from_statements_with_id {
-            match to_statements_with_id.get(statement_id) {
-                Some(to_statement) => {
-                    // Modify statement
-                    let statement_patch = from_statement.patch(to_statement)?;
-                    patch.patch_mut().extend(statement_patch.patch().to_owned());
-                }
-                None => {
-                    // Remove statement
-                    let statement_path = format!("/statements/{statement_id}"); // TODO check
-                    patch.remove(statement_path);
-                }
-            }
+        let diff = target.patch(base)?;
+        for entry in diff.patch() {
+            let entity_path = format!("{prefix}{}", entry.path());
+            patch.patch_mut().push(PatchEntry::new(
+                entry.op(),
+                entity_path,
+                entry.value().clone(),
+            ));
         }
         Ok(())
-    }
-
-    fn patch_add_new(
-        patch: &mut StatementsPatch,
-        from_statements_with_id: HashMap<&str, &Statement>,
-        to_statements_with_id: HashMap<&str, &Statement>,
-    ) {
-        // Add new statements
-        for (statement_id, to_statement) in &to_statements_with_id {
-            if !from_statements_with_id.contains_key(statement_id) {
-                // Add new statement
-                let add_path = format!("/statements/{statement_id}"); // TODO check
-                let value = json!(to_statement);
-                patch.add(add_path, value);
-            }
-        }
     }
 }
 
@@ -501,5 +538,48 @@ mod tests {
         assert_eq!(patch.patch().len(), 2);
         assert_eq!(patch.patch()[0].op(), "remove");
         assert_eq!(patch.patch()[1].op(), "add");
+    }
+
+    #[test]
+    fn test_patch_paths() {
+        fn stmt(property: &str, value: &str, id: Option<&str>) -> Statement {
+            let mut s = Statement::new_string(property, value);
+            s.set_id(id.map(ToString::to_string));
+            s
+        }
+
+        // base (other): P31=[Q42$A→Q1, Q42$B→Q2], P279=[Q42$C→Q3]
+        let mut base = Statements::default();
+        base.insert(stmt("P31", "Q1", Some("Q42$A")));
+        base.insert(stmt("P31", "Q2", Some("Q42$B")));
+        base.insert(stmt("P279", "Q3", Some("Q42$C")));
+
+        // target (self): modify Q42$A to Q9, add a new statement, drop Q42$B and Q42$C
+        let mut target = Statements::default();
+        target.insert(stmt("P31", "Q9", Some("Q42$A")));
+        target.insert(stmt("P31", "Q5", None));
+
+        let patch = target.patch(&base).unwrap();
+        let ops: Vec<(&str, &str)> = patch.patch().iter().map(|e| (e.op(), e.path())).collect();
+
+        // Paths are entity-relative (/statements/{property}/{index}); modify, then removals
+        // highest-index-first, then append.
+        assert_eq!(
+            ops,
+            vec![
+                ("replace", "/statements/P31/0/value/content"),
+                ("remove", "/statements/P279/0"),
+                ("remove", "/statements/P31/1"),
+                ("add", "/statements/P31/-"),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_patch_base_without_id_fails() {
+        let mut base = Statements::default();
+        base.insert(Statement::new_string("P31", "Q1")); // no ID
+        let target = Statements::default();
+        assert!(target.patch(&base).is_err());
     }
 }
