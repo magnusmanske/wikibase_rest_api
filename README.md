@@ -5,7 +5,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/acffb6bb26d8407b8e82704843a4aa7e)](https://app.codacy.com/gh/magnusmanske/wikibase_rest_api/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![CI](https://github.com/magnusmanske/wikibase_rest_api/actions/workflows/rust.yml/badge.svg)](https://github.com/magnusmanske/wikibase_rest_api/actions/workflows/rust.yml)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10599/badge)](https://www.bestpractices.dev/projects/10599)
-AvgCCN 1.6
+[![Avg. CCN](https://img.shields.io/badge/avg%20CCN-1.6-brightgreen?style=flat-square)](README.md)
 [![Coverage](https://img.shields.io/badge/coverage-95.31%25-brightgreen?style=flat-square)](README.md)
 
 # wikibase_rest_api
@@ -201,6 +201,7 @@ Lizard is a simple code analyzer, giving cyclomatic complexity etc.
 https://github.com/terryyin/lizard
 ```bash
 lizard src -C 7 -V -L 40
+./scripts/update-ccn.sh # Refresh the AvgCCN badge at the top of this README
 ```
 
 ## Analysis
