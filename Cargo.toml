@@ -10,6 +10,9 @@ keywords = ["wikibase", "REST", "API", "client"]
 categories = ["api-bindings"]
 description = "A Rust client for the Wikibase REST API."
 repository = "https://github.com/magnusmanske/wikibase_rest_api"
+# Test fixtures are only needed to run the crate's own tests; keep them out of
+# the published package to slim it down.
+exclude = ["test_data/"]
 
 [lints.rust]
 unsafe_code = "forbid"
