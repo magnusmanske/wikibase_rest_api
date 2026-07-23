@@ -19,7 +19,7 @@ pub struct RestApi {
     user_agent: String,
     api_url: String,
     api_version: u8,
-    pub token: Arc<RwLock<BearerToken>>,
+    pub(crate) token: Arc<RwLock<BearerToken>>,
     max_retries: u32,
     retry_base_delay: Duration,
     max_retry_after: Duration,

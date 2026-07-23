@@ -1,6 +1,8 @@
 // Traits
 pub use crate::entity::Entity;
-pub use crate::get_put_delete::*;
+pub use crate::get_put_delete::{
+    HttpDelete, HttpGet, HttpGetEntity, HttpGetEntityWithFallback, HttpMisc, HttpPut,
+};
 pub use crate::language_strings::LanguageStrings;
 
 // Structs and enums
@@ -12,7 +14,7 @@ pub use crate::descriptions::Descriptions;
 pub use crate::descriptions_patch::DescriptionsPatch;
 pub use crate::edit_metadata::EditMetadata;
 pub use crate::entity::EntityType;
-pub use crate::entity_container::*;
+pub use crate::entity_container::{EntityContainer, EntityContainerBuilder, LoadReport};
 pub use crate::entity_id::EntityId;
 pub use crate::error::RestApiError;
 pub use crate::header_info::HeaderInfo;

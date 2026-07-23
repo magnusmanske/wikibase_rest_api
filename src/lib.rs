@@ -99,11 +99,13 @@ pub use edit_metadata::EditMetadata;
 pub use entity_container::{EntityContainer, EntityContainerBuilder, LoadReport};
 pub use entity_id::EntityId;
 pub use error::RestApiError;
-pub use get_put_delete::*;
+pub use get_put_delete::{
+    HttpDelete, HttpGet, HttpGetEntity, HttpGetEntityWithFallback, HttpMisc, HttpPut,
+};
 pub use header_info::HeaderInfo;
 pub use item::Item;
 pub use language_string::{Language, LanguageString};
-pub use patch::*;
+pub use patch::{FromJson, Patch, PatchApply};
 pub use property::Property;
 pub use reference::Reference;
 pub use rest_api::RestApi;
