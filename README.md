@@ -37,7 +37,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-wikibase_rest_api = "0.3"
+wikibase_rest_api = "0.4"
 ```
 
 Or install via cargo:
