@@ -1,174 +1,129 @@
-/// NOTE: THIS IS INCOMPLETE AND UNTESTED!
 use crate::{
-    entity::{Entity, EntityType},
-    patch_entry::PatchEntry,
-    EditMetadata, EntityId, HttpMisc, Item, Property, RestApi, RestApiError,
+    entity::Entity, patch_entry::PatchEntry, EntityId, HttpMisc, Item, Patch, PatchApply, Property,
+    RestApiError,
 };
-use serde::Serialize;
-use serde_json::json;
+use derive_where::derive_where;
+use std::marker::PhantomData;
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct EntityPatch {
+/// A JSON Patch against a whole entity (`PATCH /entities/{group}/{id}`).
+///
+/// Paths are entity-level, e.g. `/labels/en` or `/statements/P31/0`. Usually created via
+/// [`Item::patch`] / [`Property::patch`]; apply it with [`PatchApply::apply`], which
+/// returns the patched entity.
+#[derive_where(Debug, Clone, PartialEq, Default)]
+pub struct EntityPatch<E> {
     patch: Vec<PatchEntry>,
-    mode: EntityType,
+    entity: PhantomData<E>,
 }
 
-impl EntityPatch {
-    pub const fn item() -> Self {
-        Self {
-            patch: vec![],
-            mode: EntityType::Item,
-        }
-    }
+/// A patch against a whole [`Item`].
+pub type ItemPatch = EntityPatch<Item>;
 
-    pub const fn property() -> Self {
-        Self {
-            patch: vec![],
-            mode: EntityType::Property,
-        }
-    }
+/// A patch against a whole [`Property`].
+pub type PropertyPatch = EntityPatch<Property>;
 
-    /// Returns the patch entries
-    pub const fn patch(&self) -> &Vec<PatchEntry> {
+impl<E> EntityPatch<E> {
+    /// Appends the entries of a sub-patch (e.g. a `LabelsPatch`), prefixing each path with
+    /// `prefix` (e.g. `/labels`) so it addresses the right part of the entity document.
+    pub(crate) fn with_part<P: Patch>(mut self, prefix: &str, mut part: P) -> Self {
+        self.patch.extend(
+            part.patch_mut()
+                .drain(..)
+                .map(|entry| entry.prefixed(prefix)),
+        );
+        self
+    }
+}
+
+impl<E> Patch for EntityPatch<E> {
+    fn patch(&self) -> &Vec<PatchEntry> {
         &self.patch
     }
 
-    /// Returns the mutable patch entries
-    pub const fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
+    fn patch_mut(&mut self) -> &mut Vec<PatchEntry> {
         &mut self.patch
     }
-
-    /// checks if the patch list is empty
-    pub const fn is_empty(&self) -> bool {
-        self.patch().is_empty()
-    }
-
-    /// Applies the entire patch against the API
-    pub async fn apply_item(&self, id: &EntityId, api: &RestApi) -> Result<Item, RestApiError> {
-        self.apply_match_item(id, api, EditMetadata::default())
-            .await
-    }
-
-    pub async fn apply_property(
-        &self,
-        id: &EntityId,
-        api: &RestApi,
-    ) -> Result<Property, RestApiError> {
-        self.apply_match_property(id, api, EditMetadata::default())
-            .await
-    }
-
-    /// Applies the entire patch against the API
-    pub async fn apply_match_item(
-        &self,
-        id: &EntityId,
-        api: &RestApi,
-        em: EditMetadata,
-    ) -> Result<Item, RestApiError> {
-        let j0 = json!({"patch": self.patch()});
-        let request = self
-            .generate_json_request(id, reqwest::Method::PATCH, j0, api, &em)
-            .await?;
-        let response = api.execute(request).await?;
-        let (j1, header_info) = self.filter_response_error(response).await?;
-        Item::from_json_header_info(j1, header_info)
-    }
-
-    /// Applies the entire patch against the API, conditional on metadata
-    pub async fn apply_match_property(
-        // TODO
-        &self,
-        id: &EntityId,
-        api: &RestApi,
-        em: EditMetadata,
-    ) -> Result<Property, RestApiError> {
-        let j0 = json!({"patch": self.patch()});
-        let request = self
-            .generate_json_request(id, reqwest::Method::PATCH, j0, api, &em)
-            .await?;
-        let response = api.execute(request).await?;
-        let (j1, header_info) = self.filter_response_error(response).await?;
-        Property::from_json_header_info(j1, header_info)
-    }
 }
 
-impl HttpMisc for EntityPatch {
+impl<E: Entity> HttpMisc for EntityPatch<E> {
     fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!(
-            "/entities/{group}/{id}/{mode}",
-            group = id.group()?,
-            mode = self.mode.as_str()
-        ))
+        // Catch e.g. an `ItemPatch` applied to a property ID before it reaches the server.
+        if id.kind() != Some(E::ENTITY_TYPE) {
+            return Err(RestApiError::InvalidEntityId(id.to_string()));
+        }
+        id.entity_path()
     }
 }
+
+impl<E: Entity> PatchApply<E> for EntityPatch<E> {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{labels_patch::LabelsPatch, RestApi};
     use serde_json::json;
-
-    #[test]
-    fn test_mode() {
-        assert_eq!(EntityType::Item.as_str(), "item");
-        assert_eq!(EntityType::Property.as_str(), "property");
-    }
+    use wiremock::matchers::{body_partial_json, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn test_get_rest_api_path() {
-        let patch = EntityPatch::item();
-        let id = EntityId::new("Q123").unwrap();
+        let item_id = EntityId::new("Q123").unwrap();
         assert_eq!(
-            patch.get_my_rest_api_path(&id).unwrap(),
-            "/entities/items/Q123/item"
+            ItemPatch::default().get_my_rest_api_path(&item_id).unwrap(),
+            "/entities/items/Q123"
+        );
+        let property_id = EntityId::new("P123").unwrap();
+        assert_eq!(
+            PropertyPatch::default()
+                .get_my_rest_api_path(&property_id)
+                .unwrap(),
+            "/entities/properties/P123"
         );
     }
 
     #[test]
-    fn test_item() {
-        let patch = EntityPatch::item();
-        assert!(patch.is_empty());
-        assert_eq!(patch.mode, EntityType::Item);
+    fn test_get_rest_api_path_wrong_kind() {
+        let id = EntityId::property("P1");
+        assert!(matches!(
+            ItemPatch::default().get_my_rest_api_path(&id),
+            Err(RestApiError::InvalidEntityId(_))
+        ));
+        assert!(PropertyPatch::default()
+            .get_my_rest_api_path(&EntityId::None)
+            .is_err());
     }
 
     #[test]
-    fn test_property() {
-        let patch = EntityPatch::property();
-        assert!(patch.is_empty());
-        assert_eq!(patch.mode, EntityType::Property);
-    }
-
-    #[test]
-    fn test_patch() {
-        let mut patch = EntityPatch::item();
-        assert!(patch.is_empty());
-        patch
-            .patch_mut()
-            .push(PatchEntry::new("add", "/enwiki/title", json!("foo")));
-        assert_eq!(patch.patch().len(), 1);
+    fn test_with_part_prefixes_paths() {
+        let mut labels = LabelsPatch::default();
+        labels.replace("en", "Foo");
+        let patch = ItemPatch::default().with_part("/labels", labels);
+        assert_eq!(
+            patch.patch(),
+            &vec![PatchEntry::new("replace", "/labels/en", json!("Foo"))]
+        );
     }
 
     #[test]
     fn test_is_empty() {
-        let mut patch = EntityPatch::item();
+        let mut patch = ItemPatch::default();
         assert!(patch.is_empty());
-        patch
-            .patch_mut()
-            .push(PatchEntry::new("add", "/enwiki/title", json!("foo")));
+        patch.add("/sitelinks/enwiki/title", json!("foo"));
         assert!(!patch.is_empty());
     }
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn test_apply_item() {
-        use wiremock::matchers::{method, path};
-        use wiremock::{Mock, MockServer, ResponseTemplate};
-
         let v = std::fs::read_to_string("test_data/Q42.json").unwrap();
         let v: serde_json::Value = serde_json::from_str(&v).unwrap();
 
         let mock_server = MockServer::start().await;
         Mock::given(method("PATCH"))
-            .and(path("/w/rest.php/wikibase/v1/entities/items/Q42/item"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q42"))
+            .and(body_partial_json(json!({
+                "patch": [{"op": "add", "path": "/labels/de", "value": "Test"}]
+            })))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v))
             .mount(&mock_server)
             .await;
@@ -177,40 +132,21 @@ mod tests {
             .build()
             .unwrap();
 
-        let mut patch = EntityPatch::item();
-        patch
-            .patch_mut()
-            .push(PatchEntry::new("add", "/labels/de", json!("Test")));
-
-        // apply_item -> apply_match_item (default EditMetadata).
-        let item = patch
-            .apply_item(&EntityId::item("Q42"), &api)
-            .await
-            .unwrap();
+        let mut patch = ItemPatch::default();
+        patch.add("/labels/de", json!("Test"));
+        let item = patch.apply(&EntityId::item("Q42"), &api).await.unwrap();
         assert_eq!(item.id(), &EntityId::item("Q42"));
-
-        // apply_match_item directly, with explicit metadata.
-        let item2 = patch
-            .apply_match_item(&EntityId::item("Q42"), &api, EditMetadata::default())
-            .await
-            .unwrap();
-        assert_eq!(item2.id(), &EntityId::item("Q42"));
     }
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn test_apply_property() {
-        use wiremock::matchers::{method, path};
-        use wiremock::{Mock, MockServer, ResponseTemplate};
-
         let v = std::fs::read_to_string("test_data/P214.json").unwrap();
         let v: serde_json::Value = serde_json::from_str(&v).unwrap();
 
         let mock_server = MockServer::start().await;
         Mock::given(method("PATCH"))
-            .and(path(
-                "/w/rest.php/wikibase/v1/entities/properties/P214/property",
-            ))
+            .and(path("/w/rest.php/wikibase/v1/entities/properties/P214"))
             .respond_with(ResponseTemplate::new(200).set_body_json(&v))
             .mount(&mock_server)
             .await;
@@ -219,23 +155,12 @@ mod tests {
             .build()
             .unwrap();
 
-        let mut patch = EntityPatch::property();
-        patch
-            .patch_mut()
-            .push(PatchEntry::new("add", "/labels/de", json!("Test")));
-
-        // apply_property -> apply_match_property (default EditMetadata).
+        let mut patch = PropertyPatch::default();
+        patch.add("/labels/de", json!("Test"));
         let property = patch
-            .apply_property(&EntityId::property("P214"), &api)
+            .apply(&EntityId::property("P214"), &api)
             .await
             .unwrap();
         assert_eq!(property.id(), &EntityId::property("P214"));
-
-        // apply_match_property directly, with explicit metadata.
-        let property2 = patch
-            .apply_match_property(&EntityId::property("P214"), &api, EditMetadata::default())
-            .await
-            .unwrap();
-        assert_eq!(property2.id(), &EntityId::property("P214"));
     }
 }

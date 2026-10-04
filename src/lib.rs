@@ -44,6 +44,14 @@
 //! for [Wikibase](https://www.mediawiki.org/wiki/Wikibase) instances.
 //! It provides a set of types and methods for interacting with the API,
 //! and implements all the [API endpoints](https://doc.wikimedia.org/Wikibase/master/js/rest-api/).
+//!
+//! # Async traits and `Send`
+//!
+//! Operations are exposed as `async fn`s in traits (`Entity`, `HttpGet`, `PatchApply`, …).
+//! Calling them on concrete types (`Item::get`, `Label::put`, …) yields futures that are
+//! `Send` whenever their contents are, so they can be `tokio::spawn`ed as usual. Code that is
+//! *generic* over these traits cannot name a `Send` bound on the returned futures, though;
+//! spawn the concrete calls instead.
 
 #[macro_use]
 mod macros;
@@ -61,7 +69,7 @@ pub mod edit_metadata;
 pub mod entity;
 pub mod entity_container;
 pub mod entity_id;
-pub(crate) mod entity_patch;
+pub mod entity_patch;
 pub mod error;
 pub mod get_put_delete;
 pub mod header_info;
@@ -71,9 +79,8 @@ pub mod labels;
 pub mod labels_patch;
 pub mod language_string;
 pub mod language_strings;
-pub mod language_strings_patch;
 pub mod patch;
-pub(crate) mod patch_entry;
+pub mod patch_entry;
 pub mod prelude;
 pub mod property;
 pub mod property_value;
@@ -91,13 +98,14 @@ pub mod statement_rank;
 pub mod statement_value;
 pub mod statement_value_content;
 pub mod statements;
-pub(crate) mod statements_patch;
+pub mod statements_patch;
 
 pub use config::Config;
 pub use data_type::DataType;
 pub use edit_metadata::EditMetadata;
 pub use entity_container::{EntityContainer, EntityContainerBuilder, LoadReport};
 pub use entity_id::EntityId;
+pub use entity_patch::{EntityPatch, ItemPatch, PropertyPatch};
 pub use error::RestApiError;
 pub use get_put_delete::{
     HttpDelete, HttpGet, HttpGetEntity, HttpGetEntityWithFallback, HttpMisc, HttpPut,
@@ -106,6 +114,7 @@ pub use header_info::HeaderInfo;
 pub use item::Item;
 pub use language_string::{Language, LanguageString};
 pub use patch::{FromJson, Patch, PatchApply};
+pub use patch_entry::PatchEntry;
 pub use property::Property;
 pub use reference::Reference;
 pub use rest_api::RestApi;
@@ -114,3 +123,4 @@ pub use sitelink::{SiteId, Sitelink};
 pub use sitelinks::Sitelinks;
 pub use statement::Statement;
 pub use statement_rank::StatementRank;
+pub use statements_patch::StatementsPatch;

@@ -1,10 +1,10 @@
 use crate::{RestApi, RestApiError};
 use reqwest::Request;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 /// The default time to wait until bearer token is renewed. API says 4h so setting it to 3h50min
-const DEFAULT_RENEWAL_INTERVAL_SEC: u64 = (3 * 60 + 50) * 60;
+const DEFAULT_RENEWAL_INTERVAL: Duration = Duration::from_secs((3 * 60 + 50) * 60);
 
 #[derive(Debug, Clone, Default)]
 pub struct BearerToken {
@@ -13,13 +13,14 @@ pub struct BearerToken {
     access_token: Option<String>,
     refresh_token: Option<String>,
     last_update: Option<std::time::Instant>,
-    renewal_interval: std::time::Duration,
+    /// `None` means "use `DEFAULT_RENEWAL_INTERVAL`".
+    renewal_interval: Option<Duration>,
 }
 
 impl BearerToken {
     /// Returns the `OAuth2` bearer token
-    pub const fn get(&self) -> &Option<String> {
-        &self.access_token
+    pub fn get(&self) -> Option<&str> {
+        self.access_token.as_deref()
     }
 
     /// For non-owner-only clients, returns a URL to send the user to login and authorize the client.
@@ -37,18 +38,18 @@ impl BearerToken {
     }
 
     /// Returns the renewal interval for the `OAuth2` bearer token.
-    pub const fn access_token_renewal_interval(&self) -> std::time::Duration {
-        self.renewal_interval
+    pub fn access_token_renewal_interval(&self) -> Duration {
+        self.renewal_interval.unwrap_or(DEFAULT_RENEWAL_INTERVAL)
     }
 
     /// Internal use only.
-    pub const fn client_id(&self) -> &Option<String> {
-        &self.client_id
+    pub fn client_id(&self) -> Option<&str> {
+        self.client_id.as_deref()
     }
 
     /// Internal use only.
-    pub const fn client_secret(&self) -> &Option<String> {
-        &self.client_secret
+    pub fn client_secret(&self) -> Option<&str> {
+        self.client_secret.as_deref()
     }
 
     fn generate_get_access_token_parameters(
@@ -103,7 +104,21 @@ impl BearerToken {
         code: &str,
     ) -> Result<(), RestApiError> {
         let request = self.generate_get_access_token_request(api, code).await?;
+        self.execute_token_request(api, request).await
+    }
+
+    /// Sends a request to the `OAuth2` token endpoint and stores the returned tokens.
+    /// A non-success response surfaces as `RestApiError::ApiError` carrying the server's
+    /// OAuth error (e.g. `invalid_grant`), rather than a misleading "token required".
+    async fn execute_token_request(
+        &mut self,
+        api: &RestApi,
+        request: Request,
+    ) -> Result<(), RestApiError> {
         let response = api.client().execute(request).await?;
+        if !response.status().is_success() {
+            return Err(RestApiError::from_response(response).await);
+        }
         let j: Value = response.json().await?;
         self.set_tokens_from_json(j)
     }
@@ -118,9 +133,12 @@ impl BearerToken {
             .as_str()
             .ok_or(RestApiError::RefreshTokenRequired)?
             .to_string();
-        let renewal_interval = j["expires_in"].as_u64().unwrap_or_default() / 10 * 9; // 90% of max duration
+        // Renew at 90% of the token lifetime; fall back to the default if none is given.
+        self.renewal_interval = j["expires_in"]
+            .as_u64()
+            .filter(|&secs| secs > 0)
+            .map(|secs| Duration::from_secs(secs / 10 * 9));
         self.set_tokens(Some(access_token), Some(refresh_token));
-        self.set_renewal_interval(renewal_interval);
         self.touch_access_token();
         Ok(())
     }
@@ -130,31 +148,19 @@ impl BearerToken {
         self.last_update = Some(std::time::Instant::now());
     }
 
-    pub const fn refresh_token(&self) -> &Option<String> {
-        &self.refresh_token
+    pub fn refresh_token(&self) -> Option<&str> {
+        self.refresh_token.as_deref()
     }
 
     /// Sets the renewal interval for the `OAuth2` bearer token
-    pub const fn set_renewal_interval(&mut self, renewal_interval: u64) {
-        let renewal_interval = match renewal_interval {
-            0 => DEFAULT_RENEWAL_INTERVAL_SEC,
-            renewal_interval => renewal_interval,
-        };
-        self.renewal_interval = std::time::Duration::from_secs(renewal_interval);
+    pub const fn set_renewal_interval(&mut self, renewal_interval: Duration) {
+        self.renewal_interval = Some(renewal_interval);
     }
 
     /// Sets the `OAuth2` bearer token and refresh token
     pub fn set_tokens(&mut self, access_token: Option<String>, refresh_token: Option<String>) {
         self.access_token = access_token;
         self.refresh_token = refresh_token;
-    }
-
-    /// Checks if the bearer token needs to be updated, and updates it if necessary
-    pub async fn check(&mut self, api: &RestApi, request: &Request) -> Result<(), RestApiError> {
-        if self.needs_renewal(request.method()) {
-            self.renew_access_token(api).await?;
-        }
-        Ok(())
     }
 
     /// Returns `true` if a request with this method requires an up-front token renewal.
@@ -170,7 +176,7 @@ impl BearerToken {
         self.access_token = Some(access_token.into());
     }
 
-    //// Sets the OAuth2 client ID and client secret
+    /// Sets the `OAuth2` client ID and client secret
     pub fn set_oauth2_info<S1: Into<String>, S2: Into<String>>(
         &mut self,
         client_id: S1,
@@ -194,7 +200,7 @@ impl BearerToken {
     fn does_access_token_need_updating(&self) -> bool {
         if let Some(last_update) = self.last_update {
             let elapsed = last_update.elapsed();
-            if elapsed < self.renewal_interval {
+            if elapsed < self.access_token_renewal_interval() {
                 return false;
             }
         }
@@ -246,9 +252,7 @@ impl BearerToken {
             return Ok(());
         }
         let request = self.get_renew_access_token_request(api).await?;
-        let response = api.client().execute(request).await?;
-        let j: Value = response.json().await?;
-        self.set_tokens_from_json(j)
+        self.execute_token_request(api, request).await
     }
 }
 
@@ -278,19 +282,22 @@ mod tests {
     #[test]
     fn test_does_access_token_need_updating() {
         let mut token = BearerToken::default();
+        // Never updated: needs updating.
         assert!(token.does_access_token_need_updating());
+        // Just updated, default interval: fresh.
         token.touch_access_token();
-        assert!(token.does_access_token_need_updating());
-        token.set_renewal_interval(0);
         assert!(!token.does_access_token_need_updating());
+        // A zero interval means it is immediately stale again.
+        token.set_renewal_interval(Duration::ZERO);
+        assert!(token.does_access_token_need_updating());
     }
 
     #[test]
     fn test_get() {
         let mut token = BearerToken::default();
-        assert_eq!(token.get(), &None);
+        assert_eq!(token.get(), None);
         token.set_access_token("test");
-        assert_eq!(token.get(), &Some("test".to_string()));
+        assert_eq!(token.get(), Some("test"));
     }
 
     #[test]
@@ -314,11 +321,11 @@ mod tests {
             "expires_in": 3600,
         });
         token.set_tokens_from_json(j).unwrap();
-        assert_eq!(token.get(), &Some("foo".to_string()));
-        assert_eq!(token.refresh_token(), &Some("bar".to_string()));
+        assert_eq!(token.get(), Some("foo"));
+        assert_eq!(token.refresh_token(), Some("bar"));
         assert_eq!(
             token.renewal_interval,
-            std::time::Duration::from_secs(3600 / 10 * 9)
+            Some(Duration::from_secs(3600 / 10 * 9))
         );
     }
 
@@ -372,17 +379,14 @@ mod tests {
             .get_access_token(&api, code)
             .await
             .unwrap();
+        assert_eq!(api.token.read().await.get().unwrap(), "access_token_foobar");
         assert_eq!(
-            api.token.read().await.get().to_owned().unwrap(),
-            "access_token_foobar"
-        );
-        assert_eq!(
-            api.token.read().await.refresh_token().to_owned().unwrap(),
+            api.token.read().await.refresh_token().unwrap(),
             "refresh_token_foobar"
         );
         assert_eq!(
             api.token.read().await.renewal_interval,
-            std::time::Duration::from_secs(3600 / 10 * 9)
+            Some(Duration::from_secs(3600 / 10 * 9))
         );
     }
 
@@ -443,16 +447,16 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(
-            api.token.read().await.get().to_owned().unwrap(),
+            api.token.read().await.get().unwrap(),
             "access_token_foobar2"
         );
         assert_eq!(
-            api.token.read().await.refresh_token().to_owned().unwrap(),
+            api.token.read().await.refresh_token().unwrap(),
             "refresh_token_foobar2"
         );
         assert_eq!(
             api.token.read().await.renewal_interval,
-            std::time::Duration::from_secs(3600 / 10 * 9)
+            Some(Duration::from_secs(3600 / 10 * 9))
         );
     }
 
@@ -465,7 +469,7 @@ mod tests {
             .unwrap();
         let mut bt = BearerToken::default();
         bt.touch_access_token();
-        bt.renewal_interval = std::time::Duration::from_secs(3600);
+        bt.set_renewal_interval(Duration::from_secs(3600));
         // This will fail if not for "no update needed", since client ID and secret are not set
         assert!(bt.renew_access_token(&api).await.is_ok());
     }
@@ -554,16 +558,29 @@ mod tests {
         assert!(token.needs_renewal(&reqwest::Method::POST));
     }
 
+    #[test]
+    fn test_set_tokens_from_json_without_expiry_uses_default() {
+        let mut token = BearerToken::default();
+        token.set_renewal_interval(Duration::from_secs(1));
+        let j = json!({"access_token": "a", "refresh_token": "r"});
+        token.set_tokens_from_json(j).unwrap();
+        assert_eq!(
+            token.access_token_renewal_interval(),
+            DEFAULT_RENEWAL_INTERVAL
+        );
+    }
+
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
-    async fn test_check_renews() {
+    async fn test_renew_access_token_error_status() {
+        // An OAuth error response surfaces as ApiError with the OAuth error code,
+        // not as a misleading AccessTokenRequired.
         let mock_server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/w/rest.php/oauth2/access_token"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-                "access_token": "new_access",
-                "refresh_token": "new_refresh",
-                "expires_in": 3600,
+            .respond_with(ResponseTemplate::new(400).set_body_json(json!({
+                "error": "invalid_grant",
+                "message": "The refresh token is invalid.",
             })))
             .mount(&mock_server)
             .await;
@@ -571,19 +588,18 @@ mod tests {
             .unwrap()
             .build()
             .unwrap();
-
         let mut token = BearerToken::default();
         token.set_oauth2_info("id", "secret");
         token.set_tokens(None, Some("refresh".to_string()));
-
-        // A GET request: needs_renewal is false, so check() is a no-op.
-        let get_req = Request::new(reqwest::Method::GET, api.api_url().parse().unwrap());
-        token.check(&api, &get_req).await.unwrap();
-        assert_eq!(token.get(), &None);
-
-        // A non-GET request triggers renewal via the mocked token endpoint.
-        let post_req = Request::new(reqwest::Method::POST, api.api_url().parse().unwrap());
-        token.check(&api, &post_req).await.unwrap();
-        assert_eq!(token.get(), &Some("new_access".to_string()));
+        match token.renew_access_token(&api).await.unwrap_err() {
+            RestApiError::ApiError {
+                status, payload, ..
+            } => {
+                assert_eq!(status, 400);
+                assert_eq!(payload.code(), "invalid_grant");
+            }
+            e => panic!("Wrong error type: {e:?}"),
+        }
+        assert_eq!(token.get(), None);
     }
 }

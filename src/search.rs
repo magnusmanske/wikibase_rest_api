@@ -167,20 +167,16 @@ impl Search {
         if let Some(offset) = &self.offset {
             params.insert("offset".to_string(), offset.to_string());
         }
-        let mut request = api
+        let request = api
             .wikibase_request_builder(&path, params, reqwest::Method::GET)
             .await?
             .build()?;
-        request
-            .headers_mut()
-            .insert(reqwest::header::CONTENT_TYPE, "application/json".parse()?);
         Ok(request)
     }
 
     pub async fn get(&self, api: &RestApi) -> Result<Vec<SearchResult>, RestApiError> {
         let request = self.generate_json_request(api).await?;
-        let response = api.execute(request).await?;
-        let response = self.filter_response_error(response).await?;
+        let response = api.execute_json(request).await?;
         Self::response_to_results(&response)
     }
 
@@ -200,17 +196,6 @@ impl Search {
             prefix = self.kind.path_prefix(),
             group = self.entity_type.group_name()
         )
-    }
-
-    async fn filter_response_error(
-        &self,
-        response: reqwest::Response,
-    ) -> Result<Value, RestApiError> {
-        if !response.status().is_success() {
-            return Err(RestApiError::from_response(response).await);
-        }
-        let j: Value = response.json().await?;
-        Ok(j)
     }
 }
 

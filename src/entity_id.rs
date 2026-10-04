@@ -1,6 +1,8 @@
 use std::fmt;
 
-use crate::{config::WIKIDATA_CONFIG, Config, RestApiError};
+use serde::{Serialize, Serializer};
+
+use crate::{config::WIKIDATA_CONFIG, entity::EntityType, Config, RestApiError};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub enum EntityId {
@@ -26,6 +28,15 @@ impl EntityId {
             EntityId::Item(_) => Ok("items"),
             EntityId::Property(_) => Ok("properties"),
             _ => Err(RestApiError::IsNone),
+        }
+    }
+
+    /// Returns the kind of entity this ID refers to, or `None` if unset.
+    pub const fn kind(&self) -> Option<EntityType> {
+        match self {
+            EntityId::Item(_) => Some(EntityType::Item),
+            EntityId::Property(_) => Some(EntityType::Property),
+            EntityId::None => None,
         }
     }
 
@@ -115,6 +126,13 @@ impl fmt::Display for EntityId {
             EntityId::Item(id) | EntityId::Property(id) => write!(f, "{id}"),
             EntityId::None => Ok(()),
         }
+    }
+}
+
+/// Serializes as the plain ID string (e.g. `"Q42"`); an unset ID serializes as `""`.
+impl Serialize for EntityId {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(self)
     }
 }
 
@@ -271,6 +289,19 @@ mod tests {
         assert_eq!(EntityId::property("P123").to_string(), "P123");
         // `None` renders as empty and must never panic.
         assert_eq!(EntityId::none().to_string(), "");
+    }
+
+    #[test]
+    fn test_entity_id_kind() {
+        assert_eq!(EntityId::item("Q1").kind(), Some(EntityType::Item));
+        assert_eq!(EntityId::property("P1").kind(), Some(EntityType::Property));
+        assert_eq!(EntityId::none().kind(), None);
+    }
+
+    #[test]
+    fn test_entity_id_serialize() {
+        assert_eq!(serde_json::to_value(EntityId::item("Q42")).unwrap(), "Q42");
+        assert_eq!(serde_json::to_value(EntityId::none()).unwrap(), "");
     }
 
     #[test]

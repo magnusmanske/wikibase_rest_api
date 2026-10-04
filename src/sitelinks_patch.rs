@@ -17,16 +17,9 @@ impl SitelinksPatch {
 
     /// Generates a patch from JSON, presumably from `json_patch`
     pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
-        let pe = j
-            .as_array()
-            .ok_or(RestApiError::WrongType {
-                field: "SitelinksPatch".into(),
-                j: j.to_owned(),
-            })?
-            .iter()
-            .map(|x| serde_json::from_value(x.clone()).map_err(|e| e.into()))
-            .collect::<Result<Vec<PatchEntry>, RestApiError>>()?;
-        Ok(Self { patch: pe })
+        Ok(Self {
+            patch: PatchEntry::list_from_json(j, "SitelinksPatch")?,
+        })
     }
 }
 

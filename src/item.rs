@@ -3,25 +3,32 @@ use crate::{
     aliases_in_language::AliasesInLanguage,
     descriptions::Descriptions,
     entity::{Entity, EntityType},
-    entity_patch::EntityPatch,
+    entity_patch::ItemPatch,
     labels::Labels,
     sitelinks::Sitelinks,
     statements::Statements,
-    EntityId, FromJson, HeaderInfo, HttpMisc, Patch, RestApi, RestApiError,
+    EntityId, FromJson, HeaderInfo, HttpMisc, RestApiError,
 };
 use derive_where::DeriveWhere;
-use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde::Serialize;
 use serde_json::Value;
 
-#[derive(DeriveWhere, Debug, Clone, Default)]
+#[derive(DeriveWhere, Debug, Clone, Default, Serialize)]
 #[derive_where(PartialEq)]
 pub struct Item {
+    #[serde(skip_serializing_if = "EntityId::is_none")]
     id: EntityId,
+    #[serde(skip_serializing_if = "Labels::is_empty")]
     labels: Labels,
+    #[serde(skip_serializing_if = "Descriptions::is_empty")]
     descriptions: Descriptions,
+    #[serde(skip_serializing_if = "Aliases::is_empty")]
     aliases: Aliases,
+    #[serde(skip_serializing_if = "Sitelinks::is_empty")]
     sitelinks: Sitelinks,
+    #[serde(skip_serializing_if = "Statements::is_empty")]
     statements: Statements,
+    #[serde(skip)]
     #[derive_where(skip)]
     header_info: HeaderInfo,
 }
@@ -32,25 +39,20 @@ impl HttpMisc for Item {
     }
 }
 
-impl Entity for Item {
-    fn id(&self) -> &EntityId {
-        &self.id
+impl FromJson for Item {
+    fn header_info(&self) -> &HeaderInfo {
+        &self.header_info
     }
 
-    fn set_id(&mut self, id: EntityId) {
-        self.id = id;
-    }
-
-    fn from_json_header_info(j: Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
+    fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
         let id = j["id"]
             .as_str()
-            .ok_or(RestApiError::MissingOrInvalidField {
+            .ok_or_else(|| RestApiError::MissingOrInvalidField {
                 field: "id".into(),
                 j: j.to_owned(),
-            })?
-            .to_string();
+            })?;
         Ok(Self {
-            id: EntityId::Item(id),
+            id: EntityId::item(id),
             labels: Labels::from_json_or_default(&j["labels"])?,
             descriptions: Descriptions::from_json_or_default(&j["descriptions"])?,
             aliases: Aliases::from_json_or_default(&j["aliases"])?,
@@ -59,58 +61,17 @@ impl Entity for Item {
             header_info,
         })
     }
-
-    async fn post(&self, api: &RestApi) -> Result<Self, RestApiError> {
-        self.post_with_type(EntityType::Item, api).await
-    }
 }
 
-impl Serialize for Item {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // #lizard forgives the complexity
-        let mut fields = 5;
-        if self.id.is_some() {
-            fields += 1;
-        }
-        if self.labels.is_empty() {
-            fields -= 1;
-        }
-        if self.descriptions.is_empty() {
-            fields -= 1;
-        }
-        if self.aliases.is_empty() {
-            fields -= 1;
-        }
-        if self.sitelinks.is_empty() {
-            fields -= 1;
-        }
-        if self.statements.is_empty() {
-            fields -= 1;
-        }
-        let mut s = serializer.serialize_struct("Item", fields)?;
-        if self.id.is_some() {
-            let id: String = self.id.to_owned().into();
-            s.serialize_field("id", &id)?;
-        }
-        if !self.labels.is_empty() {
-            s.serialize_field("labels", &self.labels)?;
-        }
-        if !self.descriptions.is_empty() {
-            s.serialize_field("descriptions", &self.descriptions)?;
-        }
-        if !self.aliases.is_empty() {
-            s.serialize_field("aliases", &self.aliases)?;
-        }
-        if !self.sitelinks.is_empty() {
-            s.serialize_field("sitelinks", &self.sitelinks)?;
-        }
-        if !self.statements.is_empty() {
-            s.serialize_field("statements", &self.statements)?;
-        }
-        s.end()
+impl Entity for Item {
+    const ENTITY_TYPE: EntityType = EntityType::Item;
+
+    fn id(&self) -> &EntityId {
+        &self.id
+    }
+
+    fn set_id(&mut self, id: EntityId) {
+        self.id = id;
     }
 }
 
@@ -155,16 +116,9 @@ impl Item {
         &mut self.aliases
     }
 
-    /// Returns the aliases of the item as an `Aliases` object.
+    /// Returns the aliases of the item in one language, as an `AliasesInLanguage` object.
     pub fn as_aliases<S: Into<String>>(&self, lang: S) -> AliasesInLanguage {
-        let lang: String = lang.into();
-        let v: Vec<String> = self
-            .aliases
-            .get_lang(&lang)
-            .iter()
-            .map(|x| x.to_string())
-            .collect();
-        AliasesInLanguage::new(lang, v)
+        self.aliases.in_language(lang)
     }
 
     /// Returns the sitelinks of the item.
@@ -177,28 +131,21 @@ impl Item {
         &mut self.sitelinks
     }
 
-    /// Returns the header information of the item.
-    pub const fn header_info(&self) -> &HeaderInfo {
-        &self.header_info
-    }
-
-    /// Generates a patch to transform `other` into `self`
-    pub fn patch(&self, other: &Self) -> Result<EntityPatch, RestApiError> {
-        let mut labels_patch = self.labels.patch(other.labels())?;
-        let mut descriptions_patch = self.descriptions.patch(other.descriptions())?;
-        let mut aliases_patch = self.aliases.patch(other.aliases())?;
-        let mut sitelinks_patch = self.sitelinks.patch(other.sitelinks())?;
-        let mut statements_patch = self.statements.patch(other.statements())?;
-
-        // Drain each sub-patch into the combined patch instead of cloning its entries.
-        let mut ret = EntityPatch::item();
-        ret.patch_mut().append(labels_patch.patch_mut());
-        ret.patch_mut().append(descriptions_patch.patch_mut());
-        ret.patch_mut().append(aliases_patch.patch_mut());
-        ret.patch_mut().append(sitelinks_patch.patch_mut());
-        ret.patch_mut().append(statements_patch.patch_mut());
-
-        Ok(ret)
+    /// Generates a patch to transform `other` into `self`.
+    ///
+    /// # Errors
+    /// Returns an error if a statement in `other` has no ID (it can't be addressed).
+    pub fn patch(&self, other: &Self) -> Result<ItemPatch, RestApiError> {
+        Ok(ItemPatch::default()
+            .with_part("/labels", self.labels.patch(&other.labels)?)
+            .with_part(
+                "/descriptions",
+                self.descriptions.patch(&other.descriptions)?,
+            )
+            .with_part("/aliases", self.aliases.patch(&other.aliases)?)
+            .with_part("/sitelinks", self.sitelinks.patch(&other.sitelinks)?)
+            // Statement patch paths are already entity-level (`/statements/...`).
+            .with_part("", self.statements.patch(&other.statements)?))
     }
 }
 
@@ -206,7 +153,7 @@ impl Item {
 mod tests {
     use super::*;
     use crate::language_strings::LanguageStrings;
-    use crate::{LanguageString, RestApi, Sitelink, Statement};
+    use crate::{LanguageString, Patch, PatchApply, PatchEntry, RestApi, Sitelink, Statement};
     use serde_json::json;
     use wiremock::matchers::{body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -237,7 +184,7 @@ mod tests {
             .build()
             .unwrap();
 
-        Item::get(EntityId::item(id), &api).await
+        Item::get(&EntityId::item(id), &api).await
     }
 
     #[tokio::test]
@@ -250,7 +197,7 @@ mod tests {
         assert!(item
             .aliases()
             .get_lang("en")
-            .contains(&"Douglas Noël Adams"));
+            .contains(&"Douglas Noël Adams".to_string()));
         assert!(item.descriptions.has_language("en"));
         assert!(item.aliases.has_language("en"));
         assert!(item.sitelinks.get_wiki("enwiki").is_some());
@@ -352,7 +299,7 @@ mod tests {
         let item = get_test_item("Q42").await.unwrap();
         let j = serde_json::to_string(&item).unwrap(); // Convert item to JSON text
         let v: Value = serde_json::from_str(&j).unwrap(); // Convert to JSON value
-        let item_from_json = Item::from_json(v).unwrap(); // Convert back to Item
+        let item_from_json = Item::from_json(&v).unwrap(); // Convert back to Item
         assert_eq!(item, item_from_json); // Check if the reconstituted item is identical to the original
     }
 
@@ -435,7 +382,7 @@ mod tests {
     #[test]
     fn test_from_json_with_id_and_serialize() {
         let v = json!({"id": "Q42", "labels": {"en": "Douglas Adams"}});
-        let item = Item::from_json(v).unwrap();
+        let item = Item::from_json(&v).unwrap();
         assert_eq!(item.id(), &EntityId::item("Q42"));
         assert_eq!(item.labels().get_lang("en"), Some("Douglas Adams"));
         // Serializing an item that has an ID emits the `id` field.
@@ -455,6 +402,68 @@ mod tests {
             .labels_mut()
             .insert(LanguageString::new("en", "label2"));
         let patch = item1.patch(&item2).unwrap();
-        assert_eq!(patch.patch().len(), 1);
+        // Sub-patch paths are lifted to entity-level paths.
+        assert_eq!(
+            patch.patch(),
+            &vec![PatchEntry::new("replace", "/labels/en", json!("label"))]
+        );
+    }
+
+    #[test]
+    fn test_patch_all_parts() {
+        let before = Item::default();
+        let mut after = Item::default();
+        after.labels_mut().insert(LanguageString::new("en", "L"));
+        after
+            .descriptions_mut()
+            .insert(LanguageString::new("en", "D"));
+        after.aliases_mut().insert(LanguageString::new("en", "A"));
+        after.sitelinks_mut().set_wiki(Sitelink::new("enwiki", "T"));
+        after
+            .statements_mut()
+            .insert(Statement::new_string("P1", "S"));
+        let patch = after.patch(&before).unwrap();
+        let paths: Vec<&str> = patch.patch().iter().map(|e| e.path()).collect();
+        assert_eq!(
+            paths,
+            vec![
+                "/labels/en",
+                "/descriptions/en",
+                "/aliases/en",
+                "/sitelinks/enwiki",
+                "/statements/P1/-"
+            ]
+        );
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_patch_apply_round_trip() {
+        // Item::patch + apply hits the entity endpoint with entity-level paths.
+        let mock_server = MockServer::start().await;
+        Mock::given(method("PATCH"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items/Q1"))
+            .and(body_partial_json(json!({
+                "patch": [{"op": "add", "path": "/labels/de", "value": "Eins"}]
+            })))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "id": "Q1", "labels": {"de": "Eins"}
+            })))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+        let before = Item::from_json(&json!({"id": "Q1"})).unwrap();
+        let mut after = before.clone();
+        after.labels_mut().insert(LanguageString::new("de", "Eins"));
+        let patched = after
+            .patch(&before)
+            .unwrap()
+            .apply(before.id(), &api)
+            .await
+            .unwrap();
+        assert_eq!(patched.labels().get_lang("de"), Some("Eins"));
     }
 }

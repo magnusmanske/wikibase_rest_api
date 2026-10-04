@@ -78,42 +78,59 @@ impl RestApi {
 
     /// Executes a `reqwest::Request` with automatic retry on 429 and 5xx errors.
     /// Respects `Retry-After` headers when present.
+    ///
+    /// If the bearer token is due for renewal it is renewed first, and the request is
+    /// (re-)stamped with the current access token, so a request built before a renewal
+    /// never goes out with a stale token.
     /// # Errors
     /// Returns an error if all retry attempts fail
     pub async fn execute(
         &self,
-        request: reqwest::Request,
+        mut request: reqwest::Request,
     ) -> Result<reqwest::Response, RestApiError> {
         self.ensure_token_fresh(request.method()).await?;
+        self.stamp_access_token(request.headers_mut()).await?;
 
-        for attempt in 0..=self.max_retries {
+        let mut attempt = 0;
+        loop {
             // Clone for a possible retry. If the body isn't cloneable (e.g. a stream),
             // we can only send it once — execute the original and return its result.
-            let req = match request.try_clone() {
-                Some(req) => req,
-                None => return Ok(self.client.execute(request).await?),
+            let Some(req) = request.try_clone() else {
+                return Ok(self.client.execute(request).await?);
             };
-
             let response = self.client.execute(req).await?;
-            let status = response.status();
-            let retryable =
-                status == reqwest::StatusCode::TOO_MANY_REQUESTS || status.is_server_error();
-
-            if retryable && attempt < self.max_retries {
-                let delay = self.retry_delay(&response, attempt);
-                tokio::time::sleep(delay).await;
-                continue;
+            if !Self::is_retryable(response.status()) {
+                return Ok(response);
             }
-            if retryable {
+            if attempt >= self.max_retries {
                 return Err(RestApiError::from_response(response).await);
             }
-            return Ok(response);
+            tokio::time::sleep(self.retry_delay(&response, attempt)).await;
+            attempt += 1;
         }
+    }
 
-        // The loop always returns; this satisfies the type checker only.
-        Err(RestApiError::EmptyValue(
-            "all retry attempts exhausted".into(),
-        ))
+    fn is_retryable(status: reqwest::StatusCode) -> bool {
+        status == reqwest::StatusCode::TOO_MANY_REQUESTS || status.is_server_error()
+    }
+
+    /// Sets the `Authorization` header from the current access token, if there is one.
+    async fn stamp_access_token(&self, headers: &mut HeaderMap) -> Result<(), RestApiError> {
+        if let Some(value) = Self::authorization_value(&*self.token.read().await)? {
+            headers.insert(reqwest::header::AUTHORIZATION, value);
+        }
+        Ok(())
+    }
+
+    fn authorization_value(
+        token: &BearerToken,
+    ) -> Result<Option<reqwest::header::HeaderValue>, RestApiError> {
+        token
+            .get()
+            .as_ref()
+            .map(|access_token| format!("Bearer {access_token}").parse())
+            .transpose()
+            .map_err(RestApiError::from)
     }
 
     /// Renews the bearer token if the request requires it. Uses a read lock for the common
@@ -172,7 +189,7 @@ impl RestApi {
 
     /// Executes a request and returns the parsed JSON body. Any non-success status
     /// is converted into a `RestApiError::ApiError` carrying the server error payload.
-    async fn execute_json(
+    pub(crate) async fn execute_json(
         &self,
         request: reqwest::Request,
     ) -> Result<serde_json::Value, RestApiError> {
@@ -251,11 +268,8 @@ impl RestApi {
     ) -> Result<HeaderMap, RestApiError> {
         let mut headers = HeaderMap::new();
         headers.insert(reqwest::header::USER_AGENT, self.user_agent.parse()?);
-        if let Some(access_token) = &token.get() {
-            headers.insert(
-                reqwest::header::AUTHORIZATION,
-                format!("Bearer {access_token}").parse()?,
-            );
+        if let Some(value) = Self::authorization_value(token)? {
+            headers.insert(reqwest::header::AUTHORIZATION, value);
         }
         Ok(headers)
     }
@@ -606,10 +620,50 @@ mod tests {
             .unwrap();
         let response = api.execute(request).await.unwrap();
         assert!(response.status().is_success());
-        assert_eq!(
-            api.token.read().await.get(),
-            &Some("renewed_access".to_string())
-        );
+        assert_eq!(api.token.read().await.get(), Some("renewed_access"));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_execute_sends_renewed_token() {
+        // A request built *before* the renewal must still go out with the renewed token.
+        use wiremock::matchers::header;
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/w/rest.php/oauth2/access_token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "access_token": "fresh",
+                "refresh_token": "refresh2",
+                "expires_in": 3600,
+            })))
+            .mount(&mock_server)
+            .await;
+        Mock::given(method("PUT"))
+            .and(path("/w/rest.php/wikibase/v1/x"))
+            .and(header("Authorization", "Bearer fresh"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+        {
+            let mut token = api.token.write().await;
+            token.set_oauth2_info("id", "secret");
+            token.set_tokens(Some("stale".to_string()), Some("refresh".to_string()));
+        }
+
+        let request = api
+            .wikibase_request_builder("/x", HashMap::new(), reqwest::Method::PUT)
+            .await
+            .unwrap()
+            .build()
+            .unwrap();
+        assert_eq!(request.headers()["Authorization"], "Bearer stale");
+        let response = api.execute(request).await.unwrap();
+        assert!(response.status().is_success());
     }
 
     #[tokio::test]
@@ -632,6 +686,9 @@ mod tests {
             .unwrap();
 
         let result = api.get_openapi_json().await;
-        assert!(result.is_err());
+        match result.unwrap_err() {
+            RestApiError::ApiError { status, .. } => assert_eq!(status, 500),
+            e => panic!("Wrong error type: {e:?}"),
+        }
     }
 }

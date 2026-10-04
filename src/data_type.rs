@@ -1,11 +1,13 @@
-use crate::RestApiError;
+use serde::{Serialize, Serializer};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Copy)]
+/// A Wikibase property data type, e.g. `wikibase-item` or `external-id`.
+///
+/// Data types this crate doesn't know about (e.g. ones added by a Wikibase extension)
+/// are kept verbatim as [`DataType::Other`], so they survive a read/serialize round trip.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum DataType {
     #[default]
     String,
-    Item,
-    Property,
     Url,
     Time,
     GlobeCoordinate,
@@ -23,40 +25,39 @@ pub enum DataType {
     Form,
     Sense,
     EntitySchema,
+    /// A data type not known to this crate, with its raw name.
+    Other(String),
 }
 
 impl DataType {
-    /// Constructs a new `DataType` object from a (valid) string.
-    /// # Errors
-    /// Returns a `RestApiError` if the string is not a valid `DataType`.
-    pub fn new<S: Into<String>>(s: S) -> Result<Self, RestApiError> {
-        match s.into().as_str() {
-            "wikibase-item" => Ok(DataType::WikibaseItem),
-            "external-id" => Ok(DataType::ExternalId),
-            "url" => Ok(DataType::Url),
-            "commonsMedia" => Ok(DataType::CommonsMedia),
-            "monolingualtext" => Ok(DataType::MonolingualText),
-            "quantity" => Ok(DataType::Quantity),
-            "string" => Ok(DataType::String),
-            "time" => Ok(DataType::Time),
-            "globe-coordinate" => Ok(DataType::GlobeCoordinate),
-            "wikibase-property" => Ok(DataType::WikibaseProperty),
-            "wikibase-lexeme" => Ok(DataType::Lexeme),
-            "wikibase-form" => Ok(DataType::Form),
-            "wikibase-sense" => Ok(DataType::Sense),
-            "geo-shape" => Ok(DataType::GeoShape),
-            "tabular-data" => Ok(DataType::TabularData),
-            "math" => Ok(DataType::Math),
-            "item" => Ok(DataType::Item),
-            "property" => Ok(DataType::Property),
-            "musical-notation" => Ok(DataType::MusicalNotation),
-            "entity-schema" => Ok(DataType::EntitySchema),
-            other => Err(RestApiError::UnknownDataType(other.into())),
+    /// Constructs a `DataType` from its Wikibase name. Unknown names become [`DataType::Other`].
+    pub fn new<S: Into<String>>(s: S) -> Self {
+        let s = s.into();
+        match s.as_str() {
+            "wikibase-item" => DataType::WikibaseItem,
+            "external-id" => DataType::ExternalId,
+            "url" => DataType::Url,
+            "commonsMedia" => DataType::CommonsMedia,
+            "monolingualtext" => DataType::MonolingualText,
+            "quantity" => DataType::Quantity,
+            "string" => DataType::String,
+            "time" => DataType::Time,
+            "globe-coordinate" => DataType::GlobeCoordinate,
+            "wikibase-property" => DataType::WikibaseProperty,
+            "wikibase-lexeme" => DataType::Lexeme,
+            "wikibase-form" => DataType::Form,
+            "wikibase-sense" => DataType::Sense,
+            "geo-shape" => DataType::GeoShape,
+            "tabular-data" => DataType::TabularData,
+            "math" => DataType::Math,
+            "musical-notation" => DataType::MusicalNotation,
+            "entity-schema" => DataType::EntitySchema,
+            _ => DataType::Other(s),
         }
     }
 
     /// Returns the string representation of the data type.
-    pub const fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             DataType::WikibaseItem => "wikibase-item",
             DataType::ExternalId => "external-id",
@@ -74,11 +75,16 @@ impl DataType {
             DataType::GeoShape => "geo-shape",
             DataType::TabularData => "tabular-data",
             DataType::Math => "math",
-            DataType::Item => "item",
-            DataType::Property => "property",
             DataType::MusicalNotation => "musical-notation",
             DataType::EntitySchema => "entity-schema",
+            DataType::Other(s) => s,
         }
+    }
+}
+
+impl Serialize for DataType {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.as_str())
     }
 }
 
@@ -110,10 +116,10 @@ mod tests {
 
         let types = api.get_property_data_types().await.unwrap();
         for k in types.into_keys() {
-            let dt = DataType::new(&k).unwrap();
+            let dt = DataType::new(&k);
+            assert!(!matches!(dt, DataType::Other(_)), "{k} should be known");
             assert_eq!(dt.as_str(), k);
         }
-        assert!(DataType::new("not-a-data-type").is_err());
     }
 
     #[test]
@@ -134,9 +140,19 @@ mod tests {
         assert_eq!(DataType::GeoShape.as_str(), "geo-shape");
         assert_eq!(DataType::TabularData.as_str(), "tabular-data");
         assert_eq!(DataType::Math.as_str(), "math");
-        assert_eq!(DataType::Item.as_str(), "item");
-        assert_eq!(DataType::Property.as_str(), "property");
         assert_eq!(DataType::MusicalNotation.as_str(), "musical-notation");
         assert_eq!(DataType::EntitySchema.as_str(), "entity-schema");
+    }
+
+    #[test]
+    fn test_unknown_data_type_round_trips() {
+        let dt = DataType::new("edtf");
+        assert_eq!(dt, DataType::Other("edtf".to_string()));
+        assert_eq!(dt.as_str(), "edtf");
+        assert_eq!(serde_json::to_value(&dt).unwrap(), "edtf");
+        assert_eq!(
+            serde_json::to_value(DataType::WikibaseItem).unwrap(),
+            "wikibase-item"
+        );
     }
 }

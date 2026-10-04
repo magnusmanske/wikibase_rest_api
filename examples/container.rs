@@ -28,31 +28,22 @@ async fn main() -> Result<(), RestApiError> {
         .build()?;
     println!("Trying to load {} items&properties", entity_ids.len());
     entity_container.load(&entity_ids).await?;
-    println!(
-        "Loaded {} items",
-        entity_container.items().read().await.len()
-    );
+    println!("Loaded {} items", entity_container.items().await.len());
     println!(
         "Loaded {} properties",
-        entity_container.properties().read().await.len()
+        entity_container.properties().await.len()
     );
-    println!(
-        "Items loaded: {:?}",
-        entity_container.items().read().await.keys()
-    );
+    println!("Items loaded: {:?}", entity_container.items().await.keys());
     println!(
         "Properties loaded: {:?}",
-        entity_container.properties().read().await.keys()
+        entity_container.properties().await.keys()
     );
 
     // Access item info from the container
     let q42 = entity_container
-        .items()
-        .read()
+        .get_item("Q42")
         .await
-        .get("Q42")
-        .ok_or_else(|| RestApiError::IsNone)?
-        .to_owned();
+        .ok_or_else(|| RestApiError::IsNone)?;
     let q42_label_en = q42
         .labels()
         .get_lang("en")

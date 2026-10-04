@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-10-04
+
+### Fixed
+- After an automatic `OAuth2` token renewal, the request that triggered it is now sent with the *renewed* token (previously the stale one was sent and only later requests benefited)
+- `HeaderInfo::revision_id` now parses weak ETags (`W/"123"`), which Wikidata sends; it was always `None` before
+- `Label` / `Description::get_with_fallback` report the language the server actually used (taken from the redirect target, e.g. `mul`) instead of echoing the requested one
+- `Aliases::get` / `AliasesInLanguage::get` only treat a 404 as "no aliases" when the server says the *aliases* are missing; a missing item is now an error instead of silently empty aliases
+- `OAuth2` token-endpoint failures surface as `RestApiError::ApiError` with the server's OAuth error (e.g. `invalid_grant`), instead of a misleading `AccessTokenRequired`
+- Entity-level patches (`Item::patch` / `Property::patch` + apply) now target the real `PATCH /entities/{group}/{id}` endpoint, with sub-patch paths correctly prefixed (`/labels/en`, `/sitelinks/enwiki/title`, …); previously both the URL and the paths were wrong
+- Statements whose property has been deleted (`"data_type": null`) no longer fail to parse — and with them, the whole entity
+- `Statement::same_qualifiers_as` is now a symmetric, order-independent comparison (it was a subset test)
+- `Statement::new_item` tags the property as `wikibase-item` (was the non-existent data type `item`)
+- `Statement::put` documentation: it *replaces* an existing statement; use `Statements::post` to add one
+- The README's patch example compiles with just the prelude (`PatchApply`/`FromJson` are now re-exported there)
+
+### Added
+- Entity-scoped statement endpoints: `Statement::{get,put,delete}_for_entity` (+ `_match_` variants) and `StatementPatch::apply_for_entity` / `apply_match_for_entity`
+- `ItemPatch` / `PropertyPatch` (aliases of the new generic `EntityPatch<E>`), `PatchEntry`, `StatementsPatch` are now public and re-exported
+- `LabelsPatch` / `DescriptionsPatch` are complete: `Labels::patch` / `Descriptions::patch` return them, they implement `PatchApply`, and gain `add(language, value)`
+- `DataType::Other(String)` keeps data types unknown to this crate, so they survive a round trip
+- `EntityId::kind()`, `Aliases::in_language()`, `PropertyValue::from_json()`, `RestApiErrorPayload::resource_type()`, `RestApiError::is_missing_resource()`
+- `Entity::post_meta` (create with edit metadata); created entities now carry the response's `HeaderInfo`
+
+### Changed
+- **Breaking:** `Entity::get` / `get_match` / `get_fields` / `get_match_fields` take `&EntityId` (like every other `get`); `get_match_fields` takes `fields` before `api`
+- **Breaking:** `Entity` now requires `FromJson` (its own `from_json*` methods are gone; use `FromJson::from_json(&value)`), and gains `const ENTITY_TYPE`; `post_with_type*` are replaced by `post` / `post_meta`
+- **Breaking:** `Item::patch` / `Property::patch` return `ItemPatch` / `PropertyPatch`; `EntityPatch::apply_item` / `apply_property` and friends are replaced by `PatchApply::apply`
+- **Breaking:** `LanguageStringsPatch` is removed in favour of `LabelsPatch` / `DescriptionsPatch`
+- **Breaking:** `DataType` is no longer `Copy`; `DataType::new` is infallible; the bogus `Item` / `Property` variants are removed; `Property::data_type()` returns `Option<&DataType>`
+- **Breaking:** `TimePrecision`'s `TryFrom` impls return `RestApiError::InvalidPrecision`
+- **Breaking:** `BearerToken::set_renewal_interval` takes a `Duration` (no more "0 means default"); `access_token_renewal_interval()` reports the effective interval
+- **Breaking:** `HttpMisc::filter_response_error` is removed (use `parse_response`)
+- **Breaking:** getters return borrowed, non-allocating types:
+  - `LanguageString::language` / `value` (and so `Label`, `Description`) → `&str`
+  - `Statement::id` → `Option<&str>`; `PropertyType::datatype` → `Option<&DataType>`
+  - `BearerToken::get` / `client_id` / `client_secret` / `refresh_token` → `Option<&str>`
+  - `EditMetadata::comment` → `Option<&str>` (no longer clones)
+  - `Sitelink::badges`, `AliasesInLanguage::values` → `&[String]`; `Sitelinks::sitelinks` → `&[Sitelink]`
+  - `Statements::property` / `property_mut` → `&[Statement]` / `&mut [Statement]`; `Aliases::get_lang` → `&[String]` (no longer allocate a `Vec`), and `get_lang` takes `AsRef<str>`
+- **Breaking:** `EntityContainer::items()` / `properties()` are `async` and return a read guard over the map instead of handing out the internal `Arc<RwLock<…>>` (use `get_item` / `get_property` for single lookups)
+- `RestApiBuilder::new` validates the URL properly (absolute `http(s)` URL with a `rest.php` path segment)
+- `ApiError` messages show the server payload readably (`API error 404 Not Found: resource-not-found: …`), and JSON embedded in other error messages is truncated
+- `Sitelink::delete` succeeds on any 2xx response instead of matching the response text
+- Internal: shared JSON Patch helpers, derived `Serialize` for entities/statements, a single generic loader in `EntityContainer`, no duplicated `PatchApply` bodies
+
+### Removed
+- `EditMetadata::minor` / `set_minor` (never sent; the REST API has no minor flag)
+- `BearerToken::check` (unused since renewal moved into `RestApi::execute`)
+- `RestApiError::UnexpectedResponse` and `RestApiError::UnknownDataType` (no longer produced)
+
 ## [0.3.0] - 2026-07-23
 
 ### Added

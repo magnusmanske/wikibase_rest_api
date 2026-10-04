@@ -1,6 +1,6 @@
 use crate::{
-    patch_entry::PatchEntry, statements_patch::StatementsPatch, EditMetadata, EntityId, FromJson,
-    HeaderInfo, HttpGetEntity, HttpMisc, Patch, RestApi, RestApiError, RevisionMatch, Statement,
+    statements_patch::StatementsPatch, EditMetadata, EntityId, FromJson, HeaderInfo, HttpGetEntity,
+    HttpMisc, Patch, RestApi, RestApiError, RevisionMatch, Statement,
 };
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeMap};
@@ -15,23 +15,13 @@ pub struct Statements {
     header_info: HeaderInfo,
 }
 
-impl Statements {
-    /// Creates a new `Statements` object from a JSON structure
-    pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
-        Self::from_json_header_info(j, HeaderInfo::default())
-    }
-
-    /// Creates a new `Statements` object from a JSON structure, returning a default if null
-    pub fn from_json_or_default(j: &Value) -> Result<Self, RestApiError> {
-        if j.is_null() {
-            Ok(Self::default())
-        } else {
-            Self::from_json(j)
-        }
+impl FromJson for Statements {
+    fn header_info(&self) -> &HeaderInfo {
+        &self.header_info
     }
 
     /// Creates a new `Statements` object from a JSON structure with header info
-    pub fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
+    fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
         let mut ret = Self::default();
         let statements_j = j
             .as_object()
@@ -56,7 +46,9 @@ impl Statements {
         ret.header_info = header_info;
         Ok(ret)
     }
+}
 
+impl Statements {
     /// Returns the number of statements
     pub fn len(&self) -> usize {
         self.statements.values().flatten().count()
@@ -69,17 +61,17 @@ impl Statements {
     }
 
     /// Returns the Statements for a specific property
-    pub fn property<S: AsRef<str>>(&self, property: S) -> Vec<&Statement> {
+    pub fn property<S: AsRef<str>>(&self, property: S) -> &[Statement] {
         self.statements
             .get(property.as_ref())
-            .map_or_else(Vec::new, |v| v.iter().collect())
+            .map_or(&[], Vec::as_slice)
     }
 
     /// Returns the mutable Statements for a specific property
-    pub fn property_mut<S: AsRef<str>>(&mut self, property: S) -> Vec<&mut Statement> {
+    pub fn property_mut<S: AsRef<str>>(&mut self, property: S) -> &mut [Statement] {
         self.statements
             .get_mut(property.as_ref())
-            .map_or_else(Vec::new, |v| v.iter_mut().collect())
+            .map_or(&mut [], Vec::as_mut_slice)
     }
 
     pub fn insert(&mut self, statement: Statement) {
@@ -98,16 +90,12 @@ impl Statements {
         &mut self.statements
     }
 
-    pub const fn header_info(&self) -> &HeaderInfo {
-        &self.header_info
-    }
-
     // Returns a list of all statements with an ID, as HashMap ID => &Statement
     fn get_id_statement_map(&self) -> HashMap<&str, &Statement> {
         self.statements
             .values()
             .flat_map(|v| v.iter())
-            .filter_map(|statement| Some((statement.id()?.as_str(), statement)))
+            .filter_map(|statement| Some((statement.id()?, statement)))
             .collect()
     }
 
@@ -127,7 +115,7 @@ impl Statements {
         for (property, statements) in &self.statements {
             for (index, statement) in statements.iter().enumerate() {
                 if let Some(id) = statement.id() {
-                    locations.push((id.as_str(), property.as_str(), index, statement));
+                    locations.push((id, property.as_str(), index, statement));
                 }
             }
         }
@@ -179,9 +167,7 @@ impl Statements {
         properties.sort();
         for property in properties {
             for statement in self.statements.get(property).into_iter().flatten() {
-                let is_new = statement
-                    .id()
-                    .is_none_or(|id| !base_ids.contains(id.as_str()));
+                let is_new = statement.id().is_none_or(|id| !base_ids.contains(id));
                 if is_new {
                     patch.add(format!("/statements/{property}/-"), json!(statement));
                 }
@@ -199,15 +185,12 @@ impl Statements {
         target: &Statement,
         base: &Statement,
     ) -> Result<(), RestApiError> {
-        let diff = target.patch(base)?;
-        for entry in diff.patch() {
-            let entity_path = format!("{prefix}{}", entry.path());
-            patch.patch_mut().push(PatchEntry::new(
-                entry.op(),
-                entity_path,
-                entry.value().clone(),
-            ));
-        }
+        let mut diff = target.patch(base)?;
+        patch.patch_mut().extend(
+            diff.patch_mut()
+                .drain(..)
+                .map(|entry| entry.prefixed(prefix)),
+        );
         Ok(())
     }
 }
@@ -277,14 +260,11 @@ impl Statements {
         em: EditMetadata,
     ) -> Result<Statement, RestApiError> {
         statement.set_id(None);
-        let j0 = json!({"statement": statement});
-        let request = self
-            .generate_json_request(id, reqwest::Method::POST, j0, api, &em)
+        let j = json!({"statement": statement});
+        let (j, header_info) = self
+            .run_json_query(id, reqwest::Method::POST, j, api, &em)
             .await?;
-        let response = api.execute(request).await?;
-        let (j, _statement_id) = self.filter_response_error(response).await?;
-        // TODO add to self.statements?
-        Statement::from_json(&j)
+        Statement::from_json_header_info(&j, header_info)
     }
 }
 
@@ -449,7 +429,7 @@ mod tests {
 
         // Known property returns mutable references we can edit in place.
         {
-            let mut refs = statements.property_mut("P31");
+            let refs = statements.property_mut("P31");
             assert_eq!(refs.len(), 1);
             refs[0].set_value(StatementValue::new_string("Q2"));
         }

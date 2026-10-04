@@ -9,8 +9,8 @@
 [![Dependencies](https://deps.rs/crate/wikibase_rest_api/latest/status.svg)](https://deps.rs/crate/wikibase_rest_api)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10599/badge)](https://www.bestpractices.dev/projects/10599)
 [![Unsafe: forbidden](https://img.shields.io/badge/unsafe-forbidden-success?style=flat-square)](src/lib.rs)
-[![Avg. CCN](https://img.shields.io/badge/avg%20CCN-1.6-brightgreen?style=flat-square)](README.md)
-[![Coverage](https://img.shields.io/badge/coverage-95.09%25-brightgreen?style=flat-square)](README.md)
+[![Avg. CCN](https://img.shields.io/badge/avg%20CCN-1.5-brightgreen?style=flat-square)](README.md)
+[![Coverage](https://img.shields.io/badge/coverage-95.05%25-brightgreen?style=flat-square)](README.md)
 
 # wikibase_rest_api
 
@@ -108,7 +108,7 @@ Load a whole item and read its parts. `Item` and `Property` both implement the
 [`Entity`](https://docs.rs/wikibase_rest_api/latest/wikibase_rest_api/entity/trait.Entity.html) trait.
 
 ```rust
-let item = Item::get(EntityId::new("Q42")?, &api).await?;
+let item = Item::get(&EntityId::new("Q42")?, &api).await?;
 
 // Labels, descriptions and aliases are language-keyed.
 if let Some(label) = item.labels().get_lang("en") {
@@ -162,6 +162,21 @@ reference.parts_mut().push(
 
 // P106 "occupation" = Q36180 "writer", backed by that reference.
 let statement = Statement::new_item("P106", "Q36180").with_reference(reference);
+```
+
+Add a new statement to an entity with `Statements::post`; replace, patch, or delete an
+existing one by its ID. Every single-statement operation exists in two equivalent
+flavours: `get`/`put`/`delete` use `/statements/{statement_id}`, while the
+`*_for_entity` variants use `/entities/{group}/{id}/statements/{statement_id}`, where
+the server additionally checks that the statement belongs to that entity:
+
+```rust
+let id = EntityId::new("Q42")?;
+let mut created = Statements::default().post(&id, statement, &api).await?;
+
+created.set_rank(StatementRank::Preferred);
+let replaced = created.put_for_entity(&id, &api).await?; // or: created.put(&api)
+replaced.delete(&api).await?;                            // or: replaced.delete_for_entity(&id, &api)
 ```
 
 ### Searching
@@ -277,7 +292,20 @@ after.insert(LanguageString::new("es", "Douglas Adams"));
 let updated = after.patch(&before)?.apply(&id, &api).await?;
 ```
 
-Whole entities can be patched too, via `Item::patch` / `Property::patch`.
+Whole entities can be patched the same way. `Item::patch` / `Property::patch` combine
+the changes to labels, descriptions, aliases, sitelinks and statements into one
+entity-level patch (an `ItemPatch` / `PropertyPatch`), applied in a single edit:
+
+```rust
+let id = EntityId::new("Q42")?;
+let before = Item::get(&id, &api).await?;
+
+let mut after = before.clone();
+after.labels_mut().insert(LanguageString::new("es", "Douglas Adams"));
+after.descriptions_mut().insert(LanguageString::new("es", "escritor británico"));
+
+let updated: Item = after.patch(&before)?.apply(&id, &api).await?;
+```
 
 ### Error handling
 
@@ -285,7 +313,7 @@ Every network call returns `RestApiError`. Common cases have helpers, so you
 don't have to match on message strings:
 
 ```rust
-match Item::get(EntityId::new("Q0")?, &api).await {
+match Item::get(&EntityId::new("Q0")?, &api).await {
     Ok(item) => println!("{}", item.id()),
     Err(e) if e.is_not_found() => println!("no such item"),
     Err(e) if e.is_rate_limited() => println!("slow down!"),
@@ -344,7 +372,7 @@ The crate implements the full Wikibase REST API surface.
 ### Misc
 - [x] `GET /openapi.json`
 - [x] `GET /property-data-types`
-- [x] Search items and properties (on Wikidata currently only via API `v0`)
+- [x] Search and suggest items and properties
 
 ## Documentation
 

@@ -106,7 +106,8 @@ impl RestApiBuilder {
         self
     }
 
-    /// Sets the interval for bearer token renewal. By default, the interval is `DEFAULT_RENEWAL_INTERVAL_SEC`.
+    /// Sets the interval for bearer token renewal. By default, the interval is 3h50min, or
+    /// 90% of the `expires_in` reported by the server once a token has been obtained.
     #[cfg(not(tarpaulin_include))]
     pub const fn with_access_token_renewal(mut self, renewal_interval: Duration) -> Self {
         self.renewal_interval = Some(renewal_interval);
@@ -133,7 +134,7 @@ impl RestApiBuilder {
         let api_url = self.api_url;
         let mut token = self.token;
         if let Some(interval) = self.renewal_interval {
-            token.set_renewal_interval(interval.as_secs());
+            token.set_renewal_interval(interval);
         }
         let token = Arc::new(RwLock::new(token));
         let user_agent = self.user_agent.unwrap_or_else(Self::default_user_agent);
@@ -170,13 +171,25 @@ impl RestApiBuilder {
         ))
     }
 
-    /// Checks if the REST API URL is valid. The URL must end in "rest.php".
-    /// Removes anything beyond that.
+    /// Checks if the REST API URL is valid: an absolute `http(s)` URL whose path contains a
+    /// `rest.php` segment. Removes anything beyond that (further path, query, fragment).
     fn validate_api_url(api_url: &str) -> Result<String, RestApiError> {
-        let (base, _rest) = api_url
-            .split_once("/rest.php")
-            .ok_or_else(|| RestApiError::RestApiUrlInvalid(api_url.to_string()))?;
-        Ok(format!("{base}/rest.php"))
+        const REST_PHP: &str = "/rest.php";
+        let invalid = || RestApiError::RestApiUrlInvalid(api_url.to_string());
+        let url = reqwest::Url::parse(api_url).map_err(|_| invalid())?;
+        if !matches!(url.scheme(), "http" | "https") {
+            return Err(invalid());
+        }
+        let path = url.path();
+        let end = path.find(REST_PHP).ok_or_else(invalid)? + REST_PHP.len();
+        if !(path[end..].is_empty() || path[end..].starts_with('/')) {
+            return Err(invalid());
+        }
+        Ok(format!(
+            "{}{}",
+            url.origin().ascii_serialization(),
+            &path[..end]
+        ))
     }
 
     /// Returns the default user agent, a versioned string based on `DEFAULT_USER_AGENT`.
@@ -217,6 +230,35 @@ mod tests {
     fn test_validate_api_url_rest_api() {
         let builder = RestApiBuilder::new("https://www.wikidata.org/w/rest.php");
         assert!(builder.is_ok());
+    }
+
+    #[test]
+    fn test_validate_api_url_strips_suffix() {
+        let stripped = RestApiBuilder::validate_api_url(
+            "https://www.wikidata.org/w/rest.php/wikibase/v1/entities?x=1#y",
+        )
+        .unwrap();
+        assert_eq!(stripped, "https://www.wikidata.org/w/rest.php");
+        let url = RestApiBuilder::validate_api_url("http://127.0.0.1:8080/w/rest.php").unwrap();
+        assert_eq!(url, "http://127.0.0.1:8080/w/rest.php");
+    }
+
+    #[test]
+    fn test_validate_api_url_rejects_garbage() {
+        for url in [
+            "foo/rest.php",                                     // not absolute
+            "ftp://www.wikidata.org/w/rest.php",                // wrong scheme
+            "https://www.wikidata.org/w/rest.phpx",             // not a whole segment
+            "https://www.wikidata.org/w/index.php?p=/rest.php", // only in the query
+        ] {
+            assert!(
+                matches!(
+                    RestApiBuilder::validate_api_url(url),
+                    Err(RestApiError::RestApiUrlInvalid(_))
+                ),
+                "{url} should be rejected"
+            );
+        }
     }
 
     #[test]
@@ -262,7 +304,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             api1.token().read().await.access_token_renewal_interval(),
-            Duration::from_secs(0)
+            Duration::from_secs((3 * 60 + 50) * 60)
         );
 
         let api2 = RestApi::builder("https://test.wikidata.org/w/rest.php")
@@ -283,21 +325,18 @@ mod tests {
             .unwrap()
             .build()
             .unwrap();
-        assert_eq!(*api1.token().read().await.client_id(), None);
-        assert_eq!(*api1.token().read().await.client_secret(), None);
+        assert_eq!(api1.token().read().await.client_id(), None);
+        assert_eq!(api1.token().read().await.client_secret(), None);
 
         let api2 = RestApi::builder("https://test.wikidata.org/w/rest.php")
             .unwrap()
             .with_oauth2_info("client_id", "client_secret")
             .build()
             .unwrap();
+        assert_eq!(api2.token().read().await.client_id(), Some("client_id"));
         assert_eq!(
-            *api2.token().read().await.client_id(),
-            Some("client_id".to_string())
-        );
-        assert_eq!(
-            *api2.token().read().await.client_secret(),
-            Some("client_secret".to_string())
+            api2.token().read().await.client_secret(),
+            Some("client_secret")
         );
     }
 

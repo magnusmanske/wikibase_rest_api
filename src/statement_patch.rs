@@ -1,9 +1,9 @@
 use crate::{
-    patch_entry::PatchEntry, EditMetadata, EntityId, FromJson, HttpMisc, Patch, PatchApply,
-    RestApi, RestApiError, Statement,
+    patch_entry::PatchEntry, statement::Statement, EditMetadata, EntityId, HttpMisc, Patch,
+    PatchApply, RestApi, RestApiError,
 };
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct StatementPatch {
@@ -12,8 +12,10 @@ pub struct StatementPatch {
 }
 
 impl HttpMisc for StatementPatch {
-    fn get_my_rest_api_path(&self, _id: &EntityId) -> Result<String, RestApiError> {
-        Ok(format!("/statements/{id}", id = self.statement_id))
+    /// `id` is the entity the statement belongs to; `EntityId::None` uses the
+    /// entity-independent `/statements/{statement_id}` endpoint.
+    fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
+        Statement::rest_api_path(id, &self.statement_id)
     }
 }
 
@@ -31,17 +33,8 @@ impl StatementPatch {
         statement_id: S,
         j: &Value,
     ) -> Result<StatementPatch, RestApiError> {
-        let pe = j
-            .as_array()
-            .ok_or(RestApiError::WrongType {
-                field: "StatementPatch".into(),
-                j: j.to_owned(),
-            })?
-            .iter()
-            .map(|x| serde_json::from_value(x.clone()).map_err(|e| e.into()))
-            .collect::<Result<Vec<PatchEntry>, RestApiError>>()?;
         Ok(StatementPatch {
-            patch: pe,
+            patch: PatchEntry::list_from_json(j, "StatementPatch")?,
             statement_id: statement_id.into(),
         })
     }
@@ -51,18 +44,39 @@ impl StatementPatch {
         self.replace("/value/content".to_string(), value);
     }
 
-    // Overrides the Patch<Statement> implementation becaue we don't need the EntityId
+    /// Applies the patch via `/statements/{statement_id}`; no entity ID needed.
     pub async fn apply(&self, api: &RestApi) -> Result<Statement, RestApiError> {
         self.apply_match(api, EditMetadata::default()).await
     }
 
-    // Overrides the Patch<Statement> implementation becaue we don't need the EntityId
+    /// Applies the patch via `/statements/{statement_id}`, with edit metadata.
     pub async fn apply_match(
         &self,
         api: &RestApi,
         em: EditMetadata,
     ) -> Result<Statement, RestApiError> {
-        <Self as PatchApply<Statement>>::apply_match(self, &EntityId::None, api, em).await
+        self.apply_match_for_entity(&EntityId::None, api, em).await
+    }
+
+    /// Applies the patch via `/entities/{group}/{entity_id}/statements/{statement_id}`.
+    pub async fn apply_for_entity(
+        &self,
+        entity_id: &EntityId,
+        api: &RestApi,
+    ) -> Result<Statement, RestApiError> {
+        self.apply_match_for_entity(entity_id, api, EditMetadata::default())
+            .await
+    }
+
+    /// Applies the patch via `/entities/{group}/{entity_id}/statements/{statement_id}`,
+    /// with edit metadata.
+    pub async fn apply_match_for_entity(
+        &self,
+        entity_id: &EntityId,
+        api: &RestApi,
+        em: EditMetadata,
+    ) -> Result<Statement, RestApiError> {
+        <Self as PatchApply<Statement>>::apply_match(self, entity_id, api, em).await
     }
 }
 
@@ -76,26 +90,12 @@ impl Patch for StatementPatch {
     }
 }
 
-impl PatchApply<Statement> for StatementPatch {
-    async fn apply_match(
-        &self,
-        _id: &EntityId,
-        api: &RestApi,
-        em: EditMetadata,
-    ) -> Result<Statement, RestApiError> {
-        let j0 = json!({"patch":self.patch});
-        let request = self
-            .generate_json_request(&EntityId::None, reqwest::Method::PATCH, j0, api, &em)
-            .await?;
-        let response = api.execute(request).await?;
-        let (j, header_info) = self.filter_response_error(response).await?;
-        Statement::from_json_header_info(&j, header_info)
-    }
-}
+impl PatchApply<Statement> for StatementPatch {}
 
 #[cfg(test)]
 mod tests {
-    use crate::statement_value::StatementValue;
+    use crate::{statement_value::StatementValue, FromJson};
+    use serde_json::json;
     use wiremock::matchers::{bearer_token, body_partial_json, header, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -183,7 +183,36 @@ mod tests {
             patch
                 .get_my_rest_api_path(&EntityId::new("Q42").unwrap())
                 .unwrap(),
-            "/statements/Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9"
+            "/entities/items/Q42/statements/Q42$F078E5B3-F9A8-480E-B7AC-D97778CBBEF9"
         );
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_apply_for_entity() {
+        let v = std::fs::read_to_string("test_data/test_statement_get.json").unwrap();
+        let v: Value = serde_json::from_str(&v).unwrap();
+        let statement_id = v["id"].as_str().unwrap().to_string();
+        let entity = statement_id.split('$').next().unwrap().to_string();
+        let mock_server = MockServer::start().await;
+        Mock::given(method("PATCH"))
+            .and(path(format!(
+                "/w/rest.php/wikibase/v1/entities/items/{entity}/statements/{statement_id}"
+            )))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&v))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+        let mut patch = StatementPatch::new(&statement_id);
+        patch.replace_content(json!("Q5"));
+        let statement = patch
+            .apply_for_entity(&EntityId::item(entity), &api)
+            .await
+            .unwrap();
+        assert_eq!(statement.id(), Some(statement_id.as_str()));
     }
 }

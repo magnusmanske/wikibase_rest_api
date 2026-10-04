@@ -1,6 +1,8 @@
 use crate::RestApiError;
+use serde::Serialize;
 
-#[derive(Debug, Clone, PartialEq, Default, Copy)]
+#[derive(Debug, Clone, PartialEq, Default, Copy, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum StatementRank {
     #[default]
     Normal,
@@ -53,5 +55,16 @@ mod tests {
         assert_eq!(StatementRank::Normal.as_str(), "normal");
         assert_eq!(StatementRank::Preferred.as_str(), "preferred");
         assert_eq!(StatementRank::Deprecated.as_str(), "deprecated");
+    }
+
+    #[test]
+    fn test_serialize_matches_as_str() {
+        for rank in [
+            StatementRank::Normal,
+            StatementRank::Preferred,
+            StatementRank::Deprecated,
+        ] {
+            assert_eq!(serde_json::to_value(rank).unwrap(), rank.as_str());
+        }
     }
 }

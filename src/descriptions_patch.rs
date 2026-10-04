@@ -1,4 +1,9 @@
-impl_language_string_patch!(DescriptionsPatch, "descriptions", "DescriptionsPatch");
+impl_language_string_patch!(
+    DescriptionsPatch,
+    crate::descriptions::Descriptions,
+    "descriptions",
+    "DescriptionsPatch"
+);
 
 #[cfg(test)]
 mod tests {
@@ -53,7 +58,7 @@ mod tests {
         ]);
         let patch = DescriptionsPatch::from_json(&j).unwrap();
         assert_eq!(
-            patch,
+            patch.patch,
             vec![
                 PatchEntry::new("replace", "/en", json!("Foo Bar")),
                 PatchEntry::new("remove", "/de", Value::Null)

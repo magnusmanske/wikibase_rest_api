@@ -2,7 +2,7 @@ impl_language_string_collection!(
     Descriptions,
     "descriptions",
     "Descriptions",
-    descriptions_from_json
+    crate::descriptions_patch::DescriptionsPatch
 );
 
 #[cfg(test)]
@@ -69,7 +69,7 @@ mod tests {
         let patch_json = json!(patch);
         assert_eq!(
             patch_json,
-            json!({"mode":"Descriptions","patch":[{"op":"replace","path":"/en","value":"Baz"}]})
+            json!({"patch":[{"op":"replace","path":"/en","value":"Baz"}]})
         );
     }
 

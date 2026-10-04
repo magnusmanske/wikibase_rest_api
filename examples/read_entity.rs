@@ -11,7 +11,7 @@ async fn main() -> Result<(), RestApiError> {
     let api = RestApi::wikidata()?;
 
     // One request fetches the entire item.
-    let item = Item::get(EntityId::new("Q42")?, &api).await?;
+    let item = Item::get(&EntityId::new("Q42")?, &api).await?;
     println!("Item {}", item.id());
 
     // Labels / descriptions are keyed by language code.

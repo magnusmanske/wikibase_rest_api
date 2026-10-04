@@ -1,7 +1,10 @@
 use crate::{entity::Entity, EntityId, Item, Property, RestApi, RestApiError};
 use futures::prelude::*;
 use std::{collections::HashMap, sync::Arc, time::Duration};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, RwLockReadGuard};
+
+/// One entity's fetch outcome.
+type FetchOutcome<E> = (EntityId, Result<E, RestApiError>);
 
 const MAX_CONCURRENT_LOAD_DEFAULT: usize = 10;
 const CONTAINER_RETRIES_DEFAULT: usize = 2;
@@ -83,65 +86,37 @@ impl EntityContainer {
     /// `container_retries` times; other failures are reported as-is (the request layer
     /// has already retried them).
     pub async fn load_report(&self, entity_ids: &[EntityId]) -> LoadReport {
-        let item_ids = {
-            let items = self.items.read().await;
-            Self::get_items_to_load(&items, entity_ids)
-        };
-        let property_ids = {
-            let properties = self.properties.read().await;
-            Self::get_properties_to_load(&properties, entity_ids)
-        };
-
         // Load items and properties concurrently, each with its own retry sweeps.
         let (mut report, properties_report) = futures::future::join(
-            self.load_items_with_retries(item_ids),
-            self.load_properties_with_retries(property_ids),
+            self.load_with_retries(&self.items, entity_ids),
+            self.load_with_retries(&self.properties, entity_ids),
         )
         .await;
         report.merge(properties_report);
         report
     }
 
-    fn get_items_to_load(items: &HashMap<String, Item>, entity_ids: &[EntityId]) -> Vec<String> {
-        entity_ids
-            .iter()
-            .filter_map(|id| match id {
-                EntityId::Item(id) => Some(id.as_str()),
-                _ => None,
-            })
-            .filter(|id| !items.contains_key(*id))
-            .map(ToOwned::to_owned)
-            .collect()
-    }
-
-    fn get_properties_to_load(
-        properties: &HashMap<String, Property>,
+    /// Returns the IDs of kind `E` from `entity_ids` that are not yet in `store`.
+    fn ids_to_load<E: Entity>(
+        store: &HashMap<String, E>,
         entity_ids: &[EntityId],
-    ) -> Vec<String> {
+    ) -> Vec<EntityId> {
         entity_ids
             .iter()
-            .filter_map(|id| match id {
-                EntityId::Property(id) => Some(id.as_str()),
-                _ => None,
-            })
-            .filter(|id| !properties.contains_key(*id))
-            .map(ToOwned::to_owned)
+            .filter(|id| id.kind() == Some(E::ENTITY_TYPE))
+            .filter(|id| id.id().is_ok_and(|key| !store.contains_key(key)))
+            .cloned()
             .collect()
     }
 
-    /// Fetches items concurrently, returning each ID's outcome (not flattened, so failures
+    /// Fetches entities concurrently, returning each ID's outcome (not flattened, so failures
     /// are preserved rather than silently dropped).
-    async fn fetch_items(
-        &self,
-        item_ids: &[String],
-        concurrency: usize,
-    ) -> Vec<(String, Result<Item, RestApiError>)> {
-        let futures = item_ids.iter().map(|id| {
-            let id = id.clone();
-            async move {
-                let result = Item::get(EntityId::item(id.as_str()), &self.api).await;
-                (id, result)
-            }
+    async fn fetch<E: Entity>(&self, ids: &[EntityId], concurrency: usize) -> Vec<FetchOutcome<E>> {
+        let api = &self.api;
+        // Each future owns its ID; borrowing it from `ids` would make the future non-`Send`.
+        let futures = ids.iter().cloned().map(|id| async move {
+            let result = E::get(&id, api).await;
+            (id, result)
         });
         futures::stream::iter(futures)
             .buffer_unordered(concurrency)
@@ -149,67 +124,28 @@ impl EntityContainer {
             .await
     }
 
-    async fn fetch_properties(
+    /// Loads all not-yet-loaded entities of kind `E` from `entity_ids` into `store`,
+    /// re-sweeping rate-limited IDs up to `container_retries` times.
+    async fn load_with_retries<E: Entity>(
         &self,
-        property_ids: &[String],
-        concurrency: usize,
-    ) -> Vec<(String, Result<Property, RestApiError>)> {
-        let futures = property_ids.iter().map(|id| {
-            let id = id.clone();
-            async move {
-                let result = Property::get(EntityId::property(id.as_str()), &self.api).await;
-                (id, result)
-            }
-        });
-        futures::stream::iter(futures)
-            .buffer_unordered(concurrency)
-            .collect()
-            .await
-    }
-
-    async fn load_items_with_retries(&self, mut ids: Vec<String>) -> LoadReport {
+        store: &RwLock<HashMap<String, E>>,
+        entity_ids: &[EntityId],
+    ) -> LoadReport {
+        let mut ids = Self::ids_to_load(&*store.read().await, entity_ids);
         let mut report = LoadReport::default();
         let mut concurrency = self.max_concurrent_load;
         for round in 0..=self.container_retries {
             if ids.is_empty() {
                 break;
             }
-            let outcomes = self.fetch_items(&ids, concurrency).await;
-            let (loaded, rate_limited) =
-                self.classify_round(outcomes, round, EntityId::Item, &mut report);
+            let outcomes = self.fetch::<E>(&ids, concurrency).await;
+            let (loaded, rate_limited) = self.classify_round(outcomes, round, &mut report);
             if !loaded.is_empty() {
-                let mut items = self.items.write().await;
-                for item in loaded {
-                    if let Ok(id) = item.id().id() {
-                        report.loaded.push(EntityId::Item(id.clone()));
-                        items.insert(id.clone(), item);
-                    }
-                }
-            }
-            if rate_limited.is_empty() {
-                break;
-            }
-            ids = self.prepare_resweep(rate_limited, &mut concurrency).await;
-        }
-        report
-    }
-
-    async fn load_properties_with_retries(&self, mut ids: Vec<String>) -> LoadReport {
-        let mut report = LoadReport::default();
-        let mut concurrency = self.max_concurrent_load;
-        for round in 0..=self.container_retries {
-            if ids.is_empty() {
-                break;
-            }
-            let outcomes = self.fetch_properties(&ids, concurrency).await;
-            let (loaded, rate_limited) =
-                self.classify_round(outcomes, round, EntityId::Property, &mut report);
-            if !loaded.is_empty() {
-                let mut properties = self.properties.write().await;
-                for property in loaded {
-                    if let Ok(id) = property.id().id() {
-                        report.loaded.push(EntityId::Property(id.clone()));
-                        properties.insert(id.clone(), property);
+                let mut store = store.write().await;
+                for (id, entity) in loaded {
+                    if let Ok(key) = id.id() {
+                        store.insert(key.clone(), entity);
+                        report.loaded.push(id);
                     }
                 }
             }
@@ -222,31 +158,30 @@ impl EntityContainer {
     }
 
     /// Sorts one round's outcomes into loaded entities and the IDs to re-sweep, recording
-    /// missing (404) and terminal failures into `report`. `make_id` tags IDs by entity kind.
+    /// missing (404) and terminal failures into `report`.
     fn classify_round<E>(
         &self,
-        outcomes: Vec<(String, Result<E, RestApiError>)>,
+        outcomes: Vec<FetchOutcome<E>>,
         round: usize,
-        make_id: fn(String) -> EntityId,
         report: &mut LoadReport,
-    ) -> (Vec<E>, Vec<String>) {
+    ) -> (Vec<(EntityId, E)>, Vec<EntityId>) {
         let mut loaded = Vec::new();
         let mut rate_limited = Vec::new();
         for (id, result) in outcomes {
             match result {
-                Ok(entity) => loaded.push(entity),
-                Err(e) if e.is_not_found() => report.missing.push(make_id(id)),
+                Ok(entity) => loaded.push((id, entity)),
+                Err(e) if e.is_not_found() => report.missing.push(id),
                 Err(e) if e.is_rate_limited() && round < self.container_retries => {
                     rate_limited.push(id);
                 }
-                Err(e) => report.failed.push((make_id(id), e)),
+                Err(e) => report.failed.push((id, e)),
             }
         }
         (loaded, rate_limited)
     }
 
     /// Waits out the rate limit and halves concurrency before re-sweeping the failed IDs.
-    async fn prepare_resweep(&self, ids: Vec<String>, concurrency: &mut usize) -> Vec<String> {
+    async fn prepare_resweep(&self, ids: Vec<EntityId>, concurrency: &mut usize) -> Vec<EntityId> {
         tokio::time::sleep(self.container_backoff).await;
         *concurrency = (*concurrency / 2).max(1);
         ids
@@ -262,14 +197,18 @@ impl EntityContainer {
         self.properties.read().await.get(id.as_ref()).cloned()
     }
 
-    /// Returns a reference to the items in the container.
-    pub fn items(&self) -> Arc<RwLock<HashMap<String, Item>>> {
-        self.items.clone()
+    /// Returns read access to all items in the container, keyed by ID.
+    ///
+    /// Loads wait while the returned guard is held, so drop it promptly.
+    pub async fn items(&self) -> RwLockReadGuard<'_, HashMap<String, Item>> {
+        self.items.read().await
     }
 
-    /// Returns a reference to the properties in the container.
-    pub fn properties(&self) -> Arc<RwLock<HashMap<String, Property>>> {
-        self.properties.clone()
+    /// Returns read access to all properties in the container, keyed by ID.
+    ///
+    /// Loads wait while the returned guard is held, so drop it promptly.
+    pub async fn properties(&self) -> RwLockReadGuard<'_, HashMap<String, Property>> {
+        self.properties.read().await
     }
 }
 
@@ -335,6 +274,38 @@ mod tests {
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
+    #[test]
+    fn test_load_report_future_is_send() {
+        // The generic loader must still yield a `Send` future, so callers can spawn it.
+        fn assert_send<T: Send>(_: &T) {}
+        let api = Arc::new(RestApi::wikidata().unwrap());
+        let container = EntityContainer::builder().api(api).build().unwrap();
+        let ids = [EntityId::item("Q1")];
+        let future = container.load_report(&ids);
+        assert_send(&future);
+    }
+
+    #[test]
+    fn test_ids_to_load() {
+        let mut store = HashMap::new();
+        store.insert("Q1".to_string(), Item::default());
+        let ids = [
+            EntityId::item("Q1"),
+            EntityId::item("Q2"),
+            EntityId::property("P1"),
+            EntityId::None,
+        ];
+        assert_eq!(
+            EntityContainer::ids_to_load(&store, &ids),
+            vec![EntityId::item("Q2")]
+        );
+        let properties: HashMap<String, Property> = HashMap::new();
+        assert_eq!(
+            EntityContainer::ids_to_load(&properties, &ids),
+            vec![EntityId::property("P1")]
+        );
+    }
+
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn test_entity_container() {
@@ -378,11 +349,11 @@ mod tests {
         ])
         .await
         .unwrap();
-        assert!(ec.items().read().await.contains_key("Q42"));
-        assert!(ec.items().read().await.contains_key("Q255"));
-        assert!(ec.properties().read().await.contains_key("P214"));
-        assert!(!ec.properties().read().await.contains_key("Q42"));
-        assert!(!ec.items().read().await.contains_key("P214"));
+        assert!(ec.items().await.contains_key("Q42"));
+        assert!(ec.items().await.contains_key("Q255"));
+        assert!(ec.properties().await.contains_key("P214"));
+        assert!(!ec.properties().await.contains_key("Q42"));
+        assert!(!ec.items().await.contains_key("P214"));
 
         // Convenience accessors.
         assert_eq!(

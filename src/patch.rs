@@ -34,6 +34,8 @@ pub trait Patch: Sized {
     }
 }
 
+/// Sends a patch to the API. `T` is the type the server returns after patching
+/// (e.g. `Labels` for a `LabelsPatch`).
 pub trait PatchApply<T: FromJson>: HttpMisc + Patch {
     /// Applies the entire patch against the API
     async fn apply(&self, id: &EntityId, api: &RestApi) -> Result<T, RestApiError> {
@@ -47,18 +49,20 @@ pub trait PatchApply<T: FromJson>: HttpMisc + Patch {
         api: &RestApi,
         em: EditMetadata,
     ) -> Result<T, RestApiError> {
-        let j0 = json!({"patch": self.patch()});
-        let request = self
-            .generate_json_request(id, reqwest::Method::PATCH, j0, api, &em)
+        let j = json!({"patch": self.patch()});
+        let (j, header_info) = self
+            .run_json_query(id, reqwest::Method::PATCH, j, api, &em)
             .await?;
-        let response = api.execute(request).await?;
-        let (j1, header_info) = self.filter_response_error(response).await?;
-        T::from_json_header_info(&j1, header_info)
+        T::from_json_header_info(&j, header_info)
     }
 }
 
+/// Construction from the server's JSON representation.
 pub trait FromJson: Sized {
     fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError>;
+
+    /// Returns the header information (revision ID, last modified) of the response this
+    /// value was built from; default/empty if it was not loaded from the API.
     fn header_info(&self) -> &HeaderInfo;
 
     fn from_json(j: &Value) -> Result<Self, RestApiError> {

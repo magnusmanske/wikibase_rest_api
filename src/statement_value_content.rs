@@ -29,7 +29,7 @@ pub enum TimePrecision {
 }
 
 impl TryFrom<u8> for TimePrecision {
-    type Error = &'static str;
+    type Error = RestApiError;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
@@ -48,7 +48,7 @@ impl TryFrom<u8> for TimePrecision {
             12 => Ok(TimePrecision::Hour),
             13 => Ok(TimePrecision::Minute),
             14 => Ok(TimePrecision::Second),
-            _ => Err("Invalid TimePrecision value"),
+            _ => Err(RestApiError::InvalidPrecision),
         }
     }
 }
@@ -60,13 +60,12 @@ impl From<TimePrecision> for u8 {
 }
 
 impl TryFrom<u64> for TimePrecision {
-    type Error = &'static str;
+    type Error = RestApiError;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        if value > u64::from(u8::MAX) {
-            return Err("Value too large for TimePrecision");
-        }
-        (value as u8).try_into()
+        u8::try_from(value)
+            .map_err(|_| RestApiError::InvalidPrecision)?
+            .try_into()
     }
 }
 
@@ -114,9 +113,7 @@ impl StatementValueContent {
         ) {
             return Ok(StatementValueContent::Time {
                 time: time.to_string(),
-                precision: precision
-                    .try_into()
-                    .map_err(|_| RestApiError::InvalidPrecision)?,
+                precision: precision.try_into()?,
                 calendarmodel: calendarmodel.to_string(),
             });
         }
@@ -268,38 +265,56 @@ mod tests {
     #[test]
     fn test_from_u8_conversion() {
         assert_eq!(
-            TimePrecision::try_from(0_u8),
-            Ok(TimePrecision::BillionYears)
+            TimePrecision::try_from(0_u8).unwrap(),
+            TimePrecision::BillionYears
         );
         assert_eq!(
-            TimePrecision::try_from(1_u8),
-            Ok(TimePrecision::HundredMillionYears)
+            TimePrecision::try_from(1_u8).unwrap(),
+            TimePrecision::HundredMillionYears
         );
         assert_eq!(
-            TimePrecision::try_from(2_u8),
-            Ok(TimePrecision::TenMillionYears)
+            TimePrecision::try_from(2_u8).unwrap(),
+            TimePrecision::TenMillionYears
         );
         assert_eq!(
-            TimePrecision::try_from(3_u8),
-            Ok(TimePrecision::MillionYears)
+            TimePrecision::try_from(3_u8).unwrap(),
+            TimePrecision::MillionYears
         );
         assert_eq!(
-            TimePrecision::try_from(4_u8),
-            Ok(TimePrecision::HundredMillennia)
+            TimePrecision::try_from(4_u8).unwrap(),
+            TimePrecision::HundredMillennia
         );
         assert_eq!(
-            TimePrecision::try_from(5_u8),
-            Ok(TimePrecision::TenMillennia)
+            TimePrecision::try_from(5_u8).unwrap(),
+            TimePrecision::TenMillennia
         );
-        assert_eq!(TimePrecision::try_from(6_u8), Ok(TimePrecision::Millennia));
-        assert_eq!(TimePrecision::try_from(7_u8), Ok(TimePrecision::Century));
-        assert_eq!(TimePrecision::try_from(8_u8), Ok(TimePrecision::Decade));
-        assert_eq!(TimePrecision::try_from(9_u8), Ok(TimePrecision::Year));
-        assert_eq!(TimePrecision::try_from(10_u8), Ok(TimePrecision::Month));
-        assert_eq!(TimePrecision::try_from(11_u8), Ok(TimePrecision::Day));
-        assert_eq!(TimePrecision::try_from(12_u8), Ok(TimePrecision::Hour));
-        assert_eq!(TimePrecision::try_from(13_u8), Ok(TimePrecision::Minute));
-        assert_eq!(TimePrecision::try_from(14_u8), Ok(TimePrecision::Second));
+        assert_eq!(
+            TimePrecision::try_from(6_u8).unwrap(),
+            TimePrecision::Millennia
+        );
+        assert_eq!(
+            TimePrecision::try_from(7_u8).unwrap(),
+            TimePrecision::Century
+        );
+        assert_eq!(
+            TimePrecision::try_from(8_u8).unwrap(),
+            TimePrecision::Decade
+        );
+        assert_eq!(TimePrecision::try_from(9_u8).unwrap(), TimePrecision::Year);
+        assert_eq!(
+            TimePrecision::try_from(10_u8).unwrap(),
+            TimePrecision::Month
+        );
+        assert_eq!(TimePrecision::try_from(11_u8).unwrap(), TimePrecision::Day);
+        assert_eq!(TimePrecision::try_from(12_u8).unwrap(), TimePrecision::Hour);
+        assert_eq!(
+            TimePrecision::try_from(13_u8).unwrap(),
+            TimePrecision::Minute
+        );
+        assert_eq!(
+            TimePrecision::try_from(14_u8).unwrap(),
+            TimePrecision::Second
+        );
         assert!(TimePrecision::try_from(15_u8).is_err());
     }
 
@@ -325,38 +340,59 @@ mod tests {
     #[test]
     fn test_from_u64_conversion() {
         assert_eq!(
-            TimePrecision::try_from(0_u64),
-            Ok(TimePrecision::BillionYears)
+            TimePrecision::try_from(0_u64).unwrap(),
+            TimePrecision::BillionYears
         );
         assert_eq!(
-            TimePrecision::try_from(1_u64),
-            Ok(TimePrecision::HundredMillionYears)
+            TimePrecision::try_from(1_u64).unwrap(),
+            TimePrecision::HundredMillionYears
         );
         assert_eq!(
-            TimePrecision::try_from(2_u64),
-            Ok(TimePrecision::TenMillionYears)
+            TimePrecision::try_from(2_u64).unwrap(),
+            TimePrecision::TenMillionYears
         );
         assert_eq!(
-            TimePrecision::try_from(3_u64),
-            Ok(TimePrecision::MillionYears)
+            TimePrecision::try_from(3_u64).unwrap(),
+            TimePrecision::MillionYears
         );
         assert_eq!(
-            TimePrecision::try_from(4_u64),
-            Ok(TimePrecision::HundredMillennia)
+            TimePrecision::try_from(4_u64).unwrap(),
+            TimePrecision::HundredMillennia
         );
         assert_eq!(
-            TimePrecision::try_from(5_u64),
-            Ok(TimePrecision::TenMillennia)
+            TimePrecision::try_from(5_u64).unwrap(),
+            TimePrecision::TenMillennia
         );
-        assert_eq!(TimePrecision::try_from(6_u64), Ok(TimePrecision::Millennia));
-        assert_eq!(TimePrecision::try_from(7_u64), Ok(TimePrecision::Century));
-        assert_eq!(TimePrecision::try_from(8_u64), Ok(TimePrecision::Decade));
-        assert_eq!(TimePrecision::try_from(9_u64), Ok(TimePrecision::Year));
-        assert_eq!(TimePrecision::try_from(10_u64), Ok(TimePrecision::Month));
-        assert_eq!(TimePrecision::try_from(11_u64), Ok(TimePrecision::Day));
-        assert_eq!(TimePrecision::try_from(12_u64), Ok(TimePrecision::Hour));
-        assert_eq!(TimePrecision::try_from(13_u64), Ok(TimePrecision::Minute));
-        assert_eq!(TimePrecision::try_from(14_u64), Ok(TimePrecision::Second));
+        assert_eq!(
+            TimePrecision::try_from(6_u64).unwrap(),
+            TimePrecision::Millennia
+        );
+        assert_eq!(
+            TimePrecision::try_from(7_u64).unwrap(),
+            TimePrecision::Century
+        );
+        assert_eq!(
+            TimePrecision::try_from(8_u64).unwrap(),
+            TimePrecision::Decade
+        );
+        assert_eq!(TimePrecision::try_from(9_u64).unwrap(), TimePrecision::Year);
+        assert_eq!(
+            TimePrecision::try_from(10_u64).unwrap(),
+            TimePrecision::Month
+        );
+        assert_eq!(TimePrecision::try_from(11_u64).unwrap(), TimePrecision::Day);
+        assert_eq!(
+            TimePrecision::try_from(12_u64).unwrap(),
+            TimePrecision::Hour
+        );
+        assert_eq!(
+            TimePrecision::try_from(13_u64).unwrap(),
+            TimePrecision::Minute
+        );
+        assert_eq!(
+            TimePrecision::try_from(14_u64).unwrap(),
+            TimePrecision::Second
+        );
         assert!(TimePrecision::try_from(15_u64).is_err());
     }
 
@@ -364,7 +400,7 @@ mod tests {
     fn test_from_u64_too_large() {
         // Values above u8::MAX cannot be a TimePrecision.
         let err = TimePrecision::try_from(u64::from(u8::MAX) + 1).unwrap_err();
-        assert_eq!(err, "Value too large for TimePrecision");
+        assert!(matches!(err, RestApiError::InvalidPrecision));
     }
 
     #[test]

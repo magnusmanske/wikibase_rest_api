@@ -38,6 +38,38 @@ mod tests {
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
+    async fn test_labels_get_with_fallback_reports_resolved_language() {
+        // The server redirects a fallback request to the language it actually used;
+        // the returned label must carry that language, not the requested one.
+        let mock_server = MockServer::start().await;
+        let base = "/w/rest.php/wikibase/v1/entities/items/Q42";
+        Mock::given(method("GET"))
+            .and(path(format!("{base}/labels_with_language_fallback/bar")))
+            .respond_with(ResponseTemplate::new(307).insert_header(
+                "Location",
+                format!("{}{base}/labels/mul", mock_server.uri()),
+            ))
+            .mount(&mock_server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path(format!("{base}/labels/mul")))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!("Douglas Adams")))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let label = Label::get_with_fallback(&EntityId::item("Q42"), "bar", &api)
+            .await
+            .unwrap();
+        assert_eq!(label.language(), "mul");
+        assert_eq!(label.value(), "Douglas Adams");
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn test_label_get() {
         let id = "Q42";
         let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/labels/en");

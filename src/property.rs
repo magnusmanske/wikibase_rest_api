@@ -3,25 +3,31 @@ use crate::{
     aliases_in_language::AliasesInLanguage,
     descriptions::Descriptions,
     entity::{Entity, EntityType},
-    entity_patch::EntityPatch,
+    entity_patch::PropertyPatch,
     labels::Labels,
-    patch::Patch,
     statements::Statements,
-    DataType, EntityId, FromJson, HeaderInfo, HttpMisc, RestApi, RestApiError,
+    DataType, EntityId, FromJson, HeaderInfo, HttpMisc, RestApiError,
 };
 use derive_where::DeriveWhere;
-use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde::Serialize;
 use serde_json::Value;
 
-#[derive(DeriveWhere, Debug, Clone, Default)]
+#[derive(DeriveWhere, Debug, Clone, Default, Serialize)]
 #[derive_where(PartialEq)]
 pub struct Property {
+    #[serde(skip_serializing_if = "EntityId::is_none")]
     id: EntityId,
+    #[serde(skip_serializing_if = "Option::is_none")]
     data_type: Option<DataType>,
+    #[serde(skip_serializing_if = "Labels::is_empty")]
     labels: Labels,
+    #[serde(skip_serializing_if = "Descriptions::is_empty")]
     descriptions: Descriptions,
+    #[serde(skip_serializing_if = "Aliases::is_empty")]
     aliases: Aliases,
+    #[serde(skip_serializing_if = "Statements::is_empty")]
     statements: Statements,
+    #[serde(skip)]
     #[derive_where(skip)]
     header_info: HeaderInfo,
 }
@@ -32,26 +38,21 @@ impl HttpMisc for Property {
     }
 }
 
-impl Entity for Property {
-    fn id(&self) -> &EntityId {
-        &self.id
+impl FromJson for Property {
+    fn header_info(&self) -> &HeaderInfo {
+        &self.header_info
     }
 
-    fn set_id(&mut self, id: EntityId) {
-        self.id = id;
-    }
-
-    fn from_json_header_info(j: Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
+    fn from_json_header_info(j: &Value, header_info: HeaderInfo) -> Result<Self, RestApiError> {
         let id = j["id"]
             .as_str()
-            .ok_or(RestApiError::MissingOrInvalidField {
+            .ok_or_else(|| RestApiError::MissingOrInvalidField {
                 field: "id".to_string(),
                 j: j.clone(),
             })?;
-        let data_type = j["data_type"].as_str().and_then(|s| DataType::new(s).ok());
         Ok(Self {
             id: EntityId::property(id),
-            data_type,
+            data_type: j["data_type"].as_str().map(DataType::new),
             labels: Labels::from_json_or_default(&j["labels"])?,
             descriptions: Descriptions::from_json_or_default(&j["descriptions"])?,
             aliases: Aliases::from_json_or_default(&j["aliases"])?,
@@ -59,58 +60,17 @@ impl Entity for Property {
             header_info,
         })
     }
-
-    async fn post(&self, api: &RestApi) -> Result<Self, RestApiError> {
-        self.post_with_type(EntityType::Property, api).await
-    }
 }
 
-impl Serialize for Property {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // #lizard forgives the complexity
-        let mut fields = 5;
-        if self.id.is_some() {
-            fields += 1;
-        }
-        if self.data_type.is_some() {
-            fields += 1;
-        }
-        if self.labels.is_empty() {
-            fields -= 1;
-        }
-        if self.descriptions.is_empty() {
-            fields -= 1;
-        }
-        if self.aliases.is_empty() {
-            fields -= 1;
-        }
-        if self.statements.is_empty() {
-            fields -= 1;
-        }
-        let mut s = serializer.serialize_struct("Property", fields)?;
-        if self.id.is_some() {
-            let id: String = self.id.to_owned().into();
-            s.serialize_field("id", &id)?;
-        }
-        if let Some(dt) = self.data_type {
-            s.serialize_field("data_type", dt.as_str())?;
-        }
-        if !self.labels.is_empty() {
-            s.serialize_field("labels", &self.labels)?;
-        }
-        if !self.descriptions.is_empty() {
-            s.serialize_field("descriptions", &self.descriptions)?;
-        }
-        if !self.aliases.is_empty() {
-            s.serialize_field("aliases", &self.aliases)?;
-        }
-        if !self.statements.is_empty() {
-            s.serialize_field("statements", &self.statements)?;
-        }
-        s.end()
+impl Entity for Property {
+    const ENTITY_TYPE: EntityType = EntityType::Property;
+
+    fn id(&self) -> &EntityId {
+        &self.id
+    }
+
+    fn set_id(&mut self, id: EntityId) {
+        self.id = id;
     }
 }
 
@@ -155,48 +115,35 @@ impl Property {
         &mut self.aliases
     }
 
-    /// Returns the aliases of the property for a specific language, as an `Aliases` object
+    /// Returns the aliases of the property for a specific language, as an `AliasesInLanguage` object
     pub fn as_aliases<S: Into<String>>(&self, lang: S) -> AliasesInLanguage {
-        let lang: String = lang.into();
-        let v: Vec<String> = self
-            .aliases
-            .get_lang(&lang)
-            .iter()
-            .map(|x| x.to_string())
-            .collect();
-        AliasesInLanguage::new(lang, v)
-    }
-
-    /// Returns the header info of the property
-    pub const fn header_info(&self) -> &HeaderInfo {
-        &self.header_info
+        self.aliases.in_language(lang)
     }
 
     /// Returns the data type of the property
-    pub const fn data_type(&self) -> Option<DataType> {
-        self.data_type
+    pub const fn data_type(&self) -> Option<&DataType> {
+        self.data_type.as_ref()
     }
 
     /// Sets the data type of the property
-    pub const fn set_data_type(&mut self, data_type: Option<DataType>) {
+    pub fn set_data_type(&mut self, data_type: Option<DataType>) {
         self.data_type = data_type;
     }
 
-    /// Generates a patch to transform `other` into `self`
-    pub fn patch(&self, other: &Self) -> Result<EntityPatch, RestApiError> {
-        let mut labels_patch = self.labels.patch(other.labels())?;
-        let mut descriptions_patch = self.descriptions.patch(other.descriptions())?;
-        let mut aliases_patch = self.aliases.patch(other.aliases())?;
-        let mut statements_patch = self.statements.patch(other.statements())?;
-
-        // Drain each sub-patch into the combined patch instead of cloning its entries.
-        let mut ret = EntityPatch::property();
-        ret.patch_mut().append(labels_patch.patch_mut());
-        ret.patch_mut().append(descriptions_patch.patch_mut());
-        ret.patch_mut().append(aliases_patch.patch_mut());
-        ret.patch_mut().append(statements_patch.patch_mut());
-
-        Ok(ret)
+    /// Generates a patch to transform `other` into `self`.
+    ///
+    /// # Errors
+    /// Returns an error if a statement in `other` has no ID (it can't be addressed).
+    pub fn patch(&self, other: &Self) -> Result<PropertyPatch, RestApiError> {
+        Ok(PropertyPatch::default()
+            .with_part("/labels", self.labels.patch(&other.labels)?)
+            .with_part(
+                "/descriptions",
+                self.descriptions.patch(&other.descriptions)?,
+            )
+            .with_part("/aliases", self.aliases.patch(&other.aliases)?)
+            // Statement patch paths are already entity-level (`/statements/...`).
+            .with_part("", self.statements.patch(&other.statements)?))
     }
 }
 
@@ -204,7 +151,7 @@ impl Property {
 mod tests {
     use super::*;
     use crate::language_strings::LanguageStrings;
-    use crate::{LanguageString, RestApi, Statement};
+    use crate::{LanguageString, Patch, RestApi, Statement};
     use serde_json::json;
     use wiremock::matchers::{body_partial_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -227,13 +174,13 @@ mod tests {
             .build()
             .unwrap();
 
-        let property = Property::get(EntityId::property("P214"), &api)
+        let property = Property::get(&EntityId::property("P214"), &api)
             .await
             .unwrap();
-        assert_eq!(property.data_type(), Some(DataType::ExternalId));
+        assert_eq!(property.data_type(), Some(&DataType::ExternalId));
         let j = serde_json::to_string(&property).unwrap(); // Convert property to JSON text
         let v: Value = serde_json::from_str(&j).unwrap(); // Convert to JSON value
-        let property_from_json = Property::from_json(v).unwrap(); // Convert back to property
+        let property_from_json = Property::from_json(&v).unwrap(); // Convert back to property
         assert_eq!(property, property_from_json); // Check if the reconstituted property is identical to the original
     }
 
@@ -308,6 +255,14 @@ mod tests {
     }
 
     #[test]
+    fn test_unknown_data_type_round_trips() {
+        let v = json!({"id": "P1", "data_type": "edtf"});
+        let property = Property::from_json(&v).unwrap();
+        assert_eq!(property.data_type(), Some(&DataType::Other("edtf".into())));
+        assert_eq!(serde_json::to_value(&property).unwrap(), v);
+    }
+
+    #[test]
     fn test_serialize() {
         let mut property = Property {
             id: EntityId::property("P214"),
@@ -342,9 +297,9 @@ mod tests {
             "aliases": {"en": ["alias"]},
             "statements": {},
         });
-        let property = Property::from_json(v).unwrap();
+        let property = Property::from_json(&v).unwrap();
         assert_eq!(property.id(), &EntityId::property("P214"));
-        assert_eq!(property.data_type(), Some(DataType::ExternalId));
+        assert_eq!(property.data_type(), Some(&DataType::ExternalId));
         assert_eq!(property.labels().get_lang("en").unwrap(), "label");
         assert_eq!(
             property.descriptions().get_lang("en").unwrap(),
@@ -358,7 +313,7 @@ mod tests {
         let mut property = Property::default();
         assert_eq!(property.data_type(), None);
         property.set_data_type(Some(DataType::WikibaseItem));
-        assert_eq!(property.data_type(), Some(DataType::WikibaseItem));
+        assert_eq!(property.data_type(), Some(&DataType::WikibaseItem));
         property.set_data_type(None);
         assert_eq!(property.data_type(), None);
     }
@@ -388,7 +343,7 @@ mod tests {
             "aliases": {},
             "statements": {},
         });
-        let property = Property::from_json(v).unwrap();
+        let property = Property::from_json(&v).unwrap();
         let j = serde_json::to_value(&property).unwrap();
         assert_eq!(j["data_type"], "external-id");
     }
@@ -419,6 +374,7 @@ mod tests {
         p2.labels_mut().insert(LanguageString::new("en", "label2"));
         let patch = p1.patch(&p2).unwrap();
         assert_eq!(patch.patch().len(), 1);
+        assert_eq!(patch.patch()[0].path(), "/labels/en");
     }
 
     #[tokio::test]
@@ -426,7 +382,7 @@ mod tests {
     async fn test_item_post() {
         let j214 = std::fs::read_to_string("test_data/P214.json").unwrap();
         let v214: Value = serde_json::from_str(&j214).unwrap();
-        let mut property = Property::from_json(v214).unwrap();
+        let mut property = Property::from_json(&v214).unwrap();
         let v = property.to_owned();
 
         let mock_server = MockServer::start().await;

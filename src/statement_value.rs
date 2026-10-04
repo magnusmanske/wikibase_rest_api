@@ -101,7 +101,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let item = Item::get(EntityId::item(id), &api).await.unwrap();
+        let item = Item::get(&EntityId::item(id), &api).await.unwrap();
         let prop = item.statements().property("P2021")[0].to_owned();
         let qual = &prop.qualifiers()[0];
         assert_eq!(qual.value(), &StatementValue::SomeValue);
@@ -126,8 +126,8 @@ mod tests {
             .build()
             .unwrap();
 
-        let item = Item::get(EntityId::item(id), &api).await.unwrap();
-        let prop = item.statements().property("P40")[0];
+        let item = Item::get(&EntityId::item(id), &api).await.unwrap();
+        let prop = &item.statements().property("P40")[0];
         assert_eq!(prop.value(), &StatementValue::NoValue);
     }
 

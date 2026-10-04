@@ -1,9 +1,8 @@
 use crate::{
-    aliases::Aliases, patch_entry::PatchEntry, EditMetadata, EntityId, FromJson, HttpMisc, Patch,
-    PatchApply, RestApi, RestApiError,
+    aliases::Aliases, patch_entry::PatchEntry, EntityId, HttpMisc, Patch, PatchApply, RestApiError,
 };
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct AliasesPatch {
@@ -32,16 +31,9 @@ impl AliasesPatch {
 
     /// Generates a patch from JSON, presumably from `json_patch`
     pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
-        let pe = j
-            .as_array()
-            .ok_or(RestApiError::MissingOrInvalidField {
-                field: "AliasPatch".to_string(),
-                j: j.clone(),
-            })?
-            .iter()
-            .map(|x| serde_json::from_value(x.clone()))
-            .collect::<Result<Vec<PatchEntry>, serde_json::Error>>()?;
-        Ok(Self { patch: pe })
+        Ok(Self {
+            patch: PatchEntry::list_from_json(j, "AliasesPatch")?,
+        })
     }
 }
 
@@ -55,22 +47,7 @@ impl Patch for AliasesPatch {
     }
 }
 
-impl PatchApply<Aliases> for AliasesPatch {
-    async fn apply_match(
-        &self,
-        id: &EntityId,
-        api: &RestApi,
-        em: EditMetadata,
-    ) -> Result<Aliases, RestApiError> {
-        let j = json!({"patch": self.patch});
-        let request = self
-            .generate_json_request(id, reqwest::Method::PATCH, j, api, &em)
-            .await?;
-        let response = api.execute(request).await?;
-        let (j2, header_info) = self.filter_response_error(response).await?;
-        Aliases::from_json_header_info(&j2, header_info)
-    }
-}
+impl PatchApply<Aliases> for AliasesPatch {}
 
 impl HttpMisc for AliasesPatch {
     fn get_my_rest_api_path(&self, id: &EntityId) -> Result<String, RestApiError> {
@@ -81,7 +58,8 @@ impl HttpMisc for AliasesPatch {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::Value;
+    use crate::RestApi;
+    use serde_json::json;
     use wiremock::matchers::{bearer_token, body_partial_json, header, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 

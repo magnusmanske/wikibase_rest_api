@@ -1,4 +1,4 @@
-impl_language_string_collection!(Labels, "labels", "Labels", labels_from_json);
+impl_language_string_collection!(Labels, "labels", "Labels", crate::labels_patch::LabelsPatch);
 
 #[cfg(test)]
 mod tests {
@@ -64,7 +64,7 @@ mod tests {
         let patch_json = json!(patch);
         assert_eq!(
             patch_json,
-            json!({"mode":"Labels","patch":[{"op":"replace","path":"/en","value":"Baz"}]})
+            json!({"patch":[{"op":"replace","path":"/en","value":"Baz"}]})
         );
     }
 

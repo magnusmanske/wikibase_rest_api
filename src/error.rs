@@ -7,9 +7,27 @@ use std::{
 };
 use thiserror::Error;
 
+/// Maximum number of characters of offending JSON shown in an error message.
+const MAX_JSON_SNIPPET_CHARS: usize = 200;
+
+/// Renders JSON for an error message, truncated so that a large document
+/// (e.g. a whole entity) doesn't flood logs. The full value stays available
+/// on the error variant itself.
+fn json_snippet(j: &Value) -> String {
+    let s = j.to_string();
+    match s.char_indices().nth(MAX_JSON_SNIPPET_CHARS) {
+        Some((cut, _)) => format!("{}…", &s[..cut]),
+        None => s,
+    }
+}
+
+/// The error body returned by the server. Wikibase uses `code`/`message`/`context`;
+/// the OAuth endpoints use `error`/`message`, which is accepted as an alias for `code`.
 #[derive(Debug, Clone, Deserialize, Default, PartialEq)]
 pub struct RestApiErrorPayload {
+    #[serde(default, alias = "error")]
     code: String,
+    #[serde(default)]
     message: String,
     #[serde(default)]
     context: HashMap<String, Value>,
@@ -27,6 +45,12 @@ impl RestApiErrorPayload {
     pub const fn context(&self) -> &HashMap<String, Value> {
         &self.context
     }
+
+    /// Returns the `resource_type` context of a `resource-not-found` error
+    /// (e.g. `"item"` or `"aliases"`), which tells *what* was missing.
+    pub fn resource_type(&self) -> Option<&str> {
+        self.context.get("resource_type")?.as_str()
+    }
 }
 
 impl Display for RestApiErrorPayload {
@@ -43,7 +67,7 @@ impl Display for RestApiErrorPayload {
 
 #[derive(Error, Debug)]
 pub enum RestApiError {
-    #[error("ApiError: {status} {status_text} / {payload:?}")]
+    #[error("API error {status}: {payload}")]
     ApiError {
         status: reqwest::StatusCode,
         status_text: String,
@@ -66,15 +90,13 @@ pub enum RestApiError {
         method: reqwest::Method,
         path: String,
     },
-    #[error("Unexpected response: {0}")]
-    UnexpectedResponse(Value),
     #[error("Missing ID")]
     MissingId,
     #[error("ID already set")]
     HasId,
-    #[error("Missing field {field}: {j}")]
+    #[error("Missing field {field}: {}", json_snippet(.j))]
     MissingOrInvalidField { field: String, j: Value },
-    #[error("Wrong type for {field}: {j}")]
+    #[error("Wrong type for {field}: {}", json_snippet(.j))]
     WrongType { field: String, j: Value },
     #[error("Entity ID is None")]
     IsNone,
@@ -84,8 +106,6 @@ pub enum RestApiError {
     InvalidEntityId(String),
     #[error("Unknown value: {0}")]
     UnknownValue(String),
-    #[error("Unknown data type: {0}")]
-    UnknownDataType(String),
     #[error("Serde JSON error: {0}")]
     SerdeJson(serde_json::Error),
     #[error("Unknown statement rank: {0}")]
@@ -147,6 +167,17 @@ impl RestApiError {
         )
     }
 
+    /// Returns `true` if this is a 404 `resource-not-found` for the given resource type
+    /// (e.g. `"aliases"`), as opposed to e.g. the entity itself not existing.
+    pub fn is_missing_resource(&self, resource_type: &str) -> bool {
+        matches!(
+            self,
+            RestApiError::ApiError { status, payload, .. }
+                if *status == reqwest::StatusCode::NOT_FOUND
+                    && payload.resource_type() == Some(resource_type)
+        )
+    }
+
     pub async fn from_response(response: reqwest::Response) -> Self {
         let status = response.status();
         let status_text = status.canonical_reason().unwrap_or_default().to_string();
@@ -191,8 +222,67 @@ mod tests {
         };
         assert_eq!(
             error.to_string(),
-            "ApiError: 400 Bad Request Bad Request / RestApiErrorPayload { code: \"code\", message: \"message\", context: {\"key\": String(\"value\")} }"
+            "API error 400 Bad Request: code: message / {\"key\":\"value\"}"
         );
+    }
+
+    #[test]
+    fn test_payload_resource_type() {
+        let payload: RestApiErrorPayload = serde_json::from_value(json!({
+            "code": "resource-not-found",
+            "message": "The requested resource does not exist",
+            "context": {"resource_type": "aliases"}
+        }))
+        .unwrap();
+        assert_eq!(payload.resource_type(), Some("aliases"));
+        assert_eq!(RestApiErrorPayload::default().resource_type(), None);
+    }
+
+    #[test]
+    fn test_is_missing_resource() {
+        let error = |status, resource_type: &str| RestApiError::ApiError {
+            status,
+            status_text: String::new(),
+            payload: serde_json::from_value(json!({
+                "code": "resource-not-found",
+                "message": "m",
+                "context": {"resource_type": resource_type}
+            }))
+            .unwrap(),
+        };
+        assert!(error(reqwest::StatusCode::NOT_FOUND, "aliases").is_missing_resource("aliases"));
+        assert!(!error(reqwest::StatusCode::NOT_FOUND, "item").is_missing_resource("aliases"));
+        assert!(!error(reqwest::StatusCode::BAD_REQUEST, "aliases").is_missing_resource("aliases"));
+        assert!(!RestApiError::MissingId.is_missing_resource("aliases"));
+    }
+
+    #[test]
+    fn test_payload_oauth_error_alias() {
+        // OAuth endpoints report `error` rather than `code`.
+        let payload: RestApiErrorPayload =
+            serde_json::from_value(json!({"error": "invalid_grant", "message": "bad token"}))
+                .unwrap();
+        assert_eq!(payload.code(), "invalid_grant");
+        assert_eq!(payload.message(), "bad token");
+    }
+
+    #[test]
+    fn test_json_snippet_truncates() {
+        let long = json!("x".repeat(1000));
+        let error = RestApiError::WrongType {
+            field: "f".into(),
+            j: long.clone(),
+        };
+        let msg = error.to_string();
+        assert!(msg.ends_with('…'));
+        assert!(msg.chars().count() < 250);
+        // Short values are shown in full.
+        assert_eq!(json_snippet(&json!({"a": 1})), "{\"a\":1}");
+        // The full value is still available on the variant.
+        match error {
+            RestApiError::WrongType { j, .. } => assert_eq!(j, long),
+            _ => unreachable!(),
+        }
     }
 
     #[tokio::test]

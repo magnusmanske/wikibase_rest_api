@@ -3,9 +3,7 @@ use crate::{
     RevisionMatch,
 };
 use derive_where::DeriveWhere;
-use reqwest::{Response, StatusCode};
 use serde_json::{json, Value};
-use std::collections::HashMap;
 
 /// A group of aliases in a specific language.
 #[derive(DeriveWhere, Debug, Clone)]
@@ -73,7 +71,7 @@ impl AliasesInLanguage {
     }
 
     /// Returns the list of aliases.
-    pub const fn values(&self) -> &Vec<String> {
+    pub fn values(&self) -> &[String] {
         &self.values
     }
 
@@ -121,22 +119,6 @@ impl AliasesInLanguage {
     pub const fn header_info(&self) -> &HeaderInfo {
         &self.header_info
     }
-
-    async fn check_get_match_response(
-        language: &str,
-        response: Response,
-    ) -> Result<Self, RestApiError> {
-        let header_info = HeaderInfo::from_header(response.headers());
-        // A 404 means there are no aliases in this language; other failures are real errors.
-        let j: Value = if response.status() == StatusCode::NOT_FOUND {
-            json!([])
-        } else if !response.status().is_success() {
-            return Err(RestApiError::from_response(response).await);
-        } else {
-            response.json().await?
-        };
-        Self::from_json_header_info(language, &j, header_info)
-    }
 }
 
 impl HttpMisc for AliasesInLanguage {
@@ -157,17 +139,13 @@ impl HttpGet for AliasesInLanguage {
         rm: RevisionMatch,
     ) -> Result<Self, RestApiError> {
         let language = Language::validated(language)?;
-        let path = format!(
-            "/entities/{group}/{id}/aliases/{language}",
-            group = id.group()?
-        );
-        let mut request = api
-            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::GET)
-            .await?
-            .build()?;
-        rm.modify_headers(request.headers_mut())?;
-        let response = api.execute(request).await?;
-        Self::check_get_match_response(&language, response).await
+        let path = format!("{}/aliases/{language}", id.entity_path()?);
+        match Self::get_match_internal(api, &path, rm).await {
+            Ok((j, header_info)) => Self::from_json_header_info(language, &j, header_info),
+            // No aliases in this language; other 404s (e.g. no such item) are errors.
+            Err(e) if e.is_missing_resource("aliases") => Ok(Self::new(language, vec![])),
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -208,18 +186,48 @@ mod tests {
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(mock_path))
-            .respond_with(ResponseTemplate::new(404))
+            .respond_with(ResponseTemplate::new(404).set_body_json(json!({
+                "code": "resource-not-found",
+                "message": "The requested resource does not exist",
+                "context": {"resource_type": "aliases"}
+            })))
             .mount(&mock_server)
             .await;
         let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
             .unwrap()
             .build()
             .unwrap();
-        // A 404 means "no aliases in this language", not an error.
+        // A 404 for the aliases resource means "no aliases in this language", not an error.
         let aliases = AliasesInLanguage::get(&EntityId::item("Q42"), "en", &api)
             .await
             .unwrap();
         assert!(aliases.values.is_empty());
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_aliases_get_404_missing_item_is_error() {
+        // A 404 because the *item* doesn't exist must not masquerade as "no aliases".
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(
+                "/w/rest.php/wikibase/v1/entities/items/Q42/aliases/en",
+            ))
+            .respond_with(ResponseTemplate::new(404).set_body_json(json!({
+                "code": "resource-not-found",
+                "message": "The requested resource does not exist",
+                "context": {"resource_type": "item"}
+            })))
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+        let err = AliasesInLanguage::get(&EntityId::item("Q42"), "en", &api)
+            .await
+            .unwrap_err();
+        assert!(err.is_not_found());
     }
 
     #[tokio::test]
@@ -287,15 +295,10 @@ mod tests {
         assert_eq!(new_aliases2.len(), aliases.len() + 1);
         assert!(new_aliases2.values.contains(&new_alias.to_string()));
 
-        // Check non-existing item
+        // A non-existing item is an error, not "no aliases".
         let id3 = EntityId::item("Q12345");
-        assert_eq!(
-            AliasesInLanguage::get(&id3, "en", &api)
-                .await
-                .unwrap()
-                .len(),
-            0
-        );
+        let err = AliasesInLanguage::get(&id3, "en", &api).await.unwrap_err();
+        assert!(err.is_not_found());
     }
 
     #[test]

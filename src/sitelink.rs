@@ -1,6 +1,6 @@
 use derive_where::DeriveWhere;
 use nutype::nutype;
-use serde::ser::{Serialize, SerializeStruct};
+use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::{
@@ -28,13 +28,18 @@ impl SiteId {
     }
 }
 
-#[derive(DeriveWhere, Debug, Clone)]
+/// Serializes as the REST API's sitelink object (`title`, `badges`, `url`); the wiki is the
+/// key under which it lives in `Sitelinks`, so it isn't part of the object itself.
+#[derive(DeriveWhere, Debug, Clone, Serialize)]
 #[derive_where(PartialEq)]
 pub struct Sitelink {
+    #[serde(skip)]
     wiki: String,
     title: String,
     badges: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     url: Option<String>,
+    #[serde(skip)]
     #[derive_where(skip)]
     header_info: HeaderInfo,
 }
@@ -115,7 +120,7 @@ impl Sitelink {
     }
 
     /// Returns the badges of the sitelink
-    pub const fn badges(&self) -> &Vec<String> {
+    pub fn badges(&self) -> &[String] {
         &self.badges
     }
 
@@ -130,26 +135,6 @@ impl Sitelink {
             "/entities/{group}/{id}/sitelinks/{wiki}",
             group = id.group()?
         ))
-    }
-}
-
-impl Serialize for Sitelink {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        // #lizard forgives the complexity
-        let mut fields = 2;
-        if self.url.is_some() {
-            fields += 1;
-        }
-        let mut s = serializer.serialize_struct("Sitelink", fields)?;
-        s.serialize_field("title", &self.title)?;
-        s.serialize_field("badges", &self.badges)?;
-        if let Some(url) = &self.url {
-            s.serialize_field("url", url)?;
-        }
-        s.end()
     }
 }
 
@@ -179,14 +164,10 @@ impl HttpDelete for Sitelink {
         api: &RestApi,
         em: EditMetadata,
     ) -> Result<(), RestApiError> {
-        let j = json!({});
-        let (j, _revision_id) = self
-            .run_json_query(id, reqwest::Method::DELETE, j, api, &em)
+        // Success is signalled by the 2xx status; the body is just an informational message.
+        self.run_json_query(id, reqwest::Method::DELETE, json!({}), api, &em)
             .await?;
-        match j.as_str() {
-            Some("Sitelink deleted") => Ok(()),
-            _ => Err(RestApiError::UnexpectedResponse(j.to_owned())),
-        }
+        Ok(())
     }
 }
 
@@ -365,7 +346,7 @@ mod tests {
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
-    async fn test_sitelink_delete_unexpected_response() {
+    async fn test_sitelink_delete_any_success_body() {
         let id = "Q42";
         let mock_path = format!("/w/rest.php/wikibase/v1/entities/items/{id}/sitelinks/enwiki");
         let mock_server = MockServer::start().await;
@@ -384,11 +365,8 @@ mod tests {
 
         let id = EntityId::item(id);
         let sitelink = Sitelink::new("enwiki", "doesn't matter");
-        // An unexpected response body must surface as UnexpectedResponse.
-        match sitelink.delete(&id, &api).await.unwrap_err() {
-            RestApiError::UnexpectedResponse(j) => assert_eq!(j, json!("something else")),
-            e => panic!("Wrong error type: {e:?}"),
-        }
+        // Success is decided by the status, not by the (informational) message text.
+        sitelink.delete(&id, &api).await.unwrap();
     }
 
     #[tokio::test]

@@ -1,10 +1,9 @@
-use crate::{EditMetadata, EntityId, HeaderInfo, HttpMisc, RestApi, RestApiError, RevisionMatch};
-use reqwest::{Request, Response};
+use crate::{EditMetadata, EntityId, FromJson, HttpMisc, RestApi, RestApiError, RevisionMatch};
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 pub enum EntityType {
     Item,
     Property,
@@ -30,142 +29,88 @@ impl EntityType {
     }
 }
 
-pub trait Entity: Default + Sized + Serialize + HttpMisc {
+/// A top-level Wikibase entity (`Item` or `Property`), with GET and POST (create) support.
+pub trait Entity: Default + Serialize + HttpMisc + FromJson {
+    /// The kind of entity this type represents.
+    const ENTITY_TYPE: EntityType;
+
     fn id(&self) -> &EntityId;
     fn set_id(&mut self, id: EntityId);
-    fn from_json_header_info(j: Value, header_info: HeaderInfo) -> Result<Self, RestApiError>;
 
-    fn from_json(j: Value) -> Result<Self, RestApiError> {
-        Self::from_json_header_info(j, HeaderInfo::default())
-    }
-
-    async fn get(id: EntityId, api: &RestApi) -> Result<Self, RestApiError> {
+    /// Fetches the entity.
+    async fn get(id: &EntityId, api: &RestApi) -> Result<Self, RestApiError> {
         Self::get_match(id, api, RevisionMatch::default()).await
     }
 
-    async fn generate_get_match_request(
-        id: EntityId,
+    /// Fetches the entity, conditional on `rm`.
+    async fn get_match(
+        id: &EntityId,
         api: &RestApi,
         rm: RevisionMatch,
-    ) -> Result<Request, RestApiError> {
-        Self::generate_get_match_request_fields(id, api, rm, &[]).await
+    ) -> Result<Self, RestApiError> {
+        Self::get_match_fields(id, &[], api, rm).await
     }
 
-    async fn generate_get_match_request_fields(
-        id: EntityId,
+    /// Fetches only the given top-level `fields` (e.g. `["labels"]`) of the entity.
+    async fn get_fields(
+        id: &EntityId,
+        fields: &[&str],
+        api: &RestApi,
+    ) -> Result<Self, RestApiError> {
+        Self::get_match_fields(id, fields, api, RevisionMatch::default()).await
+    }
+
+    /// Fetches only the given top-level `fields` of the entity, conditional on `rm`.
+    /// An empty `fields` slice fetches the whole entity.
+    async fn get_match_fields(
+        id: &EntityId,
+        fields: &[&str],
         api: &RestApi,
         rm: RevisionMatch,
-        fields: &[&str],
-    ) -> Result<Request, RestApiError> {
-        let path = format!("/entities/{group}/{id}", group = id.group()?);
+    ) -> Result<Self, RestApiError> {
         let mut params = HashMap::new();
         if !fields.is_empty() {
             params.insert("_fields".to_string(), fields.join(","));
         }
         let mut request = api
-            .wikibase_request_builder(&path, params, reqwest::Method::GET)
+            .wikibase_request_builder(&id.entity_path()?, params, reqwest::Method::GET)
             .await?
             .build()?;
         rm.modify_headers(request.headers_mut())?;
-        Ok(request)
+        let (j, header_info) = Self::api_execute(api, request).await?;
+        Self::from_json_header_info(&j, header_info)
     }
 
-    async fn get_match(
-        id: EntityId,
-        api: &RestApi,
-        rm: RevisionMatch,
-    ) -> Result<Self, RestApiError> {
-        let request = Self::generate_get_match_request(id, api, rm).await?;
-        let response = api.execute(request).await?;
-        let (j, hi) = Self::parse_response(response).await?;
-        Self::from_json_header_info(j, hi)
+    /// Creates the entity via the API. The entity must not have an ID yet.
+    /// Returns the newly created entity, as reported by the server.
+    async fn post(&self, api: &RestApi) -> Result<Self, RestApiError> {
+        self.post_meta(api, EditMetadata::default()).await
     }
 
-    async fn get_fields(
-        id: EntityId,
-        fields: &[&str],
-        api: &RestApi,
-    ) -> Result<Self, RestApiError> {
-        Self::get_match_fields(id, api, RevisionMatch::default(), fields).await
-    }
-
-    async fn get_match_fields(
-        id: EntityId,
-        api: &RestApi,
-        rm: RevisionMatch,
-        fields: &[&str],
-    ) -> Result<Self, RestApiError> {
-        let request = Self::generate_get_match_request_fields(id, api, rm, fields).await?;
-        let response = api.execute(request).await?;
-        let (j, hi) = Self::parse_response(response).await?;
-        Self::from_json_header_info(j, hi)
-    }
-
-    async fn post(&self, api: &RestApi) -> Result<Self, RestApiError>;
-
-    async fn post_with_type(
-        &self,
-        entity_type: EntityType,
-        api: &RestApi,
-    ) -> Result<Self, RestApiError> {
-        self.post_with_type_and_metadata(entity_type, api, EditMetadata::default())
-            .await
-    }
-
-    async fn build_post_with_type_and_metadata_request(
-        &self,
-        entity_type: EntityType,
-        path: &str,
-        api: &RestApi,
-        em: EditMetadata,
-    ) -> Result<reqwest::Request, RestApiError> {
-        let mut request = api
-            .wikibase_request_builder(path, HashMap::new(), reqwest::Method::POST)
-            .await?
-            .build()?;
-        let mut j: Value = json!({entity_type.type_name(): self});
-        Self::add_metadata_to_json(&mut j, &em);
-        *request.body_mut() = Some(format!("{j}").into());
-        Ok(request)
-    }
-
-    async fn check_post_with_type_and_metadata_response(
-        path: &str,
-        response: Response,
-    ) -> Result<Response, RestApiError> {
-        if response.status().is_success() {
-            return Ok(response);
-        }
-        let status_code = response.status();
-        if status_code == 404 {
-            return Err(RestApiError::NotImplementedInRestApi {
-                method: reqwest::Method::POST,
-                path: path.to_string(),
-            });
-        }
-        Err(RestApiError::from_response(response).await)
-    }
-
-    async fn post_with_type_and_metadata(
-        &self,
-        entity_type: EntityType,
-        api: &RestApi,
-        em: EditMetadata,
-    ) -> Result<Self, RestApiError> {
+    /// Creates the entity via the API, with edit metadata.
+    /// The entity must not have an ID yet.
+    async fn post_meta(&self, api: &RestApi, em: EditMetadata) -> Result<Self, RestApiError> {
         if self.id().is_some() {
             return Err(RestApiError::HasId);
         }
-        let path = format!("/entities/{group}", group = entity_type.group_name());
-        let request = self
-            .build_post_with_type_and_metadata_request(entity_type, &path, api, em)
-            .await?;
+        let path = format!("/entities/{}", Self::ENTITY_TYPE.group_name());
+        let mut body = json!({Self::ENTITY_TYPE.type_name(): self});
+        Self::add_metadata_to_json(&mut body, &em);
+        let mut request = api
+            .wikibase_request_builder(&path, HashMap::new(), reqwest::Method::POST)
+            .await?
+            .build()?;
+        *request.body_mut() = Some(body.to_string().into());
         let response = api.execute(request).await?;
-        let response = Self::check_post_with_type_and_metadata_response(&path, response).await?;
-
-        let j: Value = response.json().await?;
-        // TODO return entire entity? Check if it's the same as this one?
-        let ret = Self::from_json(j)?;
-        Ok(ret)
+        if response.status() == reqwest::StatusCode::NOT_FOUND {
+            // Older Wikibase versions don't offer entity creation via REST.
+            return Err(RestApiError::NotImplementedInRestApi {
+                method: reqwest::Method::POST,
+                path,
+            });
+        }
+        let (j, header_info) = Self::parse_response(response).await?;
+        Self::from_json_header_info(&j, header_info)
     }
 }
 
@@ -174,7 +119,7 @@ mod tests {
     use super::*;
     use crate::{item::Item, RestApi};
     use serde_json::json;
-    use wiremock::matchers::{method, path, query_param};
+    use wiremock::matchers::{body_partial_json, method, path, query_param};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
@@ -203,7 +148,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let item = Item::get_fields(EntityId::item("Q42"), &["labels"], &api)
+        let item = Item::get_fields(&EntityId::item("Q42"), &["labels"], &api)
             .await
             .unwrap();
         assert_eq!(item.labels().get_lang("en"), Some("Douglas Adams"));
@@ -228,14 +173,14 @@ mod tests {
             .build()
             .unwrap();
 
-        let item = Item::get(EntityId::item("Q42"), &api).await.unwrap();
+        let item = Item::get(&EntityId::item("Q42"), &api).await.unwrap();
         assert_eq!(item.id(), &EntityId::item("Q42"));
         assert_eq!(item.labels().get_lang("en"), Some("Douglas Adams"));
     }
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
-    async fn test_post_with_type_success() {
+    async fn test_post_success() {
         // Exercises building the POST request body and parsing the created entity.
         let mock_server = MockServer::start().await;
         Mock::given(method("POST"))
@@ -252,13 +197,42 @@ mod tests {
             .unwrap();
 
         let item = Item::default();
-        let created = item.post_with_type(EntityType::Item, &api).await.unwrap();
+        let created = item.post(&api).await.unwrap();
         assert_eq!(created.id(), &EntityId::item("Q123"));
     }
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
-    async fn test_post_with_type_non_404_error() {
+    async fn test_post_meta_sends_metadata() {
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/w/rest.php/wikibase/v1/entities/items"))
+            .and(body_partial_json(
+                json!({"comment": "new item", "bot": true}),
+            ))
+            .respond_with(
+                ResponseTemplate::new(201)
+                    .insert_header("ETag", r#"W/"7""#)
+                    .set_body_json(json!({"id": "Q7"})),
+            )
+            .mount(&mock_server)
+            .await;
+        let api = RestApi::builder(&(mock_server.uri() + "/w/rest.php"))
+            .unwrap()
+            .build()
+            .unwrap();
+        let mut em = EditMetadata::default();
+        em.set_comment(Some("new item".to_string()));
+        em.set_bot(true);
+        let created = Item::default().post_meta(&api, em).await.unwrap();
+        assert_eq!(created.id(), &EntityId::item("Q7"));
+        // The created entity carries the response's revision.
+        assert_eq!(created.header_info().revision_id(), Some(7));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn test_post_non_404_error() {
         // A non-404 error response is surfaced as an `ApiError`, not `NotImplementedInRestApi`.
         let mock_server = MockServer::start().await;
         Mock::given(method("POST"))
@@ -275,11 +249,7 @@ mod tests {
             .unwrap();
 
         let item = Item::default();
-        let err = item
-            .post_with_type(EntityType::Item, &api)
-            .await
-            .err()
-            .unwrap();
+        let err = item.post(&api).await.err().unwrap();
         match err {
             RestApiError::ApiError { status, .. } => assert_eq!(status, 400),
             other => panic!("Wrong error type: {other:?}"),

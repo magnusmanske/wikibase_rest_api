@@ -1,4 +1,4 @@
-use crate::{prelude::RestApiError, EditMetadata, EntityId, HeaderInfo, RestApi, RevisionMatch};
+use crate::{EditMetadata, EntityId, HeaderInfo, RestApi, RestApiError, RevisionMatch};
 use reqwest::Request;
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -75,8 +75,7 @@ pub trait HttpMisc {
         em: &EditMetadata,
     ) -> Result<(Value, HeaderInfo), RestApiError> {
         let request = self.generate_json_request(id, method, j, api, em).await?;
-        let response = api.execute(request).await?;
-        self.filter_response_error(response).await
+        Self::api_execute(api, request).await
     }
 
     async fn generate_json_request(
@@ -89,28 +88,14 @@ pub trait HttpMisc {
     ) -> Result<reqwest::Request, RestApiError> {
         Self::add_metadata_to_json(&mut j, em);
         let path = self.get_my_rest_api_path(id)?;
-        let content_type = match method {
-            reqwest::Method::PATCH => "application/json-patch+json",
-            _ => "application/json",
-        }
-        .parse()?;
+        // `wikibase_request_builder` sets the method-appropriate Content-Type.
         let mut request = api
             .wikibase_request_builder(&path, HashMap::new(), method)
             .await?
             .build()?;
-        request
-            .headers_mut()
-            .insert(reqwest::header::CONTENT_TYPE, content_type);
         em.revision_match().modify_headers(request.headers_mut())?;
         *request.body_mut() = Some(format!("{j}").into());
         Ok(request)
-    }
-
-    async fn filter_response_error(
-        &self,
-        response: reqwest::Response,
-    ) -> Result<(Value, HeaderInfo), RestApiError> {
-        Self::parse_response(response).await
     }
 }
 
@@ -259,7 +244,7 @@ mod tests {
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn test_run_json_query() {
-        // Exercises run_json_query -> generate_json_request (PUT branch) -> filter_response_error.
+        // Exercises run_json_query -> generate_json_request (PUT branch) -> parse_response.
         let mock_server = MockServer::start().await;
         Mock::given(wm_method("PUT"))
             .and(wm_path(
@@ -289,28 +274,25 @@ mod tests {
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
-    async fn test_filter_response_error() {
-        let sl = Sitelinks::default();
+    async fn test_parse_response_invalid_json() {
         let response = reqwest::Response::from(http::Response::new("body text"));
-        let result = sl.filter_response_error(response).await;
-        assert!(result.is_err());
+        let result = Sitelinks::parse_response(response).await;
+        assert!(matches!(result, Err(RestApiError::Reqwest(_))));
     }
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
-    async fn test_filter_response_error2() {
-        let sl = Sitelinks::default();
+    async fn test_parse_response_error_status() {
         let response = reqwest::Response::from(
             http::Response::builder()
                 .status(400)
                 .body(r#"{"code":"foo","message":"bar"}"#)
                 .unwrap(),
         );
-        let result = sl.filter_response_error(response).await;
-        assert!(result.is_err());
+        let result = Sitelinks::parse_response(response).await;
         assert_eq!(
             result.unwrap_err().to_string(),
-            "ApiError: 400 Bad Request Bad Request / RestApiErrorPayload { code: \"foo\", message: \"bar\", context: {} }"
+            "API error 400 Bad Request: foo: bar / {}"
         );
     }
 }

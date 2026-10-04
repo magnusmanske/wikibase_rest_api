@@ -1,12 +1,8 @@
-use crate::{
-    property_value::{PropertyType, PropertyValue},
-    statement_value::StatementValue,
-    RestApiError,
-};
-use serde::ser::{Serialize, SerializeStruct, Serializer};
+use crate::{property_value::PropertyValue, RestApiError};
+use serde::Serialize;
 use serde_json::Value;
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize)]
 pub struct Reference {
     parts: Vec<PropertyValue>,
     hash: String,
@@ -17,7 +13,6 @@ impl Reference {
     /// # Errors
     /// Returns an error if the JSON structure is missing a required field or if a field is invalid
     pub fn from_json(j: &Value) -> Result<Self, RestApiError> {
-        // #lizard forgives the complexity
         let hash = j["hash"]
             .as_str()
             .ok_or_else(|| RestApiError::MissingOrInvalidField {
@@ -31,12 +26,8 @@ impl Reference {
                 field: "parts".into(),
                 j: j.to_owned(),
             })?
-            .iter() // TODO was par_iter but miri doesn't like rayon...
-            .map(|part| {
-                let property = PropertyType::from_json(&part["property"])?;
-                let value = StatementValue::from_json(&part["value"])?;
-                Ok(PropertyValue::new(property, value))
-            })
+            .iter()
+            .map(PropertyValue::from_json)
             .collect::<Result<Vec<PropertyValue>, RestApiError>>()?;
         Ok(Reference { parts, hash })
     }
@@ -56,21 +47,10 @@ impl Reference {
     }
 }
 
-impl Serialize for Reference {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("Reference", 2)?;
-        s.serialize_field("hash", &self.hash)?;
-        s.serialize_field("parts", &self.parts)?;
-        s.end()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{property_value::PropertyType, statement_value::StatementValue};
 
     #[test]
     fn test_parts() {

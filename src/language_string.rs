@@ -37,12 +37,12 @@ impl LanguageString {
     }
 
     /// Returns the language code of the language string.
-    pub const fn language(&self) -> &String {
+    pub fn language(&self) -> &str {
         &self.language
     }
 
     /// Returns the value (text) of the language string.
-    pub const fn value(&self) -> &String {
+    pub fn value(&self) -> &str {
         &self.value
     }
 }

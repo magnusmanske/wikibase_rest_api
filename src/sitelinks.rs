@@ -1,10 +1,10 @@
 use crate::{
-    sitelinks_patch::SitelinksPatch, EntityId, FromJson, HeaderInfo, HttpGetEntity, HttpMisc,
-    RestApi, RestApiError, RevisionMatch, Sitelink,
+    patch_entry::PatchEntry, sitelinks_patch::SitelinksPatch, EntityId, FromJson, HeaderInfo,
+    HttpGetEntity, HttpMisc, Patch, RestApi, RestApiError, RevisionMatch, Sitelink,
 };
 use derive_where::DeriveWhere;
 use serde::ser::{Serialize, SerializeMap};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 #[derive(DeriveWhere, Debug, Clone, Default)]
 #[derive_where(PartialEq)]
@@ -59,7 +59,7 @@ impl HttpGetEntity for Sitelinks {
 
 impl Sitelinks {
     /// Returns the sitelinks
-    pub const fn sitelinks(&self) -> &Vec<Sitelink> {
+    pub fn sitelinks(&self) -> &[Sitelink] {
         &self.sitelinks
     }
 
@@ -93,8 +93,8 @@ impl Sitelinks {
 
     /// Generates a patch to transform `other` into `self`
     pub fn patch(&self, other: &Self) -> Result<SitelinksPatch, RestApiError> {
-        let patch = json_patch::diff(&json!(&other), &json!(&self));
-        let patch = SitelinksPatch::from_json(&json!(patch))?;
+        let mut patch = SitelinksPatch::default();
+        *patch.patch_mut() = PatchEntry::diff(other, self, "SitelinksPatch")?;
         Ok(patch)
     }
 }
