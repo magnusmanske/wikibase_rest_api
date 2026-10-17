@@ -33,7 +33,7 @@ tokio = { version = "1.23.1", features = ["sync", "time"] }
 uuid = { version = "1", features = ["v4"] }
 thiserror = "2"
 regex = "1.5.5"
-nutype = { version = "0.7", features = ["regex"] }
+nutype = { version = "0.8", features = ["regex"] }
 
 [dev-dependencies]
 wiremock = "0.6"
